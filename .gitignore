@@ -1,17 +1,25 @@
-# 纹理与体素导出体积较大，走 Git LFS（见 .gitattributes）。
-# 它们全部入库：贴图是 layer 1 材质与 phase 2 语义着色的唯一来源，
-# voxel bin 则是可复现解析的中间产物，入库便于离线核对。
-# assets/textures/**/*.png filter=lfs
-# voxel_data/**/*.bin    filter=lfs
+# ---------------------------------------------------------------------------
+# 什么入库，什么不入库
+# ---------------------------------------------------------------------------
+# 入库：
+#   * 源码 / 文档 / 测试
+#   * assets/            layer 1 材质与 phase 2 语义着色的**唯一来源**
+#   * out/phase2/        第二阶段的最终产物（landscape PNG / json / debug 图）
+#
+# 不入库：
+#   * voxel_data/        可由 `parse_world.py --save <存档> --full` 一键重建
+#   * out/survey/*.npy   可由 `survey.py` 重算的稠密中间数组
+#
+# 理由：assets 与 out/phase2 是「不重跑管线就拿不到」的东西，值得 review；
+# voxel_data 只是存档的另一种编码，存档本身才是 source of truth。把 144 MB
+# 的中间编码入库，既拖慢克隆，又在存档更新时产生无意义的二进制 diff。
 
-# survey 的稠密中间数组。层2 全部从存档可重建，且体积达 84 MiB；
-# 与其对应的**最终产物**（landscape PNG / water.json / prop_placements.json
-# / debug 图）已全部入库，可直接核对，这里只排除可再生的中间态。
-out/survey/
+# ---- 可重建的中间产物 --------------------------------------------------
+voxel_data/
 *.npy
 *.npz
 
-# Unreal 工程中间产物
+# ---- Unreal 工程中间产物 ----------------------------------------------
 project/Saved/
 project/Intermediate/
 project/DerivedDataCache/
@@ -23,28 +31,28 @@ project/Packaged/
 project/Content/**/__pycache__/
 *.pyc
 
-# 凭据 —— 绝不提交
+# ---- 凭据 —— 绝不提交 --------------------------------------------------
 .gh_token
 .gh_askpass.sh
 *.token
 *.pat
 
-# 存档备份与分片下载产物
+# ---- 存档备份与分片下载产物 --------------------------------------------
 *.zip
 _parts/
 *.bin.part
 
-# UE 引擎源码（浅克隆，本仓库只保留工程）
+# ---- UE 引擎源码（浅克隆，本仓库只保留工程）----------------------------
 UnrealEngine/
 
-# 编辑器与操作系统
+# ---- 编辑器与操作系统 --------------------------------------------------
 .DS_Store
 Thumbs.db
 *.swp
 .idea/
 .vscode/
 
-# Python
+# ---- Python ------------------------------------------------------------
 __pycache__/
 *.py[cod]
 .venv/
