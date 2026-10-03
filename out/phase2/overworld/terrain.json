@@ -1,0 +1,35 @@
+{
+  "block_origin": [
+    -272,
+    -672
+  ],
+  "block_size": [
+    720,
+    1040
+  ],
+  "y_range_blocks": [
+    4.0,
+    63.0
+  ],
+  "y_span_blocks": 59.0,
+  "seconds": 0.3773531913757324,
+  "landscape": {
+    "dir": "landscape",
+    "resolution": [
+      745,
+      1055
+    ],
+    "n_components": [
+      24,
+      34
+    ],
+    "section_size": 31,
+    "quads_per_component": 31,
+    "xy_scale_cm": 100.0,
+    "tile_count": 1,
+    "tile_grid": [
+      1,
+      1
+    ]
+  }
+}

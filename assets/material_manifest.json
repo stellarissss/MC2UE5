@@ -1,0 +1,2996 @@
+[
+ {
+  "blockName": "minecraft:acacia_fence",
+  "texSource": "model:block/acacia_fence_post(multipart)",
+  "topTex": "acacia_planks.png",
+  "sideTex": "acacia_planks.png",
+  "bottomTex": "acacia_planks.png",
+  "alphaMode": "masked",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:acacia_fence_gate",
+  "texSource": "model:block/acacia_fence_gate_open(variants:facing=east,in_wall=false,open=true)",
+  "topTex": "acacia_planks.png",
+  "sideTex": "acacia_planks.png",
+  "bottomTex": "acacia_planks.png",
+  "alphaMode": "masked",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:acacia_leaves",
+  "texSource": "model:block/acacia_leaves(variants:default)",
+  "topTex": "acacia_leaves.png",
+  "sideTex": "acacia_leaves.png",
+  "bottomTex": "acacia_leaves.png",
+  "alphaMode": "masked",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:acacia_log",
+  "texSource": "model:block/acacia_log(variants:axis=y)",
+  "topTex": "acacia_log_top.png",
+  "sideTex": "acacia_log.png",
+  "bottomTex": "acacia_log_top.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:acacia_planks",
+  "texSource": "model:block/acacia_planks(variants:default)",
+  "topTex": "acacia_planks.png",
+  "sideTex": "acacia_planks.png",
+  "bottomTex": "acacia_planks.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:acacia_stairs",
+  "texSource": "model:block/acacia_stairs(variants:facing=east,half=top,shape=straight)",
+  "topTex": "acacia_planks.png",
+  "sideTex": "acacia_planks.png",
+  "bottomTex": "acacia_planks.png",
+  "alphaMode": "opaque",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:ancient_debris",
+  "texSource": "model:block/ancient_debris(variants:default)",
+  "topTex": "ancient_debris_top.png",
+  "sideTex": "ancient_debris_side.png",
+  "bottomTex": "ancient_debris_top.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:anvil",
+  "texSource": "model:block/anvil(variants:facing=west)",
+  "topTex": "anvil.png",
+  "sideTex": "anvil.png",
+  "bottomTex": "anvil.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:azure_bluet",
+  "texSource": "model:block/azure_bluet(variants:default)",
+  "topTex": "azure_bluet.png",
+  "sideTex": "azure_bluet.png",
+  "bottomTex": "azure_bluet.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:barrel",
+  "texSource": "model:block/barrel(variants:facing=up,open=false)",
+  "topTex": "barrel_top.png",
+  "sideTex": "barrel_side.png",
+  "bottomTex": "barrel_bottom.png",
+  "alphaMode": "masked",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:barrier",
+  "isPlaceholder": true,
+  "texSource": "placeholder:generated",
+  "topTex": "barrier.png",
+  "sideTex": "barrier.png",
+  "bottomTex": "barrier.png",
+  "alphaMode": "transparent",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:basalt",
+  "texSource": "model:block/basalt(variants:axis=y)",
+  "topTex": "basalt_top.png",
+  "sideTex": "basalt_side.png",
+  "bottomTex": "basalt_top.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:beacon",
+  "texSource": "model:block/beacon(variants:default)",
+  "topTex": "glass.png",
+  "sideTex": "glass.png",
+  "bottomTex": "glass.png",
+  "alphaMode": "transparent",
+  "emissive": true,
+  "emissiveColor": "#8fd4ff"
+ },
+ {
+  "blockName": "minecraft:bedrock",
+  "texSource": "model:block/bedrock(variants:default)",
+  "topTex": "bedrock.png",
+  "sideTex": "bedrock.png",
+  "bottomTex": "bedrock.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:bee_nest",
+  "texSource": "model:block/bee_nest(variants:facing=east,honey_level=0)",
+  "topTex": "bee_nest_top.png",
+  "sideTex": "bee_nest_front.png",
+  "bottomTex": "bee_nest_bottom.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:birch_button",
+  "texSource": "model:block/birch_button(variants:face=wall,facing=east,powered=false)",
+  "topTex": "birch_planks.png",
+  "sideTex": "birch_planks.png",
+  "bottomTex": "birch_planks.png",
+  "alphaMode": "masked",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:birch_door",
+  "texSource": "model:block/birch_door_bottom(variants:facing=east,half=lower,hinge=left,open=false)",
+  "topTex": "birch_door_bottom.png",
+  "sideTex": "birch_door_bottom.png",
+  "bottomTex": "birch_door_bottom.png",
+  "alphaMode": "masked",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:birch_fence",
+  "texSource": "model:block/birch_fence_post(multipart)",
+  "topTex": "birch_planks.png",
+  "sideTex": "birch_planks.png",
+  "bottomTex": "birch_planks.png",
+  "alphaMode": "masked",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:birch_leaves",
+  "texSource": "model:block/birch_leaves(variants:default)",
+  "topTex": "birch_leaves.png",
+  "sideTex": "birch_leaves.png",
+  "bottomTex": "birch_leaves.png",
+  "alphaMode": "masked",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:birch_log",
+  "texSource": "model:block/birch_log(variants:axis=y)",
+  "topTex": "birch_log_top.png",
+  "sideTex": "birch_log.png",
+  "bottomTex": "birch_log_top.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:birch_planks",
+  "texSource": "model:block/birch_planks(variants:default)",
+  "topTex": "birch_planks.png",
+  "sideTex": "birch_planks.png",
+  "bottomTex": "birch_planks.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:birch_pressure_plate",
+  "texSource": "model:block/birch_pressure_plate(variants:powered=false)",
+  "topTex": "birch_planks.png",
+  "sideTex": "birch_planks.png",
+  "bottomTex": "birch_planks.png",
+  "alphaMode": "masked",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:birch_sapling",
+  "texSource": "model:block/birch_sapling(variants:default)",
+  "topTex": "birch_sapling.png",
+  "sideTex": "birch_sapling.png",
+  "bottomTex": "birch_sapling.png",
+  "alphaMode": "masked",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:birch_slab",
+  "texSource": "model:block/birch_slab_top(variants:type=top)",
+  "topTex": "birch_planks.png",
+  "sideTex": "birch_planks.png",
+  "bottomTex": "birch_planks.png",
+  "alphaMode": "opaque",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:birch_stairs",
+  "texSource": "model:block/birch_stairs(variants:facing=east,half=top,shape=straight)",
+  "topTex": "birch_planks.png",
+  "sideTex": "birch_planks.png",
+  "bottomTex": "birch_planks.png",
+  "alphaMode": "opaque",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:birch_trapdoor",
+  "texSource": "model:block/birch_trapdoor_top(variants:facing=east,half=top,open=false)",
+  "topTex": "birch_trapdoor.png",
+  "sideTex": "birch_trapdoor.png",
+  "bottomTex": "birch_trapdoor.png",
+  "alphaMode": "masked",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:birch_wall_sign",
+  "texSource": "model-textures:block/birch_sign(variants:default)",
+  "topTex": "birch_planks.png",
+  "sideTex": "birch_planks.png",
+  "bottomTex": "birch_planks.png",
+  "alphaMode": "masked",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:black_carpet",
+  "texSource": "model:block/black_carpet(variants:default)",
+  "topTex": "black_wool.png",
+  "sideTex": "black_wool.png",
+  "bottomTex": "black_wool.png",
+  "alphaMode": "masked",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:black_stained_glass",
+  "texSource": "model:block/black_stained_glass(variants:default)",
+  "topTex": "black_stained_glass.png",
+  "sideTex": "black_stained_glass.png",
+  "bottomTex": "black_stained_glass.png",
+  "alphaMode": "transparent",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:black_stained_glass_pane",
+  "texSource": "model:block/black_stained_glass_pane_post(multipart)",
+  "topTex": "black_stained_glass_pane_top.png",
+  "sideTex": "black_stained_glass_pane_top.png",
+  "bottomTex": "black_stained_glass_pane_top.png",
+  "alphaMode": "masked",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:blackstone",
+  "texSource": "model:block/blackstone(variants:default)",
+  "topTex": "blackstone_top.png",
+  "sideTex": "blackstone.png",
+  "bottomTex": "blackstone_top.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:blackstone_slab",
+  "texSource": "model:block/blackstone_slab_top(variants:type=top)",
+  "topTex": "blackstone_top.png",
+  "sideTex": "blackstone.png",
+  "bottomTex": "blackstone_top.png",
+  "alphaMode": "opaque",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:blackstone_stairs",
+  "texSource": "model:block/blackstone_stairs(variants:facing=east,half=top,shape=straight)",
+  "topTex": "blackstone_top.png",
+  "sideTex": "blackstone.png",
+  "bottomTex": "blackstone_top.png",
+  "alphaMode": "opaque",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:blue_carpet",
+  "texSource": "model:block/blue_carpet(variants:default)",
+  "topTex": "blue_wool.png",
+  "sideTex": "blue_wool.png",
+  "bottomTex": "blue_wool.png",
+  "alphaMode": "masked",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:blue_concrete",
+  "texSource": "model:block/blue_concrete(variants:default)",
+  "topTex": "blue_concrete.png",
+  "sideTex": "blue_concrete.png",
+  "bottomTex": "blue_concrete.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:blue_ice",
+  "texSource": "model:block/blue_ice(variants:default)",
+  "topTex": "blue_ice.png",
+  "sideTex": "blue_ice.png",
+  "bottomTex": "blue_ice.png",
+  "alphaMode": "transparent",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:bone_block",
+  "texSource": "model:block/bone_block(variants:axis=y)",
+  "topTex": "bone_block_top.png",
+  "sideTex": "bone_block_side.png",
+  "bottomTex": "bone_block_top.png",
+  "alphaMode": "masked",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:bookshelf",
+  "texSource": "model:block/bookshelf(variants:default)",
+  "topTex": "oak_planks.png",
+  "sideTex": "bookshelf.png",
+  "bottomTex": "oak_planks.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:brewing_stand",
+  "texSource": "model:block/brewing_stand(multipart)",
+  "topTex": "brewing_stand.png",
+  "sideTex": "brewing_stand.png",
+  "bottomTex": "brewing_stand.png",
+  "alphaMode": "masked",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:brick_slab",
+  "texSource": "model:block/brick_slab_top(variants:type=top)",
+  "topTex": "bricks.png",
+  "sideTex": "bricks.png",
+  "bottomTex": "bricks.png",
+  "alphaMode": "opaque",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:brick_stairs",
+  "texSource": "model:block/brick_stairs(variants:facing=east,half=top,shape=straight)",
+  "topTex": "bricks.png",
+  "sideTex": "bricks.png",
+  "bottomTex": "bricks.png",
+  "alphaMode": "opaque",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:bricks",
+  "texSource": "model:block/bricks(variants:default)",
+  "topTex": "bricks.png",
+  "sideTex": "bricks.png",
+  "bottomTex": "bricks.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:brown_bed",
+  "texSource": "model-textures:block/bed(variants:default)",
+  "topTex": "oak_planks.png",
+  "sideTex": "oak_planks.png",
+  "bottomTex": "oak_planks.png",
+  "alphaMode": "opaque",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:brown_carpet",
+  "texSource": "model:block/brown_carpet(variants:default)",
+  "topTex": "brown_wool.png",
+  "sideTex": "brown_wool.png",
+  "bottomTex": "brown_wool.png",
+  "alphaMode": "masked",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:brown_mushroom",
+  "texSource": "model:block/brown_mushroom(variants:default)",
+  "topTex": "brown_mushroom.png",
+  "sideTex": "brown_mushroom.png",
+  "bottomTex": "brown_mushroom.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:brown_mushroom_block",
+  "texSource": "model:block/brown_mushroom_block(multipart)",
+  "topTex": "brown_mushroom_block.png",
+  "sideTex": "brown_mushroom_block.png",
+  "bottomTex": "brown_mushroom_block.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:brown_terracotta",
+  "texSource": "model:block/brown_terracotta(variants:default)",
+  "topTex": "brown_terracotta.png",
+  "sideTex": "brown_terracotta.png",
+  "bottomTex": "brown_terracotta.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:brown_wool",
+  "texSource": "model:block/brown_wool(variants:default)",
+  "topTex": "brown_wool.png",
+  "sideTex": "brown_wool.png",
+  "bottomTex": "brown_wool.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:campfire",
+  "texSource": "model:block/campfire_off(variants:facing=east,lit=false)",
+  "topTex": "campfire_log.png",
+  "sideTex": "campfire_log.png",
+  "bottomTex": "campfire_log.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:cartography_table",
+  "texSource": "model:block/cartography_table(variants:default)",
+  "topTex": "cartography_table_top.png",
+  "sideTex": "cartography_table_side3.png",
+  "bottomTex": "dark_oak_planks.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:cauldron",
+  "texSource": "model:block/cauldron(variants:level=0)",
+  "topTex": "cauldron_top.png",
+  "sideTex": "cauldron_side.png",
+  "bottomTex": "cauldron_inner.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:chain",
+  "texSource": "model:block/chain(variants:axis=x)",
+  "topTex": "chain.png",
+  "sideTex": "chain.png",
+  "bottomTex": "chain.png",
+  "alphaMode": "masked",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:chain_command_block",
+  "texSource": "model:block/chain_command_block(variants:conditional=false,facing=up)",
+  "topTex": "chain_command_block_side.png",
+  "sideTex": "chain_command_block_front.png",
+  "bottomTex": "chain_command_block_side.png",
+  "alphaMode": "opaque",
+  "emissive": false,
+  "animated": true
+ },
+ {
+  "blockName": "minecraft:chest",
+  "texSource": "model-textures:block/chest(variants:default)",
+  "topTex": "oak_planks.png",
+  "sideTex": "oak_planks.png",
+  "bottomTex": "oak_planks.png",
+  "alphaMode": "masked",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:chiseled_polished_blackstone",
+  "texSource": "model:block/chiseled_polished_blackstone(variants:default)",
+  "topTex": "chiseled_polished_blackstone.png",
+  "sideTex": "chiseled_polished_blackstone.png",
+  "bottomTex": "chiseled_polished_blackstone.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:chiseled_quartz_block",
+  "texSource": "model:block/chiseled_quartz_block(variants:default)",
+  "topTex": "chiseled_quartz_block_top.png",
+  "sideTex": "chiseled_quartz_block.png",
+  "bottomTex": "chiseled_quartz_block_top.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:chorus_flower",
+  "texSource": "model:block/chorus_flower_dead(variants:age=5)",
+  "topTex": "chorus_flower_dead.png",
+  "sideTex": "chorus_plant.png",
+  "bottomTex": "chorus_plant.png",
+  "alphaMode": "masked",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:chorus_plant",
+  "texSource": "model:block/chorus_plant_side(multipart)",
+  "topTex": "chorus_plant.png",
+  "sideTex": "chorus_plant.png",
+  "bottomTex": "chorus_plant.png",
+  "alphaMode": "masked",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:coal_block",
+  "texSource": "model:block/coal_block(variants:default)",
+  "topTex": "coal_block.png",
+  "sideTex": "coal_block.png",
+  "bottomTex": "coal_block.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:coarse_dirt",
+  "texSource": "model:block/coarse_dirt(variants:default)",
+  "topTex": "coarse_dirt.png",
+  "sideTex": "coarse_dirt.png",
+  "bottomTex": "coarse_dirt.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:cobblestone",
+  "texSource": "model:block/cobblestone(variants:default)",
+  "topTex": "cobblestone.png",
+  "sideTex": "cobblestone.png",
+  "bottomTex": "cobblestone.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:cobblestone_slab",
+  "texSource": "model:block/cobblestone_slab_top(variants:type=top)",
+  "topTex": "cobblestone.png",
+  "sideTex": "cobblestone.png",
+  "bottomTex": "cobblestone.png",
+  "alphaMode": "opaque",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:cobblestone_wall",
+  "texSource": "model:block/cobblestone_wall_post(multipart)",
+  "topTex": "cobblestone.png",
+  "sideTex": "cobblestone.png",
+  "bottomTex": "cobblestone.png",
+  "alphaMode": "masked",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:cobweb",
+  "texSource": "model:block/cobweb(variants:default)",
+  "topTex": "cobweb.png",
+  "sideTex": "cobweb.png",
+  "bottomTex": "cobweb.png",
+  "alphaMode": "masked",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:command_block",
+  "texSource": "model:block/command_block(variants:conditional=false,facing=up)",
+  "topTex": "command_block_side.png",
+  "sideTex": "command_block_front.png",
+  "bottomTex": "command_block_side.png",
+  "alphaMode": "opaque",
+  "emissive": false,
+  "animated": true
+ },
+ {
+  "blockName": "minecraft:comparator",
+  "texSource": "model:block/comparator(variants:facing=east,mode=compare,powered=false)",
+  "topTex": "comparator.png",
+  "sideTex": "smooth_stone.png",
+  "bottomTex": "smooth_stone.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:composter",
+  "texSource": "model:block/composter(multipart)",
+  "topTex": "composter_bottom.png",
+  "sideTex": "composter_side.png",
+  "bottomTex": "composter_bottom.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:conduit",
+  "texSource": "model-textures:block/conduit(variants:default)",
+  "topTex": "conduit.png",
+  "sideTex": "conduit.png",
+  "bottomTex": "conduit.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:cornflower",
+  "texSource": "model:block/cornflower(variants:default)",
+  "topTex": "cornflower.png",
+  "sideTex": "cornflower.png",
+  "bottomTex": "cornflower.png",
+  "alphaMode": "masked",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:cracked_polished_blackstone_bricks",
+  "texSource": "model:block/cracked_polished_blackstone_bricks(variants:default)",
+  "topTex": "cracked_polished_blackstone_bricks.png",
+  "sideTex": "cracked_polished_blackstone_bricks.png",
+  "bottomTex": "cracked_polished_blackstone_bricks.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:crafting_table",
+  "texSource": "model:block/crafting_table(variants:default)",
+  "topTex": "crafting_table_top.png",
+  "sideTex": "crafting_table_front.png",
+  "bottomTex": "oak_planks.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:creeper_wall_head",
+  "texSource": "model-textures:block/skull(variants:default)",
+  "topTex": "soul_sand.png",
+  "sideTex": "soul_sand.png",
+  "bottomTex": "soul_sand.png",
+  "alphaMode": "opaque",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:crimson_door",
+  "texSource": "model:block/crimson_door_bottom(variants:facing=east,half=lower,hinge=left,open=false)",
+  "topTex": "crimson_door_bottom.png",
+  "sideTex": "crimson_door_bottom.png",
+  "bottomTex": "crimson_door_bottom.png",
+  "alphaMode": "masked",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:crimson_fence",
+  "texSource": "model:block/crimson_fence_post(multipart)",
+  "topTex": "crimson_planks.png",
+  "sideTex": "crimson_planks.png",
+  "bottomTex": "crimson_planks.png",
+  "alphaMode": "masked",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:crimson_fungus",
+  "texSource": "model:block/crimson_fungus(variants:default)",
+  "topTex": "crimson_fungus.png",
+  "sideTex": "crimson_fungus.png",
+  "bottomTex": "crimson_fungus.png",
+  "alphaMode": "masked",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:crimson_nylium",
+  "texSource": "model:block/crimson_nylium(variants:default)",
+  "topTex": "crimson_nylium.png",
+  "sideTex": "crimson_nylium_side.png",
+  "bottomTex": "netherrack.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:crimson_planks",
+  "texSource": "model:block/crimson_planks(variants:default)",
+  "topTex": "crimson_planks.png",
+  "sideTex": "crimson_planks.png",
+  "bottomTex": "crimson_planks.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:crimson_roots",
+  "texSource": "model:block/crimson_roots(variants:default)",
+  "topTex": "crimson_roots.png",
+  "sideTex": "crimson_roots.png",
+  "bottomTex": "crimson_roots.png",
+  "alphaMode": "masked",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:crimson_slab",
+  "texSource": "model:block/crimson_slab_top(variants:type=top)",
+  "topTex": "crimson_planks.png",
+  "sideTex": "crimson_planks.png",
+  "bottomTex": "crimson_planks.png",
+  "alphaMode": "opaque",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:crimson_stairs",
+  "texSource": "model:block/crimson_stairs(variants:facing=east,half=top,shape=straight)",
+  "topTex": "crimson_planks.png",
+  "sideTex": "crimson_planks.png",
+  "bottomTex": "crimson_planks.png",
+  "alphaMode": "opaque",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:crimson_stem",
+  "texSource": "model:block/crimson_stem(variants:axis=y)",
+  "topTex": "crimson_stem_top.png",
+  "sideTex": "crimson_stem.png",
+  "bottomTex": "crimson_stem_top.png",
+  "alphaMode": "masked",
+  "emissive": false,
+  "animated": true
+ },
+ {
+  "blockName": "minecraft:crimson_trapdoor",
+  "texSource": "model:block/crimson_trapdoor_top(variants:facing=east,half=top,open=false)",
+  "topTex": "crimson_trapdoor.png",
+  "sideTex": "crimson_trapdoor.png",
+  "bottomTex": "crimson_trapdoor.png",
+  "alphaMode": "masked",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:crying_obsidian",
+  "texSource": "model:block/crying_obsidian(variants:default)",
+  "topTex": "crying_obsidian.png",
+  "sideTex": "crying_obsidian.png",
+  "bottomTex": "crying_obsidian.png",
+  "alphaMode": "opaque",
+  "emissive": true,
+  "emissiveColor": "#8b3fd4"
+ },
+ {
+  "blockName": "minecraft:cyan_concrete",
+  "texSource": "model:block/cyan_concrete(variants:default)",
+  "topTex": "cyan_concrete.png",
+  "sideTex": "cyan_concrete.png",
+  "bottomTex": "cyan_concrete.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:cyan_terracotta",
+  "texSource": "model:block/cyan_terracotta(variants:default)",
+  "topTex": "cyan_terracotta.png",
+  "sideTex": "cyan_terracotta.png",
+  "bottomTex": "cyan_terracotta.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:dandelion",
+  "texSource": "model:block/dandelion(variants:default)",
+  "topTex": "dandelion.png",
+  "sideTex": "dandelion.png",
+  "bottomTex": "dandelion.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:dark_oak_button",
+  "texSource": "model:block/dark_oak_button(variants:face=wall,facing=east,powered=false)",
+  "topTex": "dark_oak_planks.png",
+  "sideTex": "dark_oak_planks.png",
+  "bottomTex": "dark_oak_planks.png",
+  "alphaMode": "masked",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:dark_oak_door",
+  "texSource": "model:block/dark_oak_door_bottom(variants:facing=east,half=lower,hinge=left,open=false)",
+  "topTex": "dark_oak_door_bottom.png",
+  "sideTex": "dark_oak_door_bottom.png",
+  "bottomTex": "dark_oak_door_bottom.png",
+  "alphaMode": "masked",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:dark_oak_fence",
+  "texSource": "model:block/dark_oak_fence_post(multipart)",
+  "topTex": "dark_oak_planks.png",
+  "sideTex": "dark_oak_planks.png",
+  "bottomTex": "dark_oak_planks.png",
+  "alphaMode": "masked",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:dark_oak_leaves",
+  "texSource": "model:block/dark_oak_leaves(variants:default)",
+  "topTex": "dark_oak_leaves.png",
+  "sideTex": "dark_oak_leaves.png",
+  "bottomTex": "dark_oak_leaves.png",
+  "alphaMode": "masked",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:dark_oak_log",
+  "texSource": "model:block/dark_oak_log(variants:axis=y)",
+  "topTex": "dark_oak_log_top.png",
+  "sideTex": "dark_oak_log.png",
+  "bottomTex": "dark_oak_log_top.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:dark_oak_planks",
+  "texSource": "model:block/dark_oak_planks(variants:default)",
+  "topTex": "dark_oak_planks.png",
+  "sideTex": "dark_oak_planks.png",
+  "bottomTex": "dark_oak_planks.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:dark_oak_slab",
+  "texSource": "model:block/dark_oak_slab_top(variants:type=top)",
+  "topTex": "dark_oak_planks.png",
+  "sideTex": "dark_oak_planks.png",
+  "bottomTex": "dark_oak_planks.png",
+  "alphaMode": "opaque",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:dark_oak_stairs",
+  "texSource": "model:block/dark_oak_stairs(variants:facing=east,half=top,shape=straight)",
+  "topTex": "dark_oak_planks.png",
+  "sideTex": "dark_oak_planks.png",
+  "bottomTex": "dark_oak_planks.png",
+  "alphaMode": "opaque",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:dark_oak_trapdoor",
+  "texSource": "model:block/dark_oak_trapdoor_top(variants:facing=east,half=top,open=false)",
+  "topTex": "dark_oak_trapdoor.png",
+  "sideTex": "dark_oak_trapdoor.png",
+  "bottomTex": "dark_oak_trapdoor.png",
+  "alphaMode": "masked",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:dark_oak_wood",
+  "texSource": "model:block/dark_oak_wood(variants:axis=y)",
+  "topTex": "dark_oak_log.png",
+  "sideTex": "dark_oak_log.png",
+  "bottomTex": "dark_oak_log.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:dark_prismarine",
+  "texSource": "model:block/dark_prismarine(variants:default)",
+  "topTex": "dark_prismarine.png",
+  "sideTex": "dark_prismarine.png",
+  "bottomTex": "dark_prismarine.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:diamond_block",
+  "texSource": "model:block/diamond_block(variants:default)",
+  "topTex": "diamond_block.png",
+  "sideTex": "diamond_block.png",
+  "bottomTex": "diamond_block.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:diorite_slab",
+  "texSource": "model:block/diorite_slab_top(variants:type=top)",
+  "topTex": "diorite.png",
+  "sideTex": "diorite.png",
+  "bottomTex": "diorite.png",
+  "alphaMode": "opaque",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:diorite_stairs",
+  "texSource": "model:block/diorite_stairs(variants:facing=east,half=top,shape=straight)",
+  "topTex": "diorite.png",
+  "sideTex": "diorite.png",
+  "bottomTex": "diorite.png",
+  "alphaMode": "opaque",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:diorite_wall",
+  "texSource": "model:block/diorite_wall_post(multipart)",
+  "topTex": "diorite.png",
+  "sideTex": "diorite.png",
+  "bottomTex": "diorite.png",
+  "alphaMode": "opaque",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:dirt",
+  "texSource": "model:block/dirt(variants:default)",
+  "topTex": "dirt.png",
+  "sideTex": "dirt.png",
+  "bottomTex": "dirt.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:dispenser",
+  "texSource": "model:block/dispenser_vertical(variants:facing=up)",
+  "topTex": "dispenser_front_vertical.png",
+  "sideTex": "furnace_top.png",
+  "bottomTex": "furnace_top.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:emerald_block",
+  "texSource": "model:block/emerald_block(variants:default)",
+  "topTex": "emerald_block.png",
+  "sideTex": "emerald_block.png",
+  "bottomTex": "emerald_block.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:enchanting_table",
+  "texSource": "model:block/enchanting_table(variants:default)",
+  "topTex": "enchanting_table_top.png",
+  "sideTex": "enchanting_table_side.png",
+  "bottomTex": "enchanting_table_bottom.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:end_gateway",
+  "texSource": "model-textures:block/end_portal(variants:default)",
+  "topTex": "obsidian.png",
+  "sideTex": "obsidian.png",
+  "bottomTex": "obsidian.png",
+  "alphaMode": "masked",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:end_portal",
+  "texSource": "model-textures:block/end_portal(variants:default)",
+  "topTex": "obsidian.png",
+  "sideTex": "obsidian.png",
+  "bottomTex": "obsidian.png",
+  "alphaMode": "masked",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:end_portal_frame",
+  "texSource": "model:block/end_portal_frame(variants:eye=false,facing=east)",
+  "topTex": "end_portal_frame_top.png",
+  "sideTex": "end_portal_frame_side.png",
+  "bottomTex": "end_stone.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:end_rod",
+  "texSource": "model:block/end_rod(variants:facing=west)",
+  "topTex": "end_rod.png",
+  "sideTex": "end_rod.png",
+  "bottomTex": "end_rod.png",
+  "alphaMode": "masked",
+  "emissive": true,
+  "emissiveColor": "#ffe6b0"
+ },
+ {
+  "blockName": "minecraft:end_stone",
+  "texSource": "model:block/end_stone(variants:default)",
+  "topTex": "end_stone.png",
+  "sideTex": "end_stone.png",
+  "bottomTex": "end_stone.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:end_stone_brick_slab",
+  "texSource": "model:block/end_stone_brick_slab_top(variants:type=top)",
+  "topTex": "end_stone_bricks.png",
+  "sideTex": "end_stone_bricks.png",
+  "bottomTex": "end_stone_bricks.png",
+  "alphaMode": "opaque",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:end_stone_brick_stairs",
+  "texSource": "model:block/end_stone_brick_stairs(variants:facing=east,half=top,shape=straight)",
+  "topTex": "end_stone_bricks.png",
+  "sideTex": "end_stone_bricks.png",
+  "bottomTex": "end_stone_bricks.png",
+  "alphaMode": "opaque",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:end_stone_bricks",
+  "texSource": "model:block/end_stone_bricks(variants:default)",
+  "topTex": "end_stone_bricks.png",
+  "sideTex": "end_stone_bricks.png",
+  "bottomTex": "end_stone_bricks.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:fern",
+  "texSource": "model:block/fern(variants:default)",
+  "topTex": "fern.png",
+  "sideTex": "fern.png",
+  "bottomTex": "fern.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:fire",
+  "texSource": "model:block/fire_floor0(multipart)",
+  "topTex": "fire_0.png",
+  "sideTex": "fire_0.png",
+  "bottomTex": "fire_0.png",
+  "alphaMode": "masked",
+  "emissive": true,
+  "emissiveColor": "#ffb020",
+  "animated": true
+ },
+ {
+  "blockName": "minecraft:fletching_table",
+  "texSource": "model:block/fletching_table(variants:default)",
+  "topTex": "fletching_table_top.png",
+  "sideTex": "fletching_table_front.png",
+  "bottomTex": "birch_planks.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:glass",
+  "texSource": "model:block/glass(variants:default)",
+  "topTex": "glass.png",
+  "sideTex": "glass.png",
+  "bottomTex": "glass.png",
+  "alphaMode": "transparent",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:glass_pane",
+  "texSource": "model:block/glass_pane_post(multipart)",
+  "topTex": "glass_pane_top.png",
+  "sideTex": "glass_pane_top.png",
+  "bottomTex": "glass_pane_top.png",
+  "alphaMode": "masked",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:glowstone",
+  "texSource": "model:block/glowstone(variants:default)",
+  "topTex": "glowstone.png",
+  "sideTex": "glowstone.png",
+  "bottomTex": "glowstone.png",
+  "alphaMode": "opaque",
+  "emissive": true,
+  "emissiveColor": "#ffb463"
+ },
+ {
+  "blockName": "minecraft:gold_block",
+  "texSource": "model:block/gold_block(variants:default)",
+  "topTex": "gold_block.png",
+  "sideTex": "gold_block.png",
+  "bottomTex": "gold_block.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:grass",
+  "texSource": "model:block/grass(variants:default)",
+  "topTex": "grass.png",
+  "sideTex": "grass.png",
+  "bottomTex": "grass.png",
+  "alphaMode": "masked",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:grass_block",
+  "texSource": "model:block/grass_block(variants:snowy=false)",
+  "topTex": "grass_block_top.png",
+  "sideTex": "grass_block_side.png",
+  "bottomTex": "dirt.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:gravel",
+  "texSource": "model:block/gravel(variants:default)",
+  "topTex": "gravel.png",
+  "sideTex": "gravel.png",
+  "bottomTex": "gravel.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:gray_carpet",
+  "texSource": "model:block/gray_carpet(variants:default)",
+  "topTex": "gray_wool.png",
+  "sideTex": "gray_wool.png",
+  "bottomTex": "gray_wool.png",
+  "alphaMode": "masked",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:green_carpet",
+  "texSource": "model:block/green_carpet(variants:default)",
+  "topTex": "green_wool.png",
+  "sideTex": "green_wool.png",
+  "bottomTex": "green_wool.png",
+  "alphaMode": "masked",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:green_concrete",
+  "texSource": "model:block/green_concrete(variants:default)",
+  "topTex": "green_concrete.png",
+  "sideTex": "green_concrete.png",
+  "bottomTex": "green_concrete.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:green_terracotta",
+  "texSource": "model:block/green_terracotta(variants:default)",
+  "topTex": "green_terracotta.png",
+  "sideTex": "green_terracotta.png",
+  "bottomTex": "green_terracotta.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:green_wool",
+  "texSource": "model:block/green_wool(variants:default)",
+  "topTex": "green_wool.png",
+  "sideTex": "green_wool.png",
+  "bottomTex": "green_wool.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:grindstone",
+  "texSource": "model:block/grindstone(variants:face=wall,facing=east)",
+  "topTex": "grindstone_pivot.png",
+  "sideTex": "dark_oak_log.png",
+  "bottomTex": "dark_oak_log.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:heavy_weighted_pressure_plate",
+  "texSource": "model:block/heavy_weighted_pressure_plate(variants:power=0)",
+  "topTex": "iron_block.png",
+  "sideTex": "iron_block.png",
+  "bottomTex": "iron_block.png",
+  "alphaMode": "masked",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:hopper",
+  "texSource": "model:block/hopper(variants:facing=down)",
+  "topTex": "hopper_inside.png",
+  "sideTex": "hopper_outside.png",
+  "bottomTex": "hopper_outside.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:iron_bars",
+  "texSource": "model:block/iron_bars_post_ends(multipart)",
+  "topTex": "iron_bars.png",
+  "sideTex": "iron_bars.png",
+  "bottomTex": "iron_bars.png",
+  "alphaMode": "masked",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:iron_block",
+  "texSource": "model:block/iron_block(variants:default)",
+  "topTex": "iron_block.png",
+  "sideTex": "iron_block.png",
+  "bottomTex": "iron_block.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:iron_door",
+  "texSource": "model:block/iron_door_bottom(variants:facing=east,half=lower,hinge=left,open=false)",
+  "topTex": "iron_door_bottom.png",
+  "sideTex": "iron_door_bottom.png",
+  "bottomTex": "iron_door_bottom.png",
+  "alphaMode": "masked",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:iron_trapdoor",
+  "texSource": "model:block/iron_trapdoor_top(variants:facing=east,half=top,open=false)",
+  "topTex": "iron_trapdoor.png",
+  "sideTex": "iron_trapdoor.png",
+  "bottomTex": "iron_trapdoor.png",
+  "alphaMode": "masked",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:jukebox",
+  "texSource": "model:block/jukebox(variants:default)",
+  "topTex": "jukebox_top.png",
+  "sideTex": "jukebox_side.png",
+  "bottomTex": "jukebox_side.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:jungle_door",
+  "texSource": "model:block/jungle_door_bottom(variants:facing=east,half=lower,hinge=left,open=false)",
+  "topTex": "jungle_door_bottom.png",
+  "sideTex": "jungle_door_bottom.png",
+  "bottomTex": "jungle_door_bottom.png",
+  "alphaMode": "masked",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:jungle_fence",
+  "texSource": "model:block/jungle_fence_post(multipart)",
+  "topTex": "jungle_planks.png",
+  "sideTex": "jungle_planks.png",
+  "bottomTex": "jungle_planks.png",
+  "alphaMode": "masked",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:jungle_leaves",
+  "texSource": "model:block/jungle_leaves(variants:default)",
+  "topTex": "jungle_leaves.png",
+  "sideTex": "jungle_leaves.png",
+  "bottomTex": "jungle_leaves.png",
+  "alphaMode": "masked",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:jungle_log",
+  "texSource": "model:block/jungle_log(variants:axis=y)",
+  "topTex": "jungle_log_top.png",
+  "sideTex": "jungle_log.png",
+  "bottomTex": "jungle_log_top.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:jungle_planks",
+  "texSource": "model:block/jungle_planks(variants:default)",
+  "topTex": "jungle_planks.png",
+  "sideTex": "jungle_planks.png",
+  "bottomTex": "jungle_planks.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:jungle_sapling",
+  "texSource": "model:block/jungle_sapling(variants:default)",
+  "topTex": "jungle_sapling.png",
+  "sideTex": "jungle_sapling.png",
+  "bottomTex": "jungle_sapling.png",
+  "alphaMode": "masked",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:jungle_stairs",
+  "texSource": "model:block/jungle_stairs(variants:facing=east,half=top,shape=straight)",
+  "topTex": "jungle_planks.png",
+  "sideTex": "jungle_planks.png",
+  "bottomTex": "jungle_planks.png",
+  "alphaMode": "opaque",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:jungle_wall_sign",
+  "texSource": "model-textures:block/jungle_sign(variants:default)",
+  "topTex": "jungle_planks.png",
+  "sideTex": "jungle_planks.png",
+  "bottomTex": "jungle_planks.png",
+  "alphaMode": "masked",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:ladder",
+  "texSource": "model:block/ladder(variants:facing=east)",
+  "topTex": "ladder.png",
+  "sideTex": "ladder.png",
+  "bottomTex": "ladder.png",
+  "alphaMode": "masked",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:lantern",
+  "texSource": "model:block/lantern(variants:hanging=false)",
+  "topTex": "lantern.png",
+  "sideTex": "lantern.png",
+  "bottomTex": "lantern.png",
+  "alphaMode": "masked",
+  "emissive": false,
+  "animated": true
+ },
+ {
+  "blockName": "minecraft:lapis_block",
+  "texSource": "model:block/lapis_block(variants:default)",
+  "topTex": "lapis_block.png",
+  "sideTex": "lapis_block.png",
+  "bottomTex": "lapis_block.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:large_fern",
+  "texSource": "model:block/large_fern_bottom(variants:half=lower)",
+  "topTex": "large_fern_bottom.png",
+  "sideTex": "large_fern_bottom.png",
+  "bottomTex": "large_fern_bottom.png",
+  "alphaMode": "masked",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:lava",
+  "texSource": "model-textures:block/lava(variants:default)",
+  "topTex": "lava_still.png",
+  "sideTex": "lava_still.png",
+  "bottomTex": "lava_still.png",
+  "alphaMode": "transparent",
+  "emissive": true,
+  "emissiveColor": "#ff6a00",
+  "animated": true
+ },
+ {
+  "blockName": "minecraft:lectern",
+  "texSource": "model:block/lectern(variants:facing=east)",
+  "topTex": "lectern_base.png",
+  "sideTex": "lectern_base.png",
+  "bottomTex": "oak_planks.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:lever",
+  "texSource": "model:block/lever_on(variants:face=wall,facing=east,powered=false)",
+  "topTex": "cobblestone.png",
+  "sideTex": "cobblestone.png",
+  "bottomTex": "cobblestone.png",
+  "alphaMode": "masked",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:light_blue_bed",
+  "texSource": "model-textures:block/bed(variants:default)",
+  "topTex": "oak_planks.png",
+  "sideTex": "oak_planks.png",
+  "bottomTex": "oak_planks.png",
+  "alphaMode": "opaque",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:light_blue_carpet",
+  "texSource": "model:block/light_blue_carpet(variants:default)",
+  "topTex": "light_blue_wool.png",
+  "sideTex": "light_blue_wool.png",
+  "bottomTex": "light_blue_wool.png",
+  "alphaMode": "masked",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:light_blue_concrete",
+  "texSource": "model:block/light_blue_concrete(variants:default)",
+  "topTex": "light_blue_concrete.png",
+  "sideTex": "light_blue_concrete.png",
+  "bottomTex": "light_blue_concrete.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:light_blue_wool",
+  "texSource": "model:block/light_blue_wool(variants:default)",
+  "topTex": "light_blue_wool.png",
+  "sideTex": "light_blue_wool.png",
+  "bottomTex": "light_blue_wool.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:light_gray_carpet",
+  "texSource": "model:block/light_gray_carpet(variants:default)",
+  "topTex": "light_gray_wool.png",
+  "sideTex": "light_gray_wool.png",
+  "bottomTex": "light_gray_wool.png",
+  "alphaMode": "masked",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:light_gray_concrete",
+  "texSource": "model:block/light_gray_concrete(variants:default)",
+  "topTex": "light_gray_concrete.png",
+  "sideTex": "light_gray_concrete.png",
+  "bottomTex": "light_gray_concrete.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:light_gray_stained_glass_pane",
+  "texSource": "model:block/light_gray_stained_glass_pane_post(multipart)",
+  "topTex": "light_gray_stained_glass_pane_top.png",
+  "sideTex": "light_gray_stained_glass_pane_top.png",
+  "bottomTex": "light_gray_stained_glass_pane_top.png",
+  "alphaMode": "masked",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:light_gray_wall_banner",
+  "texSource": "model-textures:block/banner(variants:default)",
+  "topTex": "oak_planks.png",
+  "sideTex": "oak_planks.png",
+  "bottomTex": "oak_planks.png",
+  "alphaMode": "masked",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:light_gray_wool",
+  "texSource": "model:block/light_gray_wool(variants:default)",
+  "topTex": "light_gray_wool.png",
+  "sideTex": "light_gray_wool.png",
+  "bottomTex": "light_gray_wool.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:lime_concrete",
+  "texSource": "model:block/lime_concrete(variants:default)",
+  "topTex": "lime_concrete.png",
+  "sideTex": "lime_concrete.png",
+  "bottomTex": "lime_concrete.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:lime_glazed_terracotta",
+  "texSource": "model:block/lime_glazed_terracotta(variants:facing=east)",
+  "topTex": "lime_glazed_terracotta.png",
+  "sideTex": "lime_glazed_terracotta.png",
+  "bottomTex": "lime_glazed_terracotta.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:lime_wool",
+  "texSource": "model:block/lime_wool(variants:default)",
+  "topTex": "lime_wool.png",
+  "sideTex": "lime_wool.png",
+  "bottomTex": "lime_wool.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:lodestone",
+  "texSource": "model:block/lodestone(variants:default)",
+  "topTex": "lodestone_top.png",
+  "sideTex": "lodestone_side.png",
+  "bottomTex": "lodestone_top.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:loom",
+  "texSource": "model:block/loom(variants:facing=west)",
+  "topTex": "loom_top.png",
+  "sideTex": "loom_front.png",
+  "bottomTex": "loom_bottom.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:magenta_stained_glass",
+  "texSource": "model:block/magenta_stained_glass(variants:default)",
+  "topTex": "magenta_stained_glass.png",
+  "sideTex": "magenta_stained_glass.png",
+  "bottomTex": "magenta_stained_glass.png",
+  "alphaMode": "transparent",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:magenta_wall_banner",
+  "texSource": "model-textures:block/banner(variants:default)",
+  "topTex": "oak_planks.png",
+  "sideTex": "oak_planks.png",
+  "bottomTex": "oak_planks.png",
+  "alphaMode": "masked",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:magma_block",
+  "texSource": "model:block/magma_block(variants:default)",
+  "topTex": "magma.png",
+  "sideTex": "magma.png",
+  "bottomTex": "magma.png",
+  "alphaMode": "opaque",
+  "emissive": true,
+  "emissiveColor": "#8a3c10",
+  "animated": true
+ },
+ {
+  "blockName": "minecraft:nether_brick_fence",
+  "texSource": "model:block/nether_brick_fence_post(multipart)",
+  "topTex": "nether_bricks.png",
+  "sideTex": "nether_bricks.png",
+  "bottomTex": "nether_bricks.png",
+  "alphaMode": "masked",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:nether_brick_stairs",
+  "texSource": "model:block/nether_brick_stairs(variants:facing=east,half=top,shape=straight)",
+  "topTex": "nether_bricks.png",
+  "sideTex": "nether_bricks.png",
+  "bottomTex": "nether_bricks.png",
+  "alphaMode": "opaque",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:nether_bricks",
+  "texSource": "model:block/nether_bricks(variants:default)",
+  "topTex": "nether_bricks.png",
+  "sideTex": "nether_bricks.png",
+  "bottomTex": "nether_bricks.png",
+  "alphaMode": "masked",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:nether_gold_ore",
+  "texSource": "model:block/nether_gold_ore(variants:default)",
+  "topTex": "nether_gold_ore.png",
+  "sideTex": "nether_gold_ore.png",
+  "bottomTex": "nether_gold_ore.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:nether_portal",
+  "texSource": "model:block/nether_portal_ew(variants:axis=z)",
+  "topTex": "nether_portal.png",
+  "sideTex": "nether_portal.png",
+  "bottomTex": "nether_portal.png",
+  "alphaMode": "masked",
+  "emissive": false,
+  "animated": true
+ },
+ {
+  "blockName": "minecraft:nether_quartz_ore",
+  "texSource": "model:block/nether_quartz_ore(variants:default)",
+  "topTex": "nether_quartz_ore.png",
+  "sideTex": "nether_quartz_ore.png",
+  "bottomTex": "nether_quartz_ore.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:nether_sprouts",
+  "texSource": "model:block/nether_sprouts(variants:default)",
+  "topTex": "nether_sprouts.png",
+  "sideTex": "nether_sprouts.png",
+  "bottomTex": "nether_sprouts.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:nether_wart_block",
+  "texSource": "model:block/nether_wart_block(variants:default)",
+  "topTex": "nether_wart_block.png",
+  "sideTex": "nether_wart_block.png",
+  "bottomTex": "nether_wart_block.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:netherite_block",
+  "texSource": "model:block/netherite_block(variants:default)",
+  "topTex": "netherite_block.png",
+  "sideTex": "netherite_block.png",
+  "bottomTex": "netherite_block.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:netherrack",
+  "texSource": "model:block/netherrack(variants:default)",
+  "topTex": "netherrack.png",
+  "sideTex": "netherrack.png",
+  "bottomTex": "netherrack.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:note_block",
+  "texSource": "model:block/note_block(variants:default)",
+  "topTex": "note_block.png",
+  "sideTex": "note_block.png",
+  "bottomTex": "note_block.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:oak_door",
+  "texSource": "model:block/oak_door_bottom(variants:facing=east,half=lower,hinge=left,open=false)",
+  "topTex": "oak_door_bottom.png",
+  "sideTex": "oak_door_bottom.png",
+  "bottomTex": "oak_door_bottom.png",
+  "alphaMode": "masked",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:oak_fence",
+  "texSource": "model:block/oak_fence_post(multipart)",
+  "topTex": "oak_planks.png",
+  "sideTex": "oak_planks.png",
+  "bottomTex": "oak_planks.png",
+  "alphaMode": "masked",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:oak_leaves",
+  "texSource": "model:block/oak_leaves(variants:default)",
+  "topTex": "oak_leaves.png",
+  "sideTex": "oak_leaves.png",
+  "bottomTex": "oak_leaves.png",
+  "alphaMode": "masked",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:oak_log",
+  "texSource": "model:block/oak_log(variants:axis=y)",
+  "topTex": "oak_log_top.png",
+  "sideTex": "oak_log.png",
+  "bottomTex": "oak_log_top.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:oak_planks",
+  "texSource": "model:block/oak_planks(variants:default)",
+  "topTex": "oak_planks.png",
+  "sideTex": "oak_planks.png",
+  "bottomTex": "oak_planks.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:oak_pressure_plate",
+  "texSource": "model:block/oak_pressure_plate(variants:powered=false)",
+  "topTex": "oak_planks.png",
+  "sideTex": "oak_planks.png",
+  "bottomTex": "oak_planks.png",
+  "alphaMode": "masked",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:oak_sign",
+  "texSource": "model-textures:block/oak_sign(variants:default)",
+  "topTex": "oak_planks.png",
+  "sideTex": "oak_planks.png",
+  "bottomTex": "oak_planks.png",
+  "alphaMode": "masked",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:oak_stairs",
+  "texSource": "model:block/oak_stairs(variants:facing=east,half=top,shape=straight)",
+  "topTex": "oak_planks.png",
+  "sideTex": "oak_planks.png",
+  "bottomTex": "oak_planks.png",
+  "alphaMode": "opaque",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:oak_trapdoor",
+  "texSource": "model:block/oak_trapdoor_top(variants:facing=east,half=top,open=false)",
+  "topTex": "oak_trapdoor.png",
+  "sideTex": "oak_trapdoor.png",
+  "bottomTex": "oak_trapdoor.png",
+  "alphaMode": "masked",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:oak_wall_sign",
+  "texSource": "model-textures:block/oak_sign(variants:default)",
+  "topTex": "oak_planks.png",
+  "sideTex": "oak_planks.png",
+  "bottomTex": "oak_planks.png",
+  "alphaMode": "masked",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:observer",
+  "texSource": "model:block/observer(variants:facing=up,powered=false)",
+  "topTex": "observer_top.png",
+  "sideTex": "observer_front.png",
+  "bottomTex": "observer_top.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:obsidian",
+  "texSource": "model:block/obsidian(variants:default)",
+  "topTex": "obsidian.png",
+  "sideTex": "obsidian.png",
+  "bottomTex": "obsidian.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:orange_carpet",
+  "texSource": "model:block/orange_carpet(variants:default)",
+  "topTex": "orange_wool.png",
+  "sideTex": "orange_wool.png",
+  "bottomTex": "orange_wool.png",
+  "alphaMode": "masked",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:orange_glazed_terracotta",
+  "texSource": "model:block/orange_glazed_terracotta(variants:facing=west)",
+  "topTex": "orange_glazed_terracotta.png",
+  "sideTex": "orange_glazed_terracotta.png",
+  "bottomTex": "orange_glazed_terracotta.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:orange_stained_glass",
+  "texSource": "model:block/orange_stained_glass(variants:default)",
+  "topTex": "orange_stained_glass.png",
+  "sideTex": "orange_stained_glass.png",
+  "bottomTex": "orange_stained_glass.png",
+  "alphaMode": "transparent",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:orange_stained_glass_pane",
+  "texSource": "model:block/orange_stained_glass_pane_post(multipart)",
+  "topTex": "orange_stained_glass_pane_top.png",
+  "sideTex": "orange_stained_glass_pane_top.png",
+  "bottomTex": "orange_stained_glass_pane_top.png",
+  "alphaMode": "masked",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:orange_tulip",
+  "texSource": "model:block/orange_tulip(variants:default)",
+  "topTex": "orange_tulip.png",
+  "sideTex": "orange_tulip.png",
+  "bottomTex": "orange_tulip.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:oxeye_daisy",
+  "texSource": "model:block/oxeye_daisy(variants:default)",
+  "topTex": "oxeye_daisy.png",
+  "sideTex": "oxeye_daisy.png",
+  "bottomTex": "oxeye_daisy.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:pink_terracotta",
+  "texSource": "model:block/pink_terracotta(variants:default)",
+  "topTex": "pink_terracotta.png",
+  "sideTex": "pink_terracotta.png",
+  "bottomTex": "pink_terracotta.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:pink_tulip",
+  "texSource": "model:block/pink_tulip(variants:default)",
+  "topTex": "pink_tulip.png",
+  "sideTex": "pink_tulip.png",
+  "bottomTex": "pink_tulip.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:piston",
+  "texSource": "model:block/piston(variants:extended=false,facing=up)",
+  "topTex": "piston_side.png",
+  "sideTex": "piston_top.png",
+  "bottomTex": "piston_side.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:piston_head",
+  "texSource": "model:block/piston_head(variants:facing=up,short=false,type=normal)",
+  "topTex": "piston_side.png",
+  "sideTex": "piston_top.png",
+  "bottomTex": "piston_side.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:podzol",
+  "texSource": "model:block/podzol(variants:snowy=false)",
+  "topTex": "podzol_top.png",
+  "sideTex": "podzol_side.png",
+  "bottomTex": "dirt.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:polished_andesite_stairs",
+  "texSource": "model:block/polished_andesite_stairs(variants:facing=east,half=top,shape=straight)",
+  "topTex": "polished_andesite.png",
+  "sideTex": "polished_andesite.png",
+  "bottomTex": "polished_andesite.png",
+  "alphaMode": "opaque",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:polished_basalt",
+  "texSource": "model:block/polished_basalt(variants:axis=x)",
+  "topTex": "polished_basalt_top.png",
+  "sideTex": "polished_basalt_side.png",
+  "bottomTex": "polished_basalt_top.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:polished_blackstone_brick_stairs",
+  "texSource": "model:block/polished_blackstone_brick_stairs(variants:facing=east,half=top,shape=straight)",
+  "topTex": "polished_blackstone_bricks.png",
+  "sideTex": "polished_blackstone_bricks.png",
+  "bottomTex": "polished_blackstone_bricks.png",
+  "alphaMode": "opaque",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:polished_blackstone_bricks",
+  "texSource": "model:block/polished_blackstone_bricks(variants:default)",
+  "topTex": "polished_blackstone_bricks.png",
+  "sideTex": "polished_blackstone_bricks.png",
+  "bottomTex": "polished_blackstone_bricks.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:polished_blackstone_button",
+  "texSource": "model:block/polished_blackstone_button(variants:face=wall,facing=east,powered=false)",
+  "topTex": "polished_blackstone.png",
+  "sideTex": "polished_blackstone.png",
+  "bottomTex": "polished_blackstone.png",
+  "alphaMode": "masked",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:polished_blackstone_pressure_plate",
+  "texSource": "model:block/polished_blackstone_pressure_plate(variants:powered=false)",
+  "topTex": "polished_blackstone.png",
+  "sideTex": "polished_blackstone.png",
+  "bottomTex": "polished_blackstone.png",
+  "alphaMode": "masked",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:polished_blackstone_slab",
+  "texSource": "model:block/polished_blackstone_slab_top(variants:type=top)",
+  "topTex": "polished_blackstone.png",
+  "sideTex": "polished_blackstone.png",
+  "bottomTex": "polished_blackstone.png",
+  "alphaMode": "opaque",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:polished_diorite_slab",
+  "texSource": "model:block/polished_diorite_slab_top(variants:type=top)",
+  "topTex": "polished_diorite.png",
+  "sideTex": "polished_diorite.png",
+  "bottomTex": "polished_diorite.png",
+  "alphaMode": "opaque",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:polished_diorite_stairs",
+  "texSource": "model:block/polished_diorite_stairs(variants:facing=east,half=top,shape=straight)",
+  "topTex": "polished_diorite.png",
+  "sideTex": "polished_diorite.png",
+  "bottomTex": "polished_diorite.png",
+  "alphaMode": "opaque",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:polished_granite_slab",
+  "texSource": "model:block/polished_granite_slab_top(variants:type=top)",
+  "topTex": "polished_granite.png",
+  "sideTex": "polished_granite.png",
+  "bottomTex": "polished_granite.png",
+  "alphaMode": "opaque",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:polished_granite_stairs",
+  "texSource": "model:block/polished_granite_stairs(variants:facing=east,half=top,shape=straight)",
+  "topTex": "polished_granite.png",
+  "sideTex": "polished_granite.png",
+  "bottomTex": "polished_granite.png",
+  "alphaMode": "opaque",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:poppy",
+  "texSource": "model:block/poppy(variants:default)",
+  "topTex": "poppy.png",
+  "sideTex": "poppy.png",
+  "bottomTex": "poppy.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:potted_allium",
+  "texSource": "model:block/potted_allium(variants:default)",
+  "topTex": "flower_pot.png",
+  "sideTex": "flower_pot.png",
+  "bottomTex": "flower_pot.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:potted_blue_orchid",
+  "texSource": "model:block/potted_blue_orchid(variants:default)",
+  "topTex": "flower_pot.png",
+  "sideTex": "flower_pot.png",
+  "bottomTex": "flower_pot.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:potted_dandelion",
+  "texSource": "model:block/potted_dandelion(variants:default)",
+  "topTex": "flower_pot.png",
+  "sideTex": "flower_pot.png",
+  "bottomTex": "flower_pot.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:prismarine_brick_slab",
+  "texSource": "model:block/prismarine_brick_slab_top(variants:type=top)",
+  "topTex": "prismarine_bricks.png",
+  "sideTex": "prismarine_bricks.png",
+  "bottomTex": "prismarine_bricks.png",
+  "alphaMode": "opaque",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:prismarine_brick_stairs",
+  "texSource": "model:block/prismarine_brick_stairs(variants:facing=east,half=top,shape=straight)",
+  "topTex": "prismarine_bricks.png",
+  "sideTex": "prismarine_bricks.png",
+  "bottomTex": "prismarine_bricks.png",
+  "alphaMode": "opaque",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:prismarine_bricks",
+  "texSource": "model:block/prismarine_bricks(variants:default)",
+  "topTex": "prismarine_bricks.png",
+  "sideTex": "prismarine_bricks.png",
+  "bottomTex": "prismarine_bricks.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:prismarine_stairs",
+  "texSource": "model:block/prismarine_stairs(variants:facing=east,half=top,shape=straight)",
+  "topTex": "prismarine.png",
+  "sideTex": "prismarine.png",
+  "bottomTex": "prismarine.png",
+  "alphaMode": "opaque",
+  "emissive": false,
+  "shapeHint": "non_cube",
+  "animated": true
+ },
+ {
+  "blockName": "minecraft:purpur_block",
+  "texSource": "model:block/purpur_block(variants:default)",
+  "topTex": "purpur_block.png",
+  "sideTex": "purpur_block.png",
+  "bottomTex": "purpur_block.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:purpur_pillar",
+  "texSource": "model:block/purpur_pillar(variants:axis=y)",
+  "topTex": "purpur_pillar_top.png",
+  "sideTex": "purpur_pillar.png",
+  "bottomTex": "purpur_pillar_top.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:purpur_slab",
+  "texSource": "model:block/purpur_slab_top(variants:type=top)",
+  "topTex": "purpur_block.png",
+  "sideTex": "purpur_block.png",
+  "bottomTex": "purpur_block.png",
+  "alphaMode": "opaque",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:purpur_stairs",
+  "texSource": "model:block/purpur_stairs(variants:facing=east,half=top,shape=straight)",
+  "topTex": "purpur_block.png",
+  "sideTex": "purpur_block.png",
+  "bottomTex": "purpur_block.png",
+  "alphaMode": "opaque",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:quartz_block",
+  "texSource": "model:block/quartz_block(variants:default)",
+  "topTex": "quartz_block_top.png",
+  "sideTex": "quartz_block_side.png",
+  "bottomTex": "quartz_block_top.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:quartz_slab",
+  "texSource": "model:block/quartz_slab_top(variants:type=top)",
+  "topTex": "quartz_block_top.png",
+  "sideTex": "quartz_block_side.png",
+  "bottomTex": "quartz_block_top.png",
+  "alphaMode": "opaque",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:quartz_stairs",
+  "texSource": "model:block/quartz_stairs(variants:facing=east,half=top,shape=straight)",
+  "topTex": "quartz_block_top.png",
+  "sideTex": "quartz_block_side.png",
+  "bottomTex": "quartz_block_top.png",
+  "alphaMode": "opaque",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:red_bed",
+  "texSource": "model-textures:block/bed(variants:default)",
+  "topTex": "oak_planks.png",
+  "sideTex": "oak_planks.png",
+  "bottomTex": "oak_planks.png",
+  "alphaMode": "opaque",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:red_carpet",
+  "texSource": "model:block/red_carpet(variants:default)",
+  "topTex": "red_wool.png",
+  "sideTex": "red_wool.png",
+  "bottomTex": "red_wool.png",
+  "alphaMode": "masked",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:red_concrete",
+  "texSource": "model:block/red_concrete(variants:default)",
+  "topTex": "red_concrete.png",
+  "sideTex": "red_concrete.png",
+  "bottomTex": "red_concrete.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:red_mushroom",
+  "texSource": "model:block/red_mushroom(variants:default)",
+  "topTex": "red_mushroom.png",
+  "sideTex": "red_mushroom.png",
+  "bottomTex": "red_mushroom.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:red_nether_brick_slab",
+  "texSource": "model:block/red_nether_brick_slab_top(variants:type=top)",
+  "topTex": "red_nether_bricks.png",
+  "sideTex": "red_nether_bricks.png",
+  "bottomTex": "red_nether_bricks.png",
+  "alphaMode": "opaque",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:red_nether_brick_stairs",
+  "texSource": "model:block/red_nether_brick_stairs(variants:facing=east,half=top,shape=straight)",
+  "topTex": "red_nether_bricks.png",
+  "sideTex": "red_nether_bricks.png",
+  "bottomTex": "red_nether_bricks.png",
+  "alphaMode": "opaque",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:red_nether_brick_wall",
+  "texSource": "model:block/red_nether_brick_wall_post(multipart)",
+  "topTex": "red_nether_bricks.png",
+  "sideTex": "red_nether_bricks.png",
+  "bottomTex": "red_nether_bricks.png",
+  "alphaMode": "opaque",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:red_stained_glass",
+  "texSource": "model:block/red_stained_glass(variants:default)",
+  "topTex": "red_stained_glass.png",
+  "sideTex": "red_stained_glass.png",
+  "bottomTex": "red_stained_glass.png",
+  "alphaMode": "transparent",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:red_stained_glass_pane",
+  "texSource": "model:block/red_stained_glass_pane_post(multipart)",
+  "topTex": "red_stained_glass_pane_top.png",
+  "sideTex": "red_stained_glass_pane_top.png",
+  "bottomTex": "red_stained_glass_pane_top.png",
+  "alphaMode": "masked",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:red_tulip",
+  "texSource": "model:block/red_tulip(variants:default)",
+  "topTex": "red_tulip.png",
+  "sideTex": "red_tulip.png",
+  "bottomTex": "red_tulip.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:red_wool",
+  "texSource": "model:block/red_wool(variants:default)",
+  "topTex": "red_wool.png",
+  "sideTex": "red_wool.png",
+  "bottomTex": "red_wool.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:redstone_block",
+  "texSource": "model:block/redstone_block(variants:default)",
+  "topTex": "redstone_block.png",
+  "sideTex": "redstone_block.png",
+  "bottomTex": "redstone_block.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:redstone_lamp",
+  "texSource": "model:block/redstone_lamp(variants:lit=false)",
+  "topTex": "redstone_lamp.png",
+  "sideTex": "redstone_lamp.png",
+  "bottomTex": "redstone_lamp.png",
+  "alphaMode": "opaque",
+  "emissive": true,
+  "emissiveColor": "#ff4d1a"
+ },
+ {
+  "blockName": "minecraft:redstone_wire",
+  "texSource": "model:block/redstone_dust_dot(multipart)",
+  "topTex": "redstone_dust_dot.png",
+  "sideTex": "redstone_dust_dot.png",
+  "bottomTex": "redstone_dust_dot.png",
+  "alphaMode": "masked",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:repeater",
+  "texSource": "model:block/repeater_1tick_on(variants:delay=1,facing=east,locked=false,powered=true)",
+  "topTex": "repeater_on.png",
+  "sideTex": "smooth_stone.png",
+  "bottomTex": "smooth_stone.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:repeating_command_block",
+  "texSource": "model:block/repeating_command_block(variants:conditional=false,facing=up)",
+  "topTex": "repeating_command_block_side.png",
+  "sideTex": "repeating_command_block_front.png",
+  "bottomTex": "repeating_command_block_side.png",
+  "alphaMode": "opaque",
+  "emissive": false,
+  "animated": true
+ },
+ {
+  "blockName": "minecraft:sand",
+  "texSource": "model:block/sand(variants:default)",
+  "topTex": "sand.png",
+  "sideTex": "sand.png",
+  "bottomTex": "sand.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:sandstone",
+  "texSource": "model:block/sandstone(variants:default)",
+  "topTex": "sandstone_top.png",
+  "sideTex": "sandstone.png",
+  "bottomTex": "sandstone_bottom.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:sandstone_slab",
+  "texSource": "model:block/sandstone_slab_top(variants:type=top)",
+  "topTex": "sandstone_top.png",
+  "sideTex": "sandstone.png",
+  "bottomTex": "sandstone_bottom.png",
+  "alphaMode": "opaque",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:scaffolding",
+  "texSource": "model:block/scaffolding_stable(variants:bottom=false)",
+  "topTex": "scaffolding_top.png",
+  "sideTex": "scaffolding_side.png",
+  "bottomTex": "scaffolding_top.png",
+  "alphaMode": "masked",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:sea_lantern",
+  "texSource": "model:block/sea_lantern(variants:default)",
+  "topTex": "sea_lantern.png",
+  "sideTex": "sea_lantern.png",
+  "bottomTex": "sea_lantern.png",
+  "alphaMode": "opaque",
+  "emissive": true,
+  "emissiveColor": "#ffdca0",
+  "shapeHint": "non_cube",
+  "animated": true
+ },
+ {
+  "blockName": "minecraft:shroomlight",
+  "texSource": "model:block/shroomlight(variants:default)",
+  "topTex": "shroomlight.png",
+  "sideTex": "shroomlight.png",
+  "bottomTex": "shroomlight.png",
+  "alphaMode": "opaque",
+  "emissive": true,
+  "emissiveColor": "#ffb45e"
+ },
+ {
+  "blockName": "minecraft:skeleton_wall_skull",
+  "texSource": "model-textures:block/skull(variants:default)",
+  "topTex": "soul_sand.png",
+  "sideTex": "soul_sand.png",
+  "bottomTex": "soul_sand.png",
+  "alphaMode": "opaque",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:smooth_quartz",
+  "texSource": "model:block/smooth_quartz(variants:default)",
+  "topTex": "quartz_block_bottom.png",
+  "sideTex": "quartz_block_bottom.png",
+  "bottomTex": "quartz_block_bottom.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:smooth_quartz_slab",
+  "texSource": "model:block/smooth_quartz_slab_top(variants:type=top)",
+  "topTex": "quartz_block_bottom.png",
+  "sideTex": "quartz_block_bottom.png",
+  "bottomTex": "quartz_block_bottom.png",
+  "alphaMode": "opaque",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:smooth_quartz_stairs",
+  "texSource": "model:block/smooth_quartz_stairs(variants:facing=east,half=top,shape=straight)",
+  "topTex": "quartz_block_bottom.png",
+  "sideTex": "quartz_block_bottom.png",
+  "bottomTex": "quartz_block_bottom.png",
+  "alphaMode": "opaque",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:smooth_red_sandstone_stairs",
+  "texSource": "model:block/smooth_red_sandstone_stairs(variants:facing=east,half=top,shape=straight)",
+  "topTex": "red_sandstone_top.png",
+  "sideTex": "red_sandstone_top.png",
+  "bottomTex": "red_sandstone_top.png",
+  "alphaMode": "opaque",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:smooth_sandstone",
+  "texSource": "model:block/smooth_sandstone(variants:default)",
+  "topTex": "sandstone_top.png",
+  "sideTex": "sandstone_top.png",
+  "bottomTex": "sandstone_top.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:smooth_sandstone_slab",
+  "texSource": "model:block/smooth_sandstone_slab_top(variants:type=top)",
+  "topTex": "sandstone_top.png",
+  "sideTex": "sandstone_top.png",
+  "bottomTex": "sandstone_top.png",
+  "alphaMode": "opaque",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:smooth_sandstone_stairs",
+  "texSource": "model:block/smooth_sandstone_stairs(variants:facing=east,half=top,shape=straight)",
+  "topTex": "sandstone_top.png",
+  "sideTex": "sandstone_top.png",
+  "bottomTex": "sandstone_top.png",
+  "alphaMode": "opaque",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:smooth_stone",
+  "texSource": "model:block/smooth_stone(variants:default)",
+  "topTex": "smooth_stone.png",
+  "sideTex": "smooth_stone.png",
+  "bottomTex": "smooth_stone.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:smooth_stone_slab",
+  "texSource": "model:block/smooth_stone_slab_top(variants:type=top)",
+  "topTex": "smooth_stone.png",
+  "sideTex": "smooth_stone_slab_side.png",
+  "bottomTex": "smooth_stone.png",
+  "alphaMode": "opaque",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:snow",
+  "texSource": "model:block/snow_height2(variants:layers=1)",
+  "topTex": "snow.png",
+  "sideTex": "snow.png",
+  "bottomTex": "snow.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:soul_fire",
+  "texSource": "model:block/soul_fire_floor0(multipart)",
+  "topTex": "soul_fire_0.png",
+  "sideTex": "soul_fire_0.png",
+  "bottomTex": "soul_fire_0.png",
+  "alphaMode": "masked",
+  "emissive": true,
+  "emissiveColor": "#3aa0ff",
+  "animated": true
+ },
+ {
+  "blockName": "minecraft:soul_sand",
+  "texSource": "model:block/soul_sand(variants:default)",
+  "topTex": "soul_sand.png",
+  "sideTex": "soul_sand.png",
+  "bottomTex": "soul_sand.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:soul_soil",
+  "texSource": "model:block/soul_soil(variants:default)",
+  "topTex": "soul_soil.png",
+  "sideTex": "soul_soil.png",
+  "bottomTex": "soul_soil.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:spawner",
+  "texSource": "model:block/spawner(variants:default)",
+  "topTex": "spawner.png",
+  "sideTex": "spawner.png",
+  "bottomTex": "spawner.png",
+  "alphaMode": "transparent",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:spruce_door",
+  "texSource": "model:block/spruce_door_bottom(variants:facing=east,half=lower,hinge=left,open=false)",
+  "topTex": "spruce_door_bottom.png",
+  "sideTex": "spruce_door_bottom.png",
+  "bottomTex": "spruce_door_bottom.png",
+  "alphaMode": "masked",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:spruce_leaves",
+  "texSource": "model:block/spruce_leaves(variants:default)",
+  "topTex": "spruce_leaves.png",
+  "sideTex": "spruce_leaves.png",
+  "bottomTex": "spruce_leaves.png",
+  "alphaMode": "masked",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:spruce_log",
+  "texSource": "model:block/spruce_log(variants:axis=y)",
+  "topTex": "spruce_log_top.png",
+  "sideTex": "spruce_log.png",
+  "bottomTex": "spruce_log_top.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:spruce_planks",
+  "texSource": "model:block/spruce_planks(variants:default)",
+  "topTex": "spruce_planks.png",
+  "sideTex": "spruce_planks.png",
+  "bottomTex": "spruce_planks.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:spruce_stairs",
+  "texSource": "model:block/spruce_stairs(variants:facing=east,half=top,shape=straight)",
+  "topTex": "spruce_planks.png",
+  "sideTex": "spruce_planks.png",
+  "bottomTex": "spruce_planks.png",
+  "alphaMode": "opaque",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:spruce_trapdoor",
+  "texSource": "model:block/spruce_trapdoor_top(variants:facing=east,half=top,open=false)",
+  "topTex": "spruce_trapdoor.png",
+  "sideTex": "spruce_trapdoor.png",
+  "bottomTex": "spruce_trapdoor.png",
+  "alphaMode": "masked",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:sticky_piston",
+  "texSource": "model:block/sticky_piston(variants:extended=false,facing=up)",
+  "topTex": "piston_side.png",
+  "sideTex": "piston_top_sticky.png",
+  "bottomTex": "piston_side.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:stone",
+  "texSource": "model:block/stone(variants:default)",
+  "topTex": "stone.png",
+  "sideTex": "stone.png",
+  "bottomTex": "stone.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:stone_brick_slab",
+  "texSource": "model:block/stone_brick_slab_top(variants:type=top)",
+  "topTex": "stone_bricks.png",
+  "sideTex": "stone_bricks.png",
+  "bottomTex": "stone_bricks.png",
+  "alphaMode": "opaque",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:stone_brick_stairs",
+  "texSource": "model:block/stone_brick_stairs(variants:facing=east,half=top,shape=straight)",
+  "topTex": "stone_bricks.png",
+  "sideTex": "stone_bricks.png",
+  "bottomTex": "stone_bricks.png",
+  "alphaMode": "opaque",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:stone_brick_wall",
+  "texSource": "model:block/stone_brick_wall_post(multipart)",
+  "topTex": "stone_bricks.png",
+  "sideTex": "stone_bricks.png",
+  "bottomTex": "stone_bricks.png",
+  "alphaMode": "opaque",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:stone_bricks",
+  "texSource": "model:block/stone_bricks(variants:default)",
+  "topTex": "stone_bricks.png",
+  "sideTex": "stone_bricks.png",
+  "bottomTex": "stone_bricks.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:stone_button",
+  "texSource": "model:block/stone_button(variants:face=wall,facing=east,powered=false)",
+  "topTex": "stone.png",
+  "sideTex": "stone.png",
+  "bottomTex": "stone.png",
+  "alphaMode": "masked",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:stone_pressure_plate",
+  "texSource": "model:block/stone_pressure_plate(variants:powered=false)",
+  "topTex": "stone.png",
+  "sideTex": "stone.png",
+  "bottomTex": "stone.png",
+  "alphaMode": "masked",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:stone_slab",
+  "texSource": "model:block/stone_slab_top(variants:type=top)",
+  "topTex": "stone.png",
+  "sideTex": "stone.png",
+  "bottomTex": "stone.png",
+  "alphaMode": "opaque",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:stone_stairs",
+  "texSource": "model:block/stone_stairs(variants:facing=east,half=top,shape=straight)",
+  "topTex": "stone.png",
+  "sideTex": "stone.png",
+  "bottomTex": "stone.png",
+  "alphaMode": "opaque",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:stripped_birch_log",
+  "texSource": "model:block/stripped_birch_log(variants:axis=y)",
+  "topTex": "stripped_birch_log_top.png",
+  "sideTex": "stripped_birch_log.png",
+  "bottomTex": "stripped_birch_log_top.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:structure_block",
+  "texSource": "model:block/structure_block_load(variants:mode=load)",
+  "topTex": "structure_block_load.png",
+  "sideTex": "structure_block_load.png",
+  "bottomTex": "structure_block_load.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:tall_grass",
+  "texSource": "model:block/tall_grass_bottom(variants:half=lower)",
+  "topTex": "tall_grass_bottom.png",
+  "sideTex": "tall_grass_bottom.png",
+  "bottomTex": "tall_grass_bottom.png",
+  "alphaMode": "masked",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:terracotta",
+  "texSource": "model:block/terracotta(variants:default)",
+  "topTex": "terracotta.png",
+  "sideTex": "terracotta.png",
+  "bottomTex": "terracotta.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:tripwire",
+  "texSource": "model:block/tripwire_nsew(variants:attached=false,east=true,north=true,south=true,west=true)",
+  "topTex": "tripwire.png",
+  "sideTex": "tripwire.png",
+  "bottomTex": "tripwire.png",
+  "alphaMode": "masked",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:tripwire_hook",
+  "texSource": "model:block/tripwire_hook_on(variants:attached=false,facing=east,powered=true)",
+  "topTex": "tripwire_hook.png",
+  "sideTex": "tripwire_hook.png",
+  "bottomTex": "tripwire_hook.png",
+  "alphaMode": "masked",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:twisting_vines",
+  "texSource": "model:block/twisting_vines(variants:default)",
+  "topTex": "twisting_vines.png",
+  "sideTex": "twisting_vines.png",
+  "bottomTex": "twisting_vines.png",
+  "alphaMode": "masked",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:twisting_vines_plant",
+  "texSource": "model:block/twisting_vines_plant(variants:default)",
+  "topTex": "twisting_vines_plant.png",
+  "sideTex": "twisting_vines_plant.png",
+  "bottomTex": "twisting_vines_plant.png",
+  "alphaMode": "masked",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:vine",
+  "texSource": "model:block/vine_3u(variants:east=false,north=true,south=true,up=true,west=true)",
+  "topTex": "vine.png",
+  "sideTex": "vine.png",
+  "bottomTex": "vine.png",
+  "alphaMode": "masked",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:wall_torch",
+  "texSource": "model:block/wall_torch(variants:facing=east)",
+  "topTex": "torch.png",
+  "sideTex": "torch.png",
+  "bottomTex": "torch.png",
+  "alphaMode": "masked",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:warped_fungus",
+  "texSource": "model:block/warped_fungus(variants:default)",
+  "topTex": "warped_fungus.png",
+  "sideTex": "warped_fungus.png",
+  "bottomTex": "warped_fungus.png",
+  "alphaMode": "masked",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:warped_nylium",
+  "texSource": "model:block/warped_nylium(variants:default)",
+  "topTex": "warped_nylium.png",
+  "sideTex": "warped_nylium_side.png",
+  "bottomTex": "netherrack.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:warped_roots",
+  "texSource": "model:block/warped_roots(variants:default)",
+  "topTex": "warped_roots.png",
+  "sideTex": "warped_roots.png",
+  "bottomTex": "warped_roots.png",
+  "alphaMode": "masked",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:warped_stem",
+  "texSource": "model:block/warped_stem(variants:axis=y)",
+  "topTex": "warped_stem_top.png",
+  "sideTex": "warped_stem.png",
+  "bottomTex": "warped_stem_top.png",
+  "alphaMode": "masked",
+  "emissive": false,
+  "animated": true
+ },
+ {
+  "blockName": "minecraft:warped_wall_sign",
+  "texSource": "model-textures:block/warped_sign(variants:default)",
+  "topTex": "warped_planks.png",
+  "sideTex": "warped_planks.png",
+  "bottomTex": "warped_planks.png",
+  "alphaMode": "masked",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:warped_wart_block",
+  "texSource": "model:block/warped_wart_block(variants:default)",
+  "topTex": "warped_wart_block.png",
+  "sideTex": "warped_wart_block.png",
+  "bottomTex": "warped_wart_block.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:water",
+  "texSource": "model-textures:block/water(variants:default)",
+  "topTex": "water_still.png",
+  "sideTex": "water_still.png",
+  "bottomTex": "water_still.png",
+  "alphaMode": "transparent",
+  "emissive": false,
+  "animated": true
+ },
+ {
+  "blockName": "minecraft:weeping_vines",
+  "texSource": "model:block/weeping_vines(variants:default)",
+  "topTex": "weeping_vines.png",
+  "sideTex": "weeping_vines.png",
+  "bottomTex": "weeping_vines.png",
+  "alphaMode": "masked",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:weeping_vines_plant",
+  "texSource": "model:block/weeping_vines_plant(variants:default)",
+  "topTex": "weeping_vines_plant.png",
+  "sideTex": "weeping_vines_plant.png",
+  "bottomTex": "weeping_vines_plant.png",
+  "alphaMode": "masked",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:white_banner",
+  "texSource": "model-textures:block/banner(variants:default)",
+  "topTex": "oak_planks.png",
+  "sideTex": "oak_planks.png",
+  "bottomTex": "oak_planks.png",
+  "alphaMode": "masked",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:white_bed",
+  "texSource": "model-textures:block/bed(variants:default)",
+  "topTex": "oak_planks.png",
+  "sideTex": "oak_planks.png",
+  "bottomTex": "oak_planks.png",
+  "alphaMode": "opaque",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:white_carpet",
+  "texSource": "model:block/white_carpet(variants:default)",
+  "topTex": "white_wool.png",
+  "sideTex": "white_wool.png",
+  "bottomTex": "white_wool.png",
+  "alphaMode": "masked",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:white_concrete",
+  "texSource": "model:block/white_concrete(variants:default)",
+  "topTex": "white_concrete.png",
+  "sideTex": "white_concrete.png",
+  "bottomTex": "white_concrete.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:white_shulker_box",
+  "texSource": "model-textures:block/white_shulker_box(variants:default)",
+  "topTex": "white_shulker_box.png",
+  "sideTex": "white_shulker_box.png",
+  "bottomTex": "white_shulker_box.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:white_stained_glass",
+  "texSource": "model:block/white_stained_glass(variants:default)",
+  "topTex": "white_stained_glass.png",
+  "sideTex": "white_stained_glass.png",
+  "bottomTex": "white_stained_glass.png",
+  "alphaMode": "transparent",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:white_stained_glass_pane",
+  "texSource": "model:block/white_stained_glass_pane_post(multipart)",
+  "topTex": "white_stained_glass_pane_top.png",
+  "sideTex": "white_stained_glass_pane_top.png",
+  "bottomTex": "white_stained_glass_pane_top.png",
+  "alphaMode": "masked",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:white_terracotta",
+  "texSource": "model:block/white_terracotta(variants:default)",
+  "topTex": "white_terracotta.png",
+  "sideTex": "white_terracotta.png",
+  "bottomTex": "white_terracotta.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:white_tulip",
+  "texSource": "model:block/white_tulip(variants:default)",
+  "topTex": "white_tulip.png",
+  "sideTex": "white_tulip.png",
+  "bottomTex": "white_tulip.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:white_wall_banner",
+  "texSource": "model-textures:block/banner(variants:default)",
+  "topTex": "oak_planks.png",
+  "sideTex": "oak_planks.png",
+  "bottomTex": "oak_planks.png",
+  "alphaMode": "masked",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:white_wool",
+  "texSource": "model:block/white_wool(variants:default)",
+  "topTex": "white_wool.png",
+  "sideTex": "white_wool.png",
+  "bottomTex": "white_wool.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:yellow_carpet",
+  "texSource": "model:block/yellow_carpet(variants:default)",
+  "topTex": "yellow_wool.png",
+  "sideTex": "yellow_wool.png",
+  "bottomTex": "yellow_wool.png",
+  "alphaMode": "masked",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ },
+ {
+  "blockName": "minecraft:yellow_stained_glass",
+  "texSource": "model:block/yellow_stained_glass(variants:default)",
+  "topTex": "yellow_stained_glass.png",
+  "sideTex": "yellow_stained_glass.png",
+  "bottomTex": "yellow_stained_glass.png",
+  "alphaMode": "transparent",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:yellow_terracotta",
+  "texSource": "model:block/yellow_terracotta(variants:default)",
+  "topTex": "yellow_terracotta.png",
+  "sideTex": "yellow_terracotta.png",
+  "bottomTex": "yellow_terracotta.png",
+  "alphaMode": "opaque",
+  "emissive": false
+ },
+ {
+  "blockName": "minecraft:yellow_wall_banner",
+  "texSource": "model-textures:block/banner(variants:default)",
+  "topTex": "oak_planks.png",
+  "sideTex": "oak_planks.png",
+  "bottomTex": "oak_planks.png",
+  "alphaMode": "masked",
+  "emissive": false,
+  "shapeHint": "non_cube"
+ }
+]

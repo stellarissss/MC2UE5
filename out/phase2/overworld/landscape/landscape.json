@@ -1,0 +1,80 @@
+{
+  "name": "overworld",
+  "block_origin": [
+    -272,
+    -672
+  ],
+  "block_size": [
+    720,
+    1040
+  ],
+  "xy_scale_cm": 100.0,
+  "section_size": 31,
+  "sections_per_component": 1,
+  "quads_per_component": 31,
+  "n_components": [
+    24,
+    34
+  ],
+  "landscape_resolution": [
+    745,
+    1055
+  ],
+  "coverage_error_blocks": [
+    24.0,
+    14.0
+  ],
+  "y_min_blocks": 4.0,
+  "y_span_blocks": 59.0,
+  "tile_grid": [
+    1,
+    1
+  ],
+  "tile_count": 1,
+  "tiles": [
+    {
+      "file": "overworld_00_00.png",
+      "tile_index": [
+        0,
+        0
+      ],
+      "resolution": [
+        745,
+        1055
+      ],
+      "n_components": [
+        24,
+        34
+      ],
+      "section_size": 31,
+      "sections_per_component": 1,
+      "quads_per_component": 31,
+      "origin_cm": [
+        -27200.0,
+        -67200.0
+      ],
+      "block_origin": [
+        -272,
+        -672
+      ],
+      "block_span": [
+        720,
+        1040
+      ],
+      "height_cm_meta": {
+        "encoding": "absolute",
+        "y_min_blocks": 4.0,
+        "y_span_blocks": 59.0,
+        "z_scale": 11.5234375,
+        "z_scale_cm": 11.523438,
+        "z_scale_blocks_span": 59.0,
+        "actor_offset_z_cm": 3350.0,
+        "range_cm": 5900.0,
+        "step_cm": 0.090026855,
+        "decode": "z_cm = actor_offset_z_cm + (v - 32768) / 128 * z_scale_cm   [see phase2.landscape.ue_decode]",
+        "note": "set the Landscape actor Scale3D to (xy_scale, xy_scale, z_scale) and place it at z = actor_offset_z_cm; then v maps back to y_min + y_span * v/65535 blocks",
+        "roundtrip_max_err_blocks": 0.0008989885937467079
+      }
+    }
+  ]
+}

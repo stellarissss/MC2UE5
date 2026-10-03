@@ -1,0 +1,101 @@
+{
+  "dimension": "overworld",
+  "chunk_range": [
+    -17,
+    -42,
+    27,
+    22
+  ],
+  "region": "campus",
+  "block_cm": 100.0,
+  "semantic_provider": {
+    "provider": "cpu",
+    "palette_entries": 1043,
+    "label_histogram": {
+      "AIR": 1,
+      "TERRAIN": 361,
+      "SUBSURFACE": 2,
+      "WATER": 2,
+      "LAVA": 2,
+      "VEGETATION": 103,
+      "STRUCTURE": 233,
+      "PROP": 277,
+      "GLASS": 61,
+      "BEDROCK": 1
+    }
+  },
+  "stages": {
+    "terrain": {
+      "block_origin": [
+        -272,
+        -672
+      ],
+      "block_size": [
+        720,
+        1040
+      ],
+      "y_range_blocks": [
+        4.0,
+        63.0
+      ],
+      "y_span_blocks": 59.0,
+      "seconds": 0.3773531913757324,
+      "landscape": {
+        "dir": "landscape",
+        "resolution": [
+          745,
+          1055
+        ],
+        "n_components": [
+          24,
+          34
+        ],
+        "section_size": 31,
+        "quads_per_component": 31,
+        "xy_scale_cm": 100.0,
+        "tile_count": 1,
+        "tile_grid": [
+          1,
+          1
+        ]
+      }
+    },
+    "water": {
+      "files": [],
+      "columns": 6,
+      "sea_level_blocks": 20.0,
+      "has_water": true
+    },
+    "props": {
+      "count": 218,
+      "by_class": {
+        "tree": 51,
+        "building": 3,
+        "structure": 74,
+        "plant": 86,
+        "prop": 4
+      },
+      "ground_aligned": true
+    },
+    "debug": {
+      "height_color": "overworld_height_color.png",
+      "height_gray": "overworld_height_gray.png",
+      "surface_labels": "overworld_surface_labels.png",
+      "shape": [
+        1040,
+        720,
+        3
+      ],
+      "height_range_blocks": [
+        4.0,
+        62.851768493652344
+      ],
+      "percentile_range": [
+        4.0,
+        53.099945068359375
+      ]
+    }
+  },
+  "seconds": 1.2823197841644287,
+  "problems": []
+}

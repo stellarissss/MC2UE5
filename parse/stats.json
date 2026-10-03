@@ -1,0 +1,1091 @@
+{
+ "save_root": "/workspace/太原师院附中MC复刻存档/4319808759_Stellariiis/太原师院附中·MC复刻v0.6版存档合集/SYFZ_1.16.5",
+ "level": {
+  "level_name": "SYFZ",
+  "game_type": 1,
+  "game_type_name": "creative",
+  "difficulty": 0,
+  "hardcore": false,
+  "data_version": 2586,
+  "version_id": 2586,
+  "version_name": "1.16.5",
+  "spawn": {
+   "x": -32,
+   "y": 4,
+   "z": 16,
+   "angle": 0.0
+  },
+  "seed": 156786179664273985,
+  "generate_features": 0,
+  "bonus_chest": 0,
+  "was_modded": true,
+  "last_played_ms": 1708175832948,
+  "time": 209373,
+  "day_time": 13339,
+  "initialized": true
+ },
+ "dimensions": {
+  "overworld": {
+   "region_count": 37,
+   "external_mcc_files": 0,
+   "chunk_count": 17029,
+   "section_count": 69468,
+   "non_air_blocks": 14513150,
+   "distinct_block_types": 276,
+   "distinct_block_states": 1042,
+   "y_range": [
+    0,
+    111
+   ],
+   "world_x_range": [
+    -1552,
+    2767
+   ],
+   "world_z_range": [
+    -1152,
+    2223
+   ],
+   "top30_block_types": [
+    {
+     "name": "minecraft:dirt",
+     "count": 6985511
+    },
+    {
+     "name": "minecraft:grass_block",
+     "count": 3479426
+    },
+    {
+     "name": "minecraft:bedrock",
+     "count": 3476798
+    },
+    {
+     "name": "minecraft:white_concrete",
+     "count": 108859
+    },
+    {
+     "name": "minecraft:quartz_block",
+     "count": 81790
+    },
+    {
+     "name": "minecraft:smooth_sandstone",
+     "count": 45253
+    },
+    {
+     "name": "minecraft:netherite_block",
+     "count": 30033
+    },
+    {
+     "name": "minecraft:light_gray_concrete",
+     "count": 25979
+    },
+    {
+     "name": "minecraft:pink_terracotta",
+     "count": 17270
+    },
+    {
+     "name": "minecraft:brick_slab",
+     "count": 13302
+    },
+    {
+     "name": "minecraft:grass",
+     "count": 10291
+    },
+    {
+     "name": "minecraft:end_stone_bricks",
+     "count": 9738
+    },
+    {
+     "name": "minecraft:glass_pane",
+     "count": 9422
+    },
+    {
+     "name": "minecraft:cobblestone_slab",
+     "count": 9396
+    },
+    {
+     "name": "minecraft:oak_leaves",
+     "count": 9387
+    },
+    {
+     "name": "minecraft:lime_wool",
+     "count": 9347
+    },
+    {
+     "name": "minecraft:green_wool",
+     "count": 8856
+    },
+    {
+     "name": "minecraft:birch_leaves",
+     "count": 8811
+    },
+    {
+     "name": "minecraft:jungle_leaves",
+     "count": 8419
+    },
+    {
+     "name": "minecraft:iron_bars",
+     "count": 8203
+    },
+    {
+     "name": "minecraft:acacia_leaves",
+     "count": 7266
+    },
+    {
+     "name": "minecraft:stone",
+     "count": 6354
+    },
+    {
+     "name": "minecraft:scaffolding",
+     "count": 5938
+    },
+    {
+     "name": "minecraft:quartz_slab",
+     "count": 5543
+    },
+    {
+     "name": "minecraft:white_wool",
+     "count": 5302
+    },
+    {
+     "name": "minecraft:end_rod",
+     "count": 5141
+    },
+    {
+     "name": "minecraft:spruce_leaves",
+     "count": 4882
+    },
+    {
+     "name": "minecraft:cobblestone",
+     "count": 4741
+    },
+    {
+     "name": "minecraft:diorite_slab",
+     "count": 4402
+    },
+    {
+     "name": "minecraft:smooth_quartz_slab",
+     "count": 4297
+    }
+   ],
+   "top30_block_states": [
+    {
+     "name": "minecraft:dirt",
+     "properties": "",
+     "count": 6985511
+    },
+    {
+     "name": "minecraft:grass_block",
+     "properties": "snowy=false",
+     "count": 3479426
+    },
+    {
+     "name": "minecraft:bedrock",
+     "properties": "",
+     "count": 3476798
+    },
+    {
+     "name": "minecraft:white_concrete",
+     "properties": "",
+     "count": 108859
+    },
+    {
+     "name": "minecraft:quartz_block",
+     "properties": "",
+     "count": 81790
+    },
+    {
+     "name": "minecraft:smooth_sandstone",
+     "properties": "",
+     "count": 45253
+    },
+    {
+     "name": "minecraft:netherite_block",
+     "properties": "",
+     "count": 30033
+    },
+    {
+     "name": "minecraft:light_gray_concrete",
+     "properties": "",
+     "count": 25979
+    },
+    {
+     "name": "minecraft:pink_terracotta",
+     "properties": "",
+     "count": 17270
+    },
+    {
+     "name": "minecraft:grass",
+     "properties": "",
+     "count": 10291
+    },
+    {
+     "name": "minecraft:end_stone_bricks",
+     "properties": "",
+     "count": 9738
+    },
+    {
+     "name": "minecraft:lime_wool",
+     "properties": "",
+     "count": 9347
+    },
+    {
+     "name": "minecraft:green_wool",
+     "properties": "",
+     "count": 8856
+    },
+    {
+     "name": "minecraft:brick_slab",
+     "properties": "type=bottom;waterlogged=false",
+     "count": 7798
+    },
+    {
+     "name": "minecraft:stone",
+     "properties": "",
+     "count": 6354
+    },
+    {
+     "name": "minecraft:cobblestone_slab",
+     "properties": "type=bottom;waterlogged=false",
+     "count": 6198
+    },
+    {
+     "name": "minecraft:glass_pane",
+     "properties": "east=true;north=false;south=false;waterlogged=false;west=true",
+     "count": 6057
+    },
+    {
+     "name": "minecraft:scaffolding",
+     "properties": "bottom=false;distance=0;waterlogged=false",
+     "count": 5925
+    },
+    {
+     "name": "minecraft:white_wool",
+     "properties": "",
+     "count": 5302
+    },
+    {
+     "name": "minecraft:brick_slab",
+     "properties": "type=top;waterlogged=false",
+     "count": 5181
+    },
+    {
+     "name": "minecraft:quartz_slab",
+     "properties": "type=bottom;waterlogged=false",
+     "count": 5088
+    },
+    {
+     "name": "minecraft:cobblestone",
+     "properties": "",
+     "count": 4741
+    },
+    {
+     "name": "minecraft:diorite_slab",
+     "properties": "type=top;waterlogged=false",
+     "count": 4166
+    },
+    {
+     "name": "minecraft:green_concrete",
+     "properties": "",
+     "count": 3748
+    },
+    {
+     "name": "minecraft:iron_block",
+     "properties": "",
+     "count": 3561
+    },
+    {
+     "name": "minecraft:birch_leaves",
+     "properties": "distance=2;persistent=false",
+     "count": 3508
+    },
+    {
+     "name": "minecraft:red_wool",
+     "properties": "",
+     "count": 3117
+    },
+    {
+     "name": "minecraft:smooth_quartz_slab",
+     "properties": "type=top;waterlogged=false",
+     "count": 3080
+    },
+    {
+     "name": "minecraft:jungle_leaves",
+     "properties": "distance=2;persistent=false",
+     "count": 3059
+    },
+    {
+     "name": "minecraft:cobblestone_slab",
+     "properties": "type=top;waterlogged=false",
+     "count": 2990
+    }
+   ],
+   "biome_id_histogram": [
+    {
+     "id": 1,
+     "count": 13484544
+    },
+    {
+     "id": 0,
+     "count": 1410560
+    }
+   ],
+   "compression_types": {
+    "2": 17029
+   },
+   "parse_seconds": 2.37,
+   "errors": [],
+   "error_count": 0,
+   "voxel_file": {
+    "path": "/workspace/MC2UE5/voxel_data/full/overworld.bin",
+    "bytes": 58720789,
+    "chunks": 13577,
+    "voxels": 14513150,
+    "palette_entries": 1043,
+    "regions": 37
+   }
+  },
+  "nether": {
+   "region_count": 6,
+   "external_mcc_files": 0,
+   "chunk_count": 857,
+   "section_count": 13712,
+   "non_air_blocks": 19585776,
+   "distinct_block_types": 45,
+   "distinct_block_states": 108,
+   "y_range": [
+    0,
+    127
+   ],
+   "world_x_range": [
+    -224,
+    415
+   ],
+   "world_z_range": [
+    -768,
+    255
+   ],
+   "top30_block_types": [
+    {
+     "name": "minecraft:netherrack",
+     "count": 16061406
+    },
+    {
+     "name": "minecraft:bedrock",
+     "count": 1415499
+    },
+    {
+     "name": "minecraft:lava",
+     "count": 589769
+    },
+    {
+     "name": "minecraft:magma_block",
+     "count": 338496
+    },
+    {
+     "name": "minecraft:blackstone",
+     "count": 177934
+    },
+    {
+     "name": "minecraft:gravel",
+     "count": 133237
+    },
+    {
+     "name": "minecraft:crimson_nylium",
+     "count": 132744
+    },
+    {
+     "name": "minecraft:nether_quartz_ore",
+     "count": 122522
+    },
+    {
+     "name": "minecraft:warped_nylium",
+     "count": 108797
+    },
+    {
+     "name": "minecraft:soul_soil",
+     "count": 106784
+    },
+    {
+     "name": "minecraft:soul_sand",
+     "count": 89319
+    },
+    {
+     "name": "minecraft:nether_bricks",
+     "count": 87430
+    },
+    {
+     "name": "minecraft:basalt",
+     "count": 58207
+    },
+    {
+     "name": "minecraft:nether_wart_block",
+     "count": 39543
+    },
+    {
+     "name": "minecraft:nether_gold_ore",
+     "count": 37243
+    },
+    {
+     "name": "minecraft:warped_wart_block",
+     "count": 29853
+    },
+    {
+     "name": "minecraft:nether_sprouts",
+     "count": 11148
+    },
+    {
+     "name": "minecraft:crimson_roots",
+     "count": 9852
+    },
+    {
+     "name": "minecraft:crimson_stem",
+     "count": 5702
+    },
+    {
+     "name": "minecraft:warped_stem",
+     "count": 5040
+    },
+    {
+     "name": "minecraft:glowstone",
+     "count": 3258
+    },
+    {
+     "name": "minecraft:ancient_debris",
+     "count": 3080
+    },
+    {
+     "name": "minecraft:warped_roots",
+     "count": 2546
+    },
+    {
+     "name": "minecraft:twisting_vines_plant",
+     "count": 2374
+    },
+    {
+     "name": "minecraft:shroomlight",
+     "count": 2340
+    },
+    {
+     "name": "minecraft:weeping_vines_plant",
+     "count": 2288
+    },
+    {
+     "name": "minecraft:nether_brick_fence",
+     "count": 2179
+    },
+    {
+     "name": "minecraft:crimson_fungus",
+     "count": 1424
+    },
+    {
+     "name": "minecraft:weeping_vines",
+     "count": 1347
+    },
+    {
+     "name": "minecraft:fire",
+     "count": 1061
+    }
+   ],
+   "top30_block_states": [
+    {
+     "name": "minecraft:netherrack",
+     "properties": "",
+     "count": 16061406
+    },
+    {
+     "name": "minecraft:bedrock",
+     "properties": "",
+     "count": 1415499
+    },
+    {
+     "name": "minecraft:lava",
+     "properties": "level=0",
+     "count": 581141
+    },
+    {
+     "name": "minecraft:magma_block",
+     "properties": "",
+     "count": 338496
+    },
+    {
+     "name": "minecraft:blackstone",
+     "properties": "",
+     "count": 177934
+    },
+    {
+     "name": "minecraft:gravel",
+     "properties": "",
+     "count": 133237
+    },
+    {
+     "name": "minecraft:crimson_nylium",
+     "properties": "",
+     "count": 132744
+    },
+    {
+     "name": "minecraft:nether_quartz_ore",
+     "properties": "",
+     "count": 122522
+    },
+    {
+     "name": "minecraft:warped_nylium",
+     "properties": "",
+     "count": 108797
+    },
+    {
+     "name": "minecraft:soul_soil",
+     "properties": "",
+     "count": 106784
+    },
+    {
+     "name": "minecraft:soul_sand",
+     "properties": "",
+     "count": 89319
+    },
+    {
+     "name": "minecraft:nether_bricks",
+     "properties": "",
+     "count": 87430
+    },
+    {
+     "name": "minecraft:basalt",
+     "properties": "axis=y",
+     "count": 58207
+    },
+    {
+     "name": "minecraft:nether_wart_block",
+     "properties": "",
+     "count": 39543
+    },
+    {
+     "name": "minecraft:nether_gold_ore",
+     "properties": "",
+     "count": 37243
+    },
+    {
+     "name": "minecraft:warped_wart_block",
+     "properties": "",
+     "count": 29853
+    },
+    {
+     "name": "minecraft:nether_sprouts",
+     "properties": "",
+     "count": 11148
+    },
+    {
+     "name": "minecraft:crimson_roots",
+     "properties": "",
+     "count": 9852
+    },
+    {
+     "name": "minecraft:crimson_stem",
+     "properties": "axis=y",
+     "count": 5702
+    },
+    {
+     "name": "minecraft:warped_stem",
+     "properties": "axis=y",
+     "count": 5040
+    },
+    {
+     "name": "minecraft:glowstone",
+     "properties": "",
+     "count": 3258
+    },
+    {
+     "name": "minecraft:ancient_debris",
+     "properties": "",
+     "count": 3080
+    },
+    {
+     "name": "minecraft:warped_roots",
+     "properties": "",
+     "count": 2546
+    },
+    {
+     "name": "minecraft:twisting_vines_plant",
+     "properties": "",
+     "count": 2374
+    },
+    {
+     "name": "minecraft:shroomlight",
+     "properties": "",
+     "count": 2340
+    },
+    {
+     "name": "minecraft:weeping_vines_plant",
+     "properties": "",
+     "count": 2288
+    },
+    {
+     "name": "minecraft:lava",
+     "properties": "level=9",
+     "count": 2251
+    },
+    {
+     "name": "minecraft:crimson_fungus",
+     "properties": "",
+     "count": 1424
+    },
+    {
+     "name": "minecraft:lava",
+     "properties": "level=8",
+     "count": 1162
+    },
+    {
+     "name": "minecraft:fire",
+     "properties": "age=0;east=false;north=false;south=false;up=false;west=false",
+     "count": 1060
+    }
+   ],
+   "biome_id_histogram": [
+    {
+     "id": 8,
+     "count": 286656
+    },
+    {
+     "id": 171,
+     "count": 188800
+    },
+    {
+     "id": 0,
+     "count": 157696
+    },
+    {
+     "id": 172,
+     "count": 100544
+    },
+    {
+     "id": 170,
+     "count": 86336
+    },
+    {
+     "id": 173,
+     "count": 57536
+    }
+   ],
+   "compression_types": {
+    "2": 857
+   },
+   "parse_seconds": 0.64,
+   "errors": [],
+   "error_count": 0,
+   "voxel_file": {
+    "path": "/workspace/MC2UE5/voxel_data/full/nether.bin",
+    "bytes": 78428660,
+    "chunks": 857,
+    "voxels": 19585776,
+    "palette_entries": 109,
+    "regions": 6
+   }
+  },
+  "end": {
+   "region_count": 10,
+   "external_mcc_files": 0,
+   "chunk_count": 1219,
+   "section_count": 19504,
+   "non_air_blocks": 3386478,
+   "distinct_block_types": 19,
+   "distinct_block_states": 50,
+   "y_range": [
+    0,
+    133
+   ],
+   "world_x_range": [
+    -329,
+    1747
+   ],
+   "world_z_range": [
+    -1047,
+    111
+   ],
+   "top30_block_types": [
+    {
+     "name": "minecraft:end_stone",
+     "count": 3329680
+    },
+    {
+     "name": "minecraft:obsidian",
+     "count": 40524
+    },
+    {
+     "name": "minecraft:chorus_plant",
+     "count": 7016
+    },
+    {
+     "name": "minecraft:purpur_block",
+     "count": 3699
+    },
+    {
+     "name": "minecraft:purpur_stairs",
+     "count": 1547
+    },
+    {
+     "name": "minecraft:end_stone_bricks",
+     "count": 1209
+    },
+    {
+     "name": "minecraft:purpur_pillar",
+     "count": 984
+    },
+    {
+     "name": "minecraft:chorus_flower",
+     "count": 876
+    },
+    {
+     "name": "minecraft:magenta_stained_glass",
+     "count": 263
+    },
+    {
+     "name": "minecraft:purpur_slab",
+     "count": 230
+    },
+    {
+     "name": "minecraft:iron_bars",
+     "count": 144
+    },
+    {
+     "name": "minecraft:end_rod",
+     "count": 112
+    },
+    {
+     "name": "minecraft:bedrock",
+     "count": 97
+    },
+    {
+     "name": "minecraft:magenta_wall_banner",
+     "count": 40
+    },
+    {
+     "name": "minecraft:end_portal",
+     "count": 20
+    },
+    {
+     "name": "minecraft:ladder",
+     "count": 15
+    },
+    {
+     "name": "minecraft:fire",
+     "count": 14
+    },
+    {
+     "name": "minecraft:end_gateway",
+     "count": 4
+    },
+    {
+     "name": "minecraft:wall_torch",
+     "count": 4
+    }
+   ],
+   "top30_block_states": [
+    {
+     "name": "minecraft:end_stone",
+     "properties": "",
+     "count": 3329680
+    },
+    {
+     "name": "minecraft:obsidian",
+     "properties": "",
+     "count": 40524
+    },
+    {
+     "name": "minecraft:chorus_plant",
+     "properties": "down=false;east=false;north=false;south=false;up=false;west=false",
+     "count": 7016
+    },
+    {
+     "name": "minecraft:purpur_block",
+     "properties": "",
+     "count": 3699
+    },
+    {
+     "name": "minecraft:end_stone_bricks",
+     "properties": "",
+     "count": 1209
+    },
+    {
+     "name": "minecraft:chorus_flower",
+     "properties": "age=5",
+     "count": 876
+    },
+    {
+     "name": "minecraft:purpur_pillar",
+     "properties": "axis=y",
+     "count": 830
+    },
+    {
+     "name": "minecraft:magenta_stained_glass",
+     "properties": "",
+     "count": 263
+    },
+    {
+     "name": "minecraft:purpur_stairs",
+     "properties": "facing=south;half=bottom;shape=straight;waterlogged=false",
+     "count": 208
+    },
+    {
+     "name": "minecraft:purpur_stairs",
+     "properties": "facing=east;half=top;shape=straight;waterlogged=false",
+     "count": 203
+    },
+    {
+     "name": "minecraft:purpur_stairs",
+     "properties": "facing=west;half=top;shape=straight;waterlogged=false",
+     "count": 197
+    },
+    {
+     "name": "minecraft:purpur_stairs",
+     "properties": "facing=north;half=bottom;shape=straight;waterlogged=false",
+     "count": 193
+    },
+    {
+     "name": "minecraft:purpur_stairs",
+     "properties": "facing=east;half=bottom;shape=straight;waterlogged=false",
+     "count": 193
+    },
+    {
+     "name": "minecraft:purpur_stairs",
+     "properties": "facing=west;half=bottom;shape=straight;waterlogged=false",
+     "count": 187
+    },
+    {
+     "name": "minecraft:purpur_stairs",
+     "properties": "facing=north;half=top;shape=straight;waterlogged=false",
+     "count": 185
+    },
+    {
+     "name": "minecraft:purpur_stairs",
+     "properties": "facing=south;half=top;shape=straight;waterlogged=false",
+     "count": 181
+    },
+    {
+     "name": "minecraft:purpur_slab",
+     "properties": "type=bottom;waterlogged=false",
+     "count": 178
+    },
+    {
+     "name": "minecraft:end_rod",
+     "properties": "facing=up",
+     "count": 112
+    },
+    {
+     "name": "minecraft:bedrock",
+     "properties": "",
+     "count": 97
+    },
+    {
+     "name": "minecraft:purpur_pillar",
+     "properties": "axis=z",
+     "count": 86
+    },
+    {
+     "name": "minecraft:purpur_pillar",
+     "properties": "axis=x",
+     "count": 68
+    },
+    {
+     "name": "minecraft:purpur_slab",
+     "properties": "type=top;waterlogged=false",
+     "count": 52
+    },
+    {
+     "name": "minecraft:iron_bars",
+     "properties": "east=true;north=false;south=false;waterlogged=false;west=true",
+     "count": 36
+    },
+    {
+     "name": "minecraft:iron_bars",
+     "properties": "east=false;north=true;south=true;waterlogged=false;west=false",
+     "count": 33
+    },
+    {
+     "name": "minecraft:end_portal",
+     "properties": "",
+     "count": 20
+    },
+    {
+     "name": "minecraft:fire",
+     "properties": "age=0;east=false;north=false;south=false;up=false;west=false",
+     "count": 14
+    },
+    {
+     "name": "minecraft:iron_bars",
+     "properties": "east=true;north=true;south=true;waterlogged=false;west=true",
+     "count": 13
+    },
+    {
+     "name": "minecraft:magenta_wall_banner",
+     "properties": "facing=north",
+     "count": 10
+    },
+    {
+     "name": "minecraft:magenta_wall_banner",
+     "properties": "facing=west",
+     "count": 10
+    },
+    {
+     "name": "minecraft:magenta_wall_banner",
+     "properties": "facing=east",
+     "count": 10
+    }
+   ],
+   "biome_id_histogram": [
+    {
+     "id": 9,
+     "count": 767360
+    },
+    {
+     "id": 0,
+     "count": 480896
+    }
+   ],
+   "compression_types": {
+    "2": 1219
+   },
+   "parse_seconds": 0.34,
+   "errors": [],
+   "error_count": 0,
+   "voxel_file": {
+    "path": "/workspace/MC2UE5/voxel_data/full/end.bin",
+    "bytes": 13576016,
+    "chunks": 754,
+    "voxels": 3386478,
+    "palette_entries": 51,
+    "regions": 10
+   }
+  }
+ },
+ "global": {
+  "total_regions": 53,
+  "total_chunks": 19105,
+  "total_non_air_blocks": 37485404,
+  "distinct_block_types": 315,
+  "distinct_block_states": 1146,
+  "top30_block_types_overworld": [
+   {
+    "name": "minecraft:dirt",
+    "count": 6985511
+   },
+   {
+    "name": "minecraft:grass_block",
+    "count": 3479426
+   },
+   {
+    "name": "minecraft:bedrock",
+    "count": 3476798
+   },
+   {
+    "name": "minecraft:white_concrete",
+    "count": 108859
+   },
+   {
+    "name": "minecraft:quartz_block",
+    "count": 81790
+   },
+   {
+    "name": "minecraft:smooth_sandstone",
+    "count": 45253
+   },
+   {
+    "name": "minecraft:netherite_block",
+    "count": 30033
+   },
+   {
+    "name": "minecraft:light_gray_concrete",
+    "count": 25979
+   },
+   {
+    "name": "minecraft:pink_terracotta",
+    "count": 17270
+   },
+   {
+    "name": "minecraft:brick_slab",
+    "count": 13302
+   },
+   {
+    "name": "minecraft:grass",
+    "count": 10291
+   },
+   {
+    "name": "minecraft:end_stone_bricks",
+    "count": 9738
+   },
+   {
+    "name": "minecraft:glass_pane",
+    "count": 9422
+   },
+   {
+    "name": "minecraft:cobblestone_slab",
+    "count": 9396
+   },
+   {
+    "name": "minecraft:oak_leaves",
+    "count": 9387
+   },
+   {
+    "name": "minecraft:lime_wool",
+    "count": 9347
+   },
+   {
+    "name": "minecraft:green_wool",
+    "count": 8856
+   },
+   {
+    "name": "minecraft:birch_leaves",
+    "count": 8811
+   },
+   {
+    "name": "minecraft:jungle_leaves",
+    "count": 8419
+   },
+   {
+    "name": "minecraft:iron_bars",
+    "count": 8203
+   },
+   {
+    "name": "minecraft:acacia_leaves",
+    "count": 7266
+   },
+   {
+    "name": "minecraft:stone",
+    "count": 6354
+   },
+   {
+    "name": "minecraft:scaffolding",
+    "count": 5938
+   },
+   {
+    "name": "minecraft:quartz_slab",
+    "count": 5543
+   },
+   {
+    "name": "minecraft:white_wool",
+    "count": 5302
+   },
+   {
+    "name": "minecraft:end_rod",
+    "count": 5141
+   },
+   {
+    "name": "minecraft:spruce_leaves",
+    "count": 4882
+   },
+   {
+    "name": "minecraft:cobblestone",
+    "count": 4741
+   },
+   {
+    "name": "minecraft:diorite_slab",
+    "count": 4402
+   },
+   {
+    "name": "minecraft:smooth_quartz_slab",
+    "count": 4297
+   }
+  ],
+  "estimated_full_export_bytes": 149941616,
+  "estimated_full_export_mib": 143.0
+ },
+ "generated_at": "2026-10-03 23:07:18",
+ "parse_seconds_total": 3.92
+}

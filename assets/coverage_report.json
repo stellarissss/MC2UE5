@@ -1,0 +1,35 @@
+{
+ "textureSource": {
+  "repo": "https://github.com/InventivetalentDev/minecraft-assets",
+  "branch": "1.16.5",
+  "commit": "1b7a1d48b0343c0b8da80604598707df428dc32a",
+  "mirror": "https://ghfast.top/",
+  "path": "assets/minecraft/textures/block",
+  "pngCount": 695
+ },
+ "manifest": {
+  "entries": 315,
+  "alphaMode": {
+   "masked": 105,
+   "opaque": 197,
+   "transparent": 13
+  },
+  "emissive": 11,
+  "placeholder": 1,
+  "nonCubeHint": 133,
+  "textureSourceBreakdown": {
+   "model": 291,
+   "placeholder": 1,
+   "model-textures": 23
+  }
+ },
+ "coverage": {
+  "usedBlockNames": 73,
+  "covered": 73,
+  "uncovered": [],
+  "partialFaceEntries": 0,
+  "partialFaceSample": [],
+  "missingTextureFiles": [],
+  "missingTextureFileCount": 0
+ }
+}

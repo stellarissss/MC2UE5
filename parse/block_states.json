@@ -1,0 +1,5735 @@
+{
+ "count": 1146,
+ "states": [
+  {
+   "name": "minecraft:netherrack",
+   "properties": "",
+   "count": 16061406
+  },
+  {
+   "name": "minecraft:dirt",
+   "properties": "",
+   "count": 6985511
+  },
+  {
+   "name": "minecraft:bedrock",
+   "properties": "",
+   "count": 4892394
+  },
+  {
+   "name": "minecraft:grass_block",
+   "properties": "snowy=false",
+   "count": 3479426
+  },
+  {
+   "name": "minecraft:end_stone",
+   "properties": "",
+   "count": 3331077
+  },
+  {
+   "name": "minecraft:lava",
+   "properties": "level=0",
+   "count": 581171
+  },
+  {
+   "name": "minecraft:magma_block",
+   "properties": "",
+   "count": 338497
+  },
+  {
+   "name": "minecraft:blackstone",
+   "properties": "",
+   "count": 177936
+  },
+  {
+   "name": "minecraft:gravel",
+   "properties": "",
+   "count": 133237
+  },
+  {
+   "name": "minecraft:crimson_nylium",
+   "properties": "",
+   "count": 132744
+  },
+  {
+   "name": "minecraft:nether_quartz_ore",
+   "properties": "",
+   "count": 122522
+  },
+  {
+   "name": "minecraft:white_concrete",
+   "properties": "",
+   "count": 108859
+  },
+  {
+   "name": "minecraft:warped_nylium",
+   "properties": "",
+   "count": 108797
+  },
+  {
+   "name": "minecraft:soul_soil",
+   "properties": "",
+   "count": 106784
+  },
+  {
+   "name": "minecraft:soul_sand",
+   "properties": "",
+   "count": 89319
+  },
+  {
+   "name": "minecraft:nether_bricks",
+   "properties": "",
+   "count": 87447
+  },
+  {
+   "name": "minecraft:quartz_block",
+   "properties": "",
+   "count": 81790
+  },
+  {
+   "name": "minecraft:basalt",
+   "properties": "axis=y",
+   "count": 58207
+  },
+  {
+   "name": "minecraft:smooth_sandstone",
+   "properties": "",
+   "count": 45253
+  },
+  {
+   "name": "minecraft:obsidian",
+   "properties": "",
+   "count": 41394
+  },
+  {
+   "name": "minecraft:nether_wart_block",
+   "properties": "",
+   "count": 39543
+  },
+  {
+   "name": "minecraft:nether_gold_ore",
+   "properties": "",
+   "count": 37243
+  },
+  {
+   "name": "minecraft:netherite_block",
+   "properties": "",
+   "count": 30033
+  },
+  {
+   "name": "minecraft:warped_wart_block",
+   "properties": "",
+   "count": 29853
+  },
+  {
+   "name": "minecraft:light_gray_concrete",
+   "properties": "",
+   "count": 25979
+  },
+  {
+   "name": "minecraft:pink_terracotta",
+   "properties": "",
+   "count": 17270
+  },
+  {
+   "name": "minecraft:nether_sprouts",
+   "properties": "",
+   "count": 11148
+  },
+  {
+   "name": "minecraft:end_stone_bricks",
+   "properties": "",
+   "count": 10947
+  },
+  {
+   "name": "minecraft:grass",
+   "properties": "",
+   "count": 10291
+  },
+  {
+   "name": "minecraft:crimson_roots",
+   "properties": "",
+   "count": 9852
+  },
+  {
+   "name": "minecraft:lime_wool",
+   "properties": "",
+   "count": 9347
+  },
+  {
+   "name": "minecraft:green_wool",
+   "properties": "",
+   "count": 8856
+  },
+  {
+   "name": "minecraft:brick_slab",
+   "properties": "type=bottom;waterlogged=false",
+   "count": 7798
+  },
+  {
+   "name": "minecraft:chorus_plant",
+   "properties": "down=false;east=false;north=false;south=false;up=false;west=false",
+   "count": 7016
+  },
+  {
+   "name": "minecraft:stone",
+   "properties": "",
+   "count": 6354
+  },
+  {
+   "name": "minecraft:cobblestone_slab",
+   "properties": "type=bottom;waterlogged=false",
+   "count": 6198
+  },
+  {
+   "name": "minecraft:glass_pane",
+   "properties": "east=true;north=false;south=false;waterlogged=false;west=true",
+   "count": 6057
+  },
+  {
+   "name": "minecraft:scaffolding",
+   "properties": "bottom=false;distance=0;waterlogged=false",
+   "count": 5925
+  },
+  {
+   "name": "minecraft:crimson_stem",
+   "properties": "axis=y",
+   "count": 5702
+  },
+  {
+   "name": "minecraft:white_wool",
+   "properties": "",
+   "count": 5302
+  },
+  {
+   "name": "minecraft:brick_slab",
+   "properties": "type=top;waterlogged=false",
+   "count": 5181
+  },
+  {
+   "name": "minecraft:quartz_slab",
+   "properties": "type=bottom;waterlogged=false",
+   "count": 5088
+  },
+  {
+   "name": "minecraft:warped_stem",
+   "properties": "axis=y",
+   "count": 5040
+  },
+  {
+   "name": "minecraft:cobblestone",
+   "properties": "",
+   "count": 4741
+  },
+  {
+   "name": "minecraft:diorite_slab",
+   "properties": "type=top;waterlogged=false",
+   "count": 4166
+  },
+  {
+   "name": "minecraft:green_concrete",
+   "properties": "",
+   "count": 3748
+  },
+  {
+   "name": "minecraft:purpur_block",
+   "properties": "",
+   "count": 3699
+  },
+  {
+   "name": "minecraft:iron_block",
+   "properties": "",
+   "count": 3561
+  },
+  {
+   "name": "minecraft:birch_leaves",
+   "properties": "distance=2;persistent=false",
+   "count": 3508
+  },
+  {
+   "name": "minecraft:glowstone",
+   "properties": "",
+   "count": 3282
+  },
+  {
+   "name": "minecraft:red_wool",
+   "properties": "",
+   "count": 3117
+  },
+  {
+   "name": "minecraft:smooth_quartz_slab",
+   "properties": "type=top;waterlogged=false",
+   "count": 3080
+  },
+  {
+   "name": "minecraft:ancient_debris",
+   "properties": "",
+   "count": 3080
+  },
+  {
+   "name": "minecraft:jungle_leaves",
+   "properties": "distance=2;persistent=false",
+   "count": 3059
+  },
+  {
+   "name": "minecraft:cobblestone_slab",
+   "properties": "type=top;waterlogged=false",
+   "count": 2990
+  },
+  {
+   "name": "minecraft:sandstone",
+   "properties": "",
+   "count": 2786
+  },
+  {
+   "name": "minecraft:smooth_quartz",
+   "properties": "",
+   "count": 2754
+  },
+  {
+   "name": "minecraft:oak_leaves",
+   "properties": "distance=7;persistent=true",
+   "count": 2663
+  },
+  {
+   "name": "minecraft:warped_roots",
+   "properties": "",
+   "count": 2546
+  },
+  {
+   "name": "minecraft:cyan_terracotta",
+   "properties": "",
+   "count": 2471
+  },
+  {
+   "name": "minecraft:birch_leaves",
+   "properties": "distance=1;persistent=false",
+   "count": 2380
+  },
+  {
+   "name": "minecraft:twisting_vines_plant",
+   "properties": "",
+   "count": 2374
+  },
+  {
+   "name": "minecraft:shroomlight",
+   "properties": "",
+   "count": 2365
+  },
+  {
+   "name": "minecraft:jungle_leaves",
+   "properties": "distance=3;persistent=false",
+   "count": 2353
+  },
+  {
+   "name": "minecraft:birch_leaves",
+   "properties": "distance=3;persistent=false",
+   "count": 2346
+  },
+  {
+   "name": "minecraft:acacia_leaves",
+   "properties": "distance=3;persistent=false",
+   "count": 2304
+  },
+  {
+   "name": "minecraft:weeping_vines_plant",
+   "properties": "",
+   "count": 2288
+  },
+  {
+   "name": "minecraft:lava",
+   "properties": "level=9",
+   "count": 2251
+  },
+  {
+   "name": "minecraft:iron_bars",
+   "properties": "east=true;north=false;south=false;waterlogged=false;west=true",
+   "count": 2151
+  },
+  {
+   "name": "minecraft:smooth_stone",
+   "properties": "",
+   "count": 2121
+  },
+  {
+   "name": "minecraft:oak_leaves",
+   "properties": "distance=2;persistent=false",
+   "count": 2071
+  },
+  {
+   "name": "minecraft:jungle_log",
+   "properties": "axis=y",
+   "count": 2051
+  },
+  {
+   "name": "minecraft:yellow_carpet",
+   "properties": "",
+   "count": 1922
+  },
+  {
+   "name": "minecraft:stone_button",
+   "properties": "face=wall;facing=west;powered=false",
+   "count": 1915
+  },
+  {
+   "name": "minecraft:acacia_leaves",
+   "properties": "distance=2;persistent=false",
+   "count": 1914
+  },
+  {
+   "name": "minecraft:end_rod",
+   "properties": "facing=west",
+   "count": 1901
+  },
+  {
+   "name": "minecraft:end_rod",
+   "properties": "facing=east",
+   "count": 1870
+  },
+  {
+   "name": "minecraft:iron_bars",
+   "properties": "east=false;north=true;south=true;waterlogged=false;west=false",
+   "count": 1860
+  },
+  {
+   "name": "minecraft:jungle_leaves",
+   "properties": "distance=1;persistent=false",
+   "count": 1824
+  },
+  {
+   "name": "minecraft:crimson_fence",
+   "properties": "east=false;north=false;south=false;waterlogged=false;west=false",
+   "count": 1777
+  },
+  {
+   "name": "minecraft:smooth_stone_slab",
+   "properties": "type=bottom;waterlogged=false",
+   "count": 1767
+  },
+  {
+   "name": "minecraft:fern",
+   "properties": "",
+   "count": 1755
+  },
+  {
+   "name": "minecraft:oak_leaves",
+   "properties": "distance=3;persistent=false",
+   "count": 1737
+  },
+  {
+   "name": "minecraft:spruce_leaves",
+   "properties": "distance=2;persistent=false",
+   "count": 1693
+  },
+  {
+   "name": "minecraft:glass_pane",
+   "properties": "east=false;north=true;south=true;waterlogged=false;west=false",
+   "count": 1662
+  },
+  {
+   "name": "minecraft:spruce_leaves",
+   "properties": "distance=1;persistent=false",
+   "count": 1658
+  },
+  {
+   "name": "minecraft:oak_pressure_plate",
+   "properties": "powered=false",
+   "count": 1562
+  },
+  {
+   "name": "minecraft:stripped_birch_log",
+   "properties": "axis=y",
+   "count": 1437
+  },
+  {
+   "name": "minecraft:crimson_fungus",
+   "properties": "",
+   "count": 1424
+  },
+  {
+   "name": "minecraft:cobweb",
+   "properties": "",
+   "count": 1412
+  },
+  {
+   "name": "minecraft:oak_leaves",
+   "properties": "distance=1;persistent=false",
+   "count": 1384
+  },
+  {
+   "name": "minecraft:bricks",
+   "properties": "",
+   "count": 1332
+  },
+  {
+   "name": "minecraft:tall_grass",
+   "properties": "half=lower",
+   "count": 1314
+  },
+  {
+   "name": "minecraft:tall_grass",
+   "properties": "half=upper",
+   "count": 1314
+  },
+  {
+   "name": "minecraft:cyan_concrete",
+   "properties": "",
+   "count": 1247
+  },
+  {
+   "name": "minecraft:sea_lantern",
+   "properties": "",
+   "count": 1242
+  },
+  {
+   "name": "minecraft:end_stone_brick_slab",
+   "properties": "type=bottom;waterlogged=false",
+   "count": 1221
+  },
+  {
+   "name": "minecraft:spruce_leaves",
+   "properties": "distance=3;persistent=false",
+   "count": 1197
+  },
+  {
+   "name": "minecraft:iron_bars",
+   "properties": "east=false;north=true;south=false;waterlogged=false;west=true",
+   "count": 1193
+  },
+  {
+   "name": "minecraft:iron_bars",
+   "properties": "east=true;north=false;south=true;waterlogged=false;west=false",
+   "count": 1164
+  },
+  {
+   "name": "minecraft:lava",
+   "properties": "level=8",
+   "count": 1162
+  },
+  {
+   "name": "minecraft:smooth_quartz_slab",
+   "properties": "type=bottom;waterlogged=false",
+   "count": 1157
+  },
+  {
+   "name": "minecraft:stone_button",
+   "properties": "face=wall;facing=east;powered=false",
+   "count": 1137
+  },
+  {
+   "name": "minecraft:birch_log",
+   "properties": "axis=y",
+   "count": 1111
+  },
+  {
+   "name": "minecraft:fire",
+   "properties": "age=0;east=false;north=false;south=false;up=false;west=false",
+   "count": 1074
+  },
+  {
+   "name": "minecraft:lava",
+   "properties": "level=1",
+   "count": 1052
+  },
+  {
+   "name": "minecraft:smooth_sandstone_slab",
+   "properties": "type=bottom;waterlogged=false",
+   "count": 1041
+  },
+  {
+   "name": "minecraft:light_blue_carpet",
+   "properties": "",
+   "count": 1024
+  },
+  {
+   "name": "minecraft:acacia_leaves",
+   "properties": "distance=4;persistent=false",
+   "count": 987
+  },
+  {
+   "name": "minecraft:acacia_leaves",
+   "properties": "distance=1;persistent=false",
+   "count": 972
+  },
+  {
+   "name": "minecraft:nether_brick_fence",
+   "properties": "east=true;north=true;south=true;waterlogged=false;west=true",
+   "count": 962
+  },
+  {
+   "name": "minecraft:oak_leaves",
+   "properties": "distance=4;persistent=false",
+   "count": 955
+  },
+  {
+   "name": "minecraft:jungle_leaves",
+   "properties": "distance=4;persistent=false",
+   "count": 946
+  },
+  {
+   "name": "minecraft:acacia_log",
+   "properties": "axis=y",
+   "count": 876
+  },
+  {
+   "name": "minecraft:warped_fungus",
+   "properties": "",
+   "count": 876
+  },
+  {
+   "name": "minecraft:chorus_flower",
+   "properties": "age=5",
+   "count": 876
+  },
+  {
+   "name": "minecraft:birch_slab",
+   "properties": "type=bottom;waterlogged=false",
+   "count": 873
+  },
+  {
+   "name": "minecraft:polished_diorite_slab",
+   "properties": "type=top;waterlogged=false",
+   "count": 862
+  },
+  {
+   "name": "minecraft:poppy",
+   "properties": "",
+   "count": 839
+  },
+  {
+   "name": "minecraft:purpur_pillar",
+   "properties": "axis=y",
+   "count": 830
+  },
+  {
+   "name": "minecraft:birch_stairs",
+   "properties": "facing=west;half=bottom;shape=straight;waterlogged=false",
+   "count": 811
+  },
+  {
+   "name": "minecraft:vine",
+   "properties": "east=false;north=true;south=false;up=false;west=false",
+   "count": 766
+  },
+  {
+   "name": "minecraft:stone_bricks",
+   "properties": "",
+   "count": 757
+  },
+  {
+   "name": "minecraft:light_blue_concrete",
+   "properties": "",
+   "count": 756
+  },
+  {
+   "name": "minecraft:birch_stairs",
+   "properties": "facing=east;half=bottom;shape=straight;waterlogged=false",
+   "count": 752
+  },
+  {
+   "name": "minecraft:orange_carpet",
+   "properties": "",
+   "count": 737
+  },
+  {
+   "name": "minecraft:red_mushroom",
+   "properties": "",
+   "count": 734
+  },
+  {
+   "name": "minecraft:light_blue_bed",
+   "properties": "facing=south;occupied=false;part=foot",
+   "count": 714
+  },
+  {
+   "name": "minecraft:light_blue_bed",
+   "properties": "facing=south;occupied=false;part=head",
+   "count": 714
+  },
+  {
+   "name": "minecraft:spruce_log",
+   "properties": "axis=y",
+   "count": 712
+  },
+  {
+   "name": "minecraft:barrel",
+   "properties": "facing=west;open=false",
+   "count": 700
+  },
+  {
+   "name": "minecraft:vine",
+   "properties": "east=false;north=false;south=false;up=false;west=true",
+   "count": 686
+  },
+  {
+   "name": "minecraft:end_rod",
+   "properties": "facing=south",
+   "count": 685
+  },
+  {
+   "name": "minecraft:end_rod",
+   "properties": "facing=north",
+   "count": 685
+  },
+  {
+   "name": "minecraft:gold_block",
+   "properties": "",
+   "count": 646
+  },
+  {
+   "name": "minecraft:brown_mushroom",
+   "properties": "",
+   "count": 627
+  },
+  {
+   "name": "minecraft:quartz_stairs",
+   "properties": "facing=north;half=bottom;shape=straight;waterlogged=false",
+   "count": 613
+  },
+  {
+   "name": "minecraft:lava",
+   "properties": "level=2",
+   "count": 611
+  },
+  {
+   "name": "minecraft:weeping_vines",
+   "properties": "age=24",
+   "count": 590
+  },
+  {
+   "name": "minecraft:oak_log",
+   "properties": "axis=y",
+   "count": 586
+  },
+  {
+   "name": "minecraft:weeping_vines",
+   "properties": "age=23",
+   "count": 579
+  },
+  {
+   "name": "minecraft:glass_pane",
+   "properties": "east=true;north=false;south=true;waterlogged=false;west=true",
+   "count": 577
+  },
+  {
+   "name": "minecraft:lava",
+   "properties": "level=7",
+   "count": 571
+  },
+  {
+   "name": "minecraft:lava",
+   "properties": "level=6",
+   "count": 564
+  },
+  {
+   "name": "minecraft:dandelion",
+   "properties": "",
+   "count": 561
+  },
+  {
+   "name": "minecraft:vine",
+   "properties": "east=false;north=false;south=true;up=false;west=false",
+   "count": 554
+  },
+  {
+   "name": "minecraft:lava",
+   "properties": "level=3",
+   "count": 552
+  },
+  {
+   "name": "minecraft:lava",
+   "properties": "level=5",
+   "count": 548
+  },
+  {
+   "name": "minecraft:lava",
+   "properties": "level=4",
+   "count": 530
+  },
+  {
+   "name": "minecraft:dark_oak_log",
+   "properties": "axis=y",
+   "count": 523
+  },
+  {
+   "name": "minecraft:brick_stairs",
+   "properties": "facing=south;half=bottom;shape=straight;waterlogged=false",
+   "count": 518
+  },
+  {
+   "name": "minecraft:barrel",
+   "properties": "facing=east;open=false",
+   "count": 495
+  },
+  {
+   "name": "minecraft:brick_stairs",
+   "properties": "facing=north;half=bottom;shape=straight;waterlogged=false",
+   "count": 492
+  },
+  {
+   "name": "minecraft:birch_trapdoor",
+   "properties": "facing=north;half=bottom;open=true;powered=false;waterlogged=false",
+   "count": 491
+  },
+  {
+   "name": "minecraft:lapis_block",
+   "properties": "",
+   "count": 484
+  },
+  {
+   "name": "minecraft:vine",
+   "properties": "east=true;north=false;south=false;up=false;west=false",
+   "count": 484
+  },
+  {
+   "name": "minecraft:quartz_stairs",
+   "properties": "facing=south;half=bottom;shape=straight;waterlogged=false",
+   "count": 480
+  },
+  {
+   "name": "minecraft:acacia_fence",
+   "properties": "east=true;north=false;south=false;waterlogged=false;west=true",
+   "count": 473
+  },
+  {
+   "name": "minecraft:barrier",
+   "properties": "",
+   "count": 469
+  },
+  {
+   "name": "minecraft:light_blue_bed",
+   "properties": "facing=north;occupied=false;part=head",
+   "count": 468
+  },
+  {
+   "name": "minecraft:light_blue_bed",
+   "properties": "facing=north;occupied=false;part=foot",
+   "count": 468
+  },
+  {
+   "name": "minecraft:acacia_leaves",
+   "properties": "distance=5;persistent=false",
+   "count": 454
+  },
+  {
+   "name": "minecraft:green_terracotta",
+   "properties": "",
+   "count": 415
+  },
+  {
+   "name": "minecraft:diamond_block",
+   "properties": "",
+   "count": 415
+  },
+  {
+   "name": "minecraft:end_stone_brick_slab",
+   "properties": "type=top;waterlogged=false",
+   "count": 414
+  },
+  {
+   "name": "minecraft:iron_bars",
+   "properties": "east=false;north=false;south=true;waterlogged=false;west=true",
+   "count": 412
+  },
+  {
+   "name": "minecraft:iron_bars",
+   "properties": "east=true;north=true;south=false;waterlogged=false;west=false",
+   "count": 410
+  },
+  {
+   "name": "minecraft:smooth_sandstone_slab",
+   "properties": "type=top;waterlogged=false",
+   "count": 402
+  },
+  {
+   "name": "minecraft:birch_pressure_plate",
+   "properties": "powered=false",
+   "count": 402
+  },
+  {
+   "name": "minecraft:iron_bars",
+   "properties": "east=true;north=true;south=true;waterlogged=false;west=false",
+   "count": 400
+  },
+  {
+   "name": "minecraft:azure_bluet",
+   "properties": "",
+   "count": 398
+  },
+  {
+   "name": "minecraft:birch_door",
+   "properties": "facing=south;half=lower;hinge=left;open=true;powered=false",
+   "count": 397
+  },
+  {
+   "name": "minecraft:birch_door",
+   "properties": "facing=south;half=upper;hinge=left;open=true;powered=false",
+   "count": 397
+  },
+  {
+   "name": "minecraft:glass_pane",
+   "properties": "east=true;north=true;south=false;waterlogged=false;west=true",
+   "count": 396
+  },
+  {
+   "name": "minecraft:oxeye_daisy",
+   "properties": "",
+   "count": 393
+  },
+  {
+   "name": "minecraft:dark_oak_leaves",
+   "properties": "distance=2;persistent=false",
+   "count": 391
+  },
+  {
+   "name": "minecraft:birch_leaves",
+   "properties": "distance=4;persistent=false",
+   "count": 389
+  },
+  {
+   "name": "minecraft:quartz_stairs",
+   "properties": "facing=north;half=top;shape=straight;waterlogged=false",
+   "count": 387
+  },
+  {
+   "name": "minecraft:cornflower",
+   "properties": "",
+   "count": 386
+  },
+  {
+   "name": "minecraft:smooth_sandstone_stairs",
+   "properties": "facing=north;half=bottom;shape=straight;waterlogged=false",
+   "count": 373
+  },
+  {
+   "name": "minecraft:red_concrete",
+   "properties": "",
+   "count": 373
+  },
+  {
+   "name": "minecraft:smooth_stone_slab",
+   "properties": "type=top;waterlogged=false",
+   "count": 370
+  },
+  {
+   "name": "minecraft:quartz_stairs",
+   "properties": "facing=south;half=top;shape=straight;waterlogged=false",
+   "count": 365
+  },
+  {
+   "name": "minecraft:nether_brick_fence",
+   "properties": "east=false;north=true;south=true;waterlogged=false;west=true",
+   "count": 357
+  },
+  {
+   "name": "minecraft:smooth_sandstone_stairs",
+   "properties": "facing=south;half=bottom;shape=straight;waterlogged=false",
+   "count": 355
+  },
+  {
+   "name": "minecraft:oak_leaves",
+   "properties": "distance=5;persistent=false",
+   "count": 336
+  },
+  {
+   "name": "minecraft:quartz_stairs",
+   "properties": "facing=east;half=bottom;shape=straight;waterlogged=false",
+   "count": 335
+  },
+  {
+   "name": "minecraft:nether_brick_fence",
+   "properties": "east=true;north=false;south=true;waterlogged=false;west=true",
+   "count": 334
+  },
+  {
+   "name": "minecraft:quartz_stairs",
+   "properties": "facing=west;half=bottom;shape=straight;waterlogged=false",
+   "count": 332
+  },
+  {
+   "name": "minecraft:birch_trapdoor",
+   "properties": "facing=south;half=bottom;open=true;powered=false;waterlogged=false",
+   "count": 331
+  },
+  {
+   "name": "minecraft:nether_brick_fence",
+   "properties": "east=true;north=true;south=false;waterlogged=false;west=true",
+   "count": 331
+  },
+  {
+   "name": "minecraft:dark_oak_leaves",
+   "properties": "distance=3;persistent=false",
+   "count": 325
+  },
+  {
+   "name": "minecraft:brick_slab",
+   "properties": "type=double;waterlogged=false",
+   "count": 323
+  },
+  {
+   "name": "minecraft:nether_brick_fence",
+   "properties": "east=true;north=true;south=true;waterlogged=false;west=false",
+   "count": 322
+  },
+  {
+   "name": "minecraft:purpur_pillar",
+   "properties": "axis=x",
+   "count": 308
+  },
+  {
+   "name": "minecraft:dark_oak_leaves",
+   "properties": "distance=1;persistent=false",
+   "count": 307
+  },
+  {
+   "name": "minecraft:yellow_terracotta",
+   "properties": "",
+   "count": 304
+  },
+  {
+   "name": "minecraft:birch_trapdoor",
+   "properties": "facing=west;half=bottom;open=true;powered=false;waterlogged=false",
+   "count": 302
+  },
+  {
+   "name": "minecraft:birch_door",
+   "properties": "facing=north;half=lower;hinge=left;open=true;powered=false",
+   "count": 301
+  },
+  {
+   "name": "minecraft:birch_door",
+   "properties": "facing=north;half=upper;hinge=left;open=true;powered=false",
+   "count": 301
+  },
+  {
+   "name": "minecraft:white_carpet",
+   "properties": "",
+   "count": 300
+  },
+  {
+   "name": "minecraft:lime_concrete",
+   "properties": "",
+   "count": 299
+  },
+  {
+   "name": "minecraft:lava",
+   "properties": "level=10",
+   "count": 297
+  },
+  {
+   "name": "minecraft:polished_granite_slab",
+   "properties": "type=bottom;waterlogged=false",
+   "count": 277
+  },
+  {
+   "name": "minecraft:birch_trapdoor",
+   "properties": "facing=east;half=bottom;open=true;powered=false;waterlogged=false",
+   "count": 272
+  },
+  {
+   "name": "minecraft:glass_pane",
+   "properties": "east=true;north=true;south=true;waterlogged=false;west=false",
+   "count": 267
+  },
+  {
+   "name": "minecraft:smooth_stone_slab",
+   "properties": "type=double;waterlogged=false",
+   "count": 265
+  },
+  {
+   "name": "minecraft:magenta_stained_glass",
+   "properties": "",
+   "count": 263
+  },
+  {
+   "name": "minecraft:birch_trapdoor",
+   "properties": "facing=east;half=top;open=false;powered=false;waterlogged=false",
+   "count": 262
+  },
+  {
+   "name": "minecraft:crimson_fence",
+   "properties": "east=true;north=false;south=false;waterlogged=false;west=true",
+   "count": 256
+  },
+  {
+   "name": "minecraft:oak_stairs",
+   "properties": "facing=west;half=bottom;shape=straight;waterlogged=false",
+   "count": 252
+  },
+  {
+   "name": "minecraft:dark_prismarine",
+   "properties": "",
+   "count": 252
+  },
+  {
+   "name": "minecraft:glass",
+   "properties": "",
+   "count": 244
+  },
+  {
+   "name": "minecraft:spruce_leaves",
+   "properties": "distance=4;persistent=false",
+   "count": 244
+  },
+  {
+   "name": "minecraft:yellow_stained_glass",
+   "properties": "",
+   "count": 240
+  },
+  {
+   "name": "minecraft:polished_basalt",
+   "properties": "axis=x",
+   "count": 238
+  },
+  {
+   "name": "minecraft:quartz_slab",
+   "properties": "type=top;waterlogged=false",
+   "count": 233
+  },
+  {
+   "name": "minecraft:birch_door",
+   "properties": "facing=south;half=lower;hinge=right;open=true;powered=false",
+   "count": 230
+  },
+  {
+   "name": "minecraft:birch_door",
+   "properties": "facing=south;half=upper;hinge=right;open=true;powered=false",
+   "count": 230
+  },
+  {
+   "name": "minecraft:chiseled_quartz_block",
+   "properties": "",
+   "count": 224
+  },
+  {
+   "name": "minecraft:birch_trapdoor",
+   "properties": "facing=west;half=top;open=false;powered=false;waterlogged=false",
+   "count": 223
+  },
+  {
+   "name": "minecraft:brown_wool",
+   "properties": "",
+   "count": 223
+  },
+  {
+   "name": "minecraft:quartz_slab",
+   "properties": "type=double;waterlogged=false",
+   "count": 222
+  },
+  {
+   "name": "minecraft:lava",
+   "properties": "level=12",
+   "count": 220
+  },
+  {
+   "name": "minecraft:dark_oak_planks",
+   "properties": "",
+   "count": 218
+  },
+  {
+   "name": "minecraft:cobblestone_slab",
+   "properties": "type=double;waterlogged=false",
+   "count": 208
+  },
+  {
+   "name": "minecraft:purpur_stairs",
+   "properties": "facing=south;half=bottom;shape=straight;waterlogged=false",
+   "count": 208
+  },
+  {
+   "name": "minecraft:oak_planks",
+   "properties": "",
+   "count": 204
+  },
+  {
+   "name": "minecraft:purpur_stairs",
+   "properties": "facing=east;half=top;shape=straight;waterlogged=false",
+   "count": 203
+  },
+  {
+   "name": "minecraft:stone_brick_slab",
+   "properties": "type=bottom;waterlogged=false",
+   "count": 198
+  },
+  {
+   "name": "minecraft:purpur_stairs",
+   "properties": "facing=west;half=top;shape=straight;waterlogged=false",
+   "count": 197
+  },
+  {
+   "name": "minecraft:purpur_stairs",
+   "properties": "facing=north;half=bottom;shape=straight;waterlogged=false",
+   "count": 193
+  },
+  {
+   "name": "minecraft:purpur_stairs",
+   "properties": "facing=east;half=bottom;shape=straight;waterlogged=false",
+   "count": 193
+  },
+  {
+   "name": "minecraft:iron_trapdoor",
+   "properties": "facing=west;half=bottom;open=true;powered=false;waterlogged=false",
+   "count": 191
+  },
+  {
+   "name": "minecraft:polished_diorite_slab",
+   "properties": "type=bottom;waterlogged=false",
+   "count": 189
+  },
+  {
+   "name": "minecraft:stone_slab",
+   "properties": "type=bottom;waterlogged=false",
+   "count": 188
+  },
+  {
+   "name": "minecraft:coarse_dirt",
+   "properties": "",
+   "count": 187
+  },
+  {
+   "name": "minecraft:purpur_stairs",
+   "properties": "facing=west;half=bottom;shape=straight;waterlogged=false",
+   "count": 187
+  },
+  {
+   "name": "minecraft:blue_ice",
+   "properties": "",
+   "count": 186
+  },
+  {
+   "name": "minecraft:purpur_stairs",
+   "properties": "facing=north;half=top;shape=straight;waterlogged=false",
+   "count": 185
+  },
+  {
+   "name": "minecraft:glass_pane",
+   "properties": "east=false;north=true;south=true;waterlogged=false;west=true",
+   "count": 183
+  },
+  {
+   "name": "minecraft:acacia_leaves",
+   "properties": "distance=4;persistent=true",
+   "count": 182
+  },
+  {
+   "name": "minecraft:purpur_stairs",
+   "properties": "facing=south;half=top;shape=straight;waterlogged=false",
+   "count": 181
+  },
+  {
+   "name": "minecraft:lava",
+   "properties": "level=11",
+   "count": 180
+  },
+  {
+   "name": "minecraft:ladder",
+   "properties": "facing=west;waterlogged=false",
+   "count": 179
+  },
+  {
+   "name": "minecraft:iron_trapdoor",
+   "properties": "facing=east;half=bottom;open=true;powered=false;waterlogged=false",
+   "count": 179
+  },
+  {
+   "name": "minecraft:purpur_slab",
+   "properties": "type=bottom;waterlogged=false",
+   "count": 178
+  },
+  {
+   "name": "minecraft:birch_door",
+   "properties": "facing=north;half=lower;hinge=right;open=true;powered=false",
+   "count": 175
+  },
+  {
+   "name": "minecraft:birch_door",
+   "properties": "facing=north;half=upper;hinge=right;open=true;powered=false",
+   "count": 175
+  },
+  {
+   "name": "minecraft:iron_bars",
+   "properties": "east=false;north=true;south=true;waterlogged=false;west=true",
+   "count": 174
+  },
+  {
+   "name": "minecraft:iron_bars",
+   "properties": "east=true;north=true;south=true;waterlogged=false;west=true",
+   "count": 170
+  },
+  {
+   "name": "minecraft:dark_oak_leaves",
+   "properties": "distance=4;persistent=false",
+   "count": 166
+  },
+  {
+   "name": "minecraft:iron_door",
+   "properties": "facing=east;half=lower;hinge=left;open=false;powered=false",
+   "count": 165
+  },
+  {
+   "name": "minecraft:iron_door",
+   "properties": "facing=east;half=upper;hinge=left;open=false;powered=false",
+   "count": 165
+  },
+  {
+   "name": "minecraft:ladder",
+   "properties": "facing=east;waterlogged=false",
+   "count": 162
+  },
+  {
+   "name": "minecraft:diorite_slab",
+   "properties": "type=double;waterlogged=false",
+   "count": 160
+  },
+  {
+   "name": "minecraft:coal_block",
+   "properties": "",
+   "count": 160
+  },
+  {
+   "name": "minecraft:lever",
+   "properties": "face=wall;facing=south;powered=true",
+   "count": 159
+  },
+  {
+   "name": "minecraft:lever",
+   "properties": "face=wall;facing=north;powered=true",
+   "count": 156
+  },
+  {
+   "name": "minecraft:white_stained_glass_pane",
+   "properties": "east=true;north=true;south=true;waterlogged=false;west=true",
+   "count": 154
+  },
+  {
+   "name": "minecraft:birch_wall_sign",
+   "properties": "facing=north;waterlogged=false",
+   "count": 152
+  },
+  {
+   "name": "minecraft:stone_brick_stairs",
+   "properties": "facing=north;half=bottom;shape=straight;waterlogged=false",
+   "count": 146
+  },
+  {
+   "name": "minecraft:podzol",
+   "properties": "snowy=false",
+   "count": 145
+  },
+  {
+   "name": "minecraft:acacia_leaves",
+   "properties": "distance=3;persistent=true",
+   "count": 143
+  },
+  {
+   "name": "minecraft:comparator",
+   "properties": "facing=south;mode=compare;powered=false",
+   "count": 143
+  },
+  {
+   "name": "minecraft:lever",
+   "properties": "face=wall;facing=west;powered=true",
+   "count": 142
+  },
+  {
+   "name": "minecraft:birch_wall_sign",
+   "properties": "facing=south;waterlogged=false",
+   "count": 142
+  },
+  {
+   "name": "minecraft:crafting_table",
+   "properties": "",
+   "count": 140
+  },
+  {
+   "name": "minecraft:large_fern",
+   "properties": "half=lower",
+   "count": 139
+  },
+  {
+   "name": "minecraft:large_fern",
+   "properties": "half=upper",
+   "count": 139
+  },
+  {
+   "name": "minecraft:stone_button",
+   "properties": "face=ceiling;facing=south;powered=false",
+   "count": 138
+  },
+  {
+   "name": "minecraft:stone_brick_slab",
+   "properties": "type=top;waterlogged=false",
+   "count": 137
+  },
+  {
+   "name": "minecraft:smooth_quartz_stairs",
+   "properties": "facing=west;half=top;shape=straight;waterlogged=false",
+   "count": 134
+  },
+  {
+   "name": "minecraft:birch_door",
+   "properties": "facing=west;half=lower;hinge=left;open=false;powered=false",
+   "count": 133
+  },
+  {
+   "name": "minecraft:birch_door",
+   "properties": "facing=west;half=upper;hinge=left;open=false;powered=false",
+   "count": 133
+  },
+  {
+   "name": "minecraft:gray_carpet",
+   "properties": "",
+   "count": 132
+  },
+  {
+   "name": "minecraft:smooth_quartz_stairs",
+   "properties": "facing=east;half=top;shape=straight;waterlogged=false",
+   "count": 132
+  },
+  {
+   "name": "minecraft:comparator",
+   "properties": "facing=north;mode=compare;powered=false",
+   "count": 130
+  },
+  {
+   "name": "minecraft:birch_door",
+   "properties": "facing=east;half=lower;hinge=right;open=false;powered=false",
+   "count": 129
+  },
+  {
+   "name": "minecraft:birch_door",
+   "properties": "facing=east;half=upper;hinge=right;open=false;powered=false",
+   "count": 129
+  },
+  {
+   "name": "minecraft:iron_bars",
+   "properties": "east=true;north=false;south=true;waterlogged=false;west=true",
+   "count": 128
+  },
+  {
+   "name": "minecraft:oak_log",
+   "properties": "axis=x",
+   "count": 126
+  },
+  {
+   "name": "minecraft:nether_brick_fence",
+   "properties": "east=true;north=false;south=false;waterlogged=false;west=true",
+   "count": 125
+  },
+  {
+   "name": "minecraft:birch_door",
+   "properties": "facing=west;half=lower;hinge=right;open=false;powered=false",
+   "count": 124
+  },
+  {
+   "name": "minecraft:birch_door",
+   "properties": "facing=west;half=upper;hinge=right;open=false;powered=false",
+   "count": 124
+  },
+  {
+   "name": "minecraft:blue_concrete",
+   "properties": "",
+   "count": 122
+  },
+  {
+   "name": "minecraft:acacia_leaves",
+   "properties": "distance=2;persistent=true",
+   "count": 121
+  },
+  {
+   "name": "minecraft:oak_log",
+   "properties": "axis=z",
+   "count": 120
+  },
+  {
+   "name": "minecraft:iron_bars",
+   "properties": "east=true;north=true;south=false;waterlogged=false;west=true",
+   "count": 119
+  },
+  {
+   "name": "minecraft:birch_trapdoor",
+   "properties": "facing=north;half=top;open=true;powered=false;waterlogged=false",
+   "count": 116
+  },
+  {
+   "name": "minecraft:acacia_planks",
+   "properties": "",
+   "count": 116
+  },
+  {
+   "name": "minecraft:smooth_sandstone_stairs",
+   "properties": "facing=west;half=bottom;shape=straight;waterlogged=false",
+   "count": 112
+  },
+  {
+   "name": "minecraft:end_rod",
+   "properties": "facing=up",
+   "count": 112
+  },
+  {
+   "name": "minecraft:dark_oak_fence",
+   "properties": "east=true;north=true;south=true;waterlogged=false;west=true",
+   "count": 111
+  },
+  {
+   "name": "minecraft:iron_door",
+   "properties": "facing=west;half=lower;hinge=left;open=false;powered=false",
+   "count": 110
+  },
+  {
+   "name": "minecraft:iron_door",
+   "properties": "facing=west;half=upper;hinge=left;open=false;powered=false",
+   "count": 110
+  },
+  {
+   "name": "minecraft:red_stained_glass",
+   "properties": "",
+   "count": 110
+  },
+  {
+   "name": "minecraft:quartz_stairs",
+   "properties": "facing=west;half=bottom;shape=straight;waterlogged=true",
+   "count": 109
+  },
+  {
+   "name": "minecraft:sand",
+   "properties": "",
+   "count": 106
+  },
+  {
+   "name": "minecraft:quartz_stairs",
+   "properties": "facing=east;half=bottom;shape=straight;waterlogged=true",
+   "count": 104
+  },
+  {
+   "name": "minecraft:chain",
+   "properties": "axis=y;waterlogged=false",
+   "count": 104
+  },
+  {
+   "name": "minecraft:crimson_fence",
+   "properties": "east=false;north=true;south=true;waterlogged=false;west=false",
+   "count": 103
+  },
+  {
+   "name": "minecraft:cauldron",
+   "properties": "level=0",
+   "count": 101
+  },
+  {
+   "name": "minecraft:black_stained_glass_pane",
+   "properties": "east=false;north=true;south=true;waterlogged=false;west=false",
+   "count": 100
+  },
+  {
+   "name": "minecraft:birch_trapdoor",
+   "properties": "facing=north;half=top;open=false;powered=false;waterlogged=false",
+   "count": 98
+  },
+  {
+   "name": "minecraft:soul_fire",
+   "properties": "",
+   "count": 98
+  },
+  {
+   "name": "minecraft:crimson_trapdoor",
+   "properties": "facing=west;half=bottom;open=true;powered=false;waterlogged=false",
+   "count": 96
+  },
+  {
+   "name": "minecraft:lever",
+   "properties": "face=wall;facing=east;powered=true",
+   "count": 95
+  },
+  {
+   "name": "minecraft:brown_carpet",
+   "properties": "",
+   "count": 95
+  },
+  {
+   "name": "minecraft:smooth_red_sandstone_stairs",
+   "properties": "facing=north;half=bottom;shape=straight;waterlogged=false",
+   "count": 90
+  },
+  {
+   "name": "minecraft:smooth_red_sandstone_stairs",
+   "properties": "facing=south;half=bottom;shape=straight;waterlogged=false",
+   "count": 90
+  },
+  {
+   "name": "minecraft:birch_leaves",
+   "properties": "distance=7;persistent=true",
+   "count": 90
+  },
+  {
+   "name": "minecraft:barrel",
+   "properties": "facing=south;open=false",
+   "count": 89
+  },
+  {
+   "name": "minecraft:smooth_quartz_stairs",
+   "properties": "facing=west;half=bottom;shape=straight;waterlogged=true",
+   "count": 86
+  },
+  {
+   "name": "minecraft:purpur_pillar",
+   "properties": "axis=z",
+   "count": 86
+  },
+  {
+   "name": "minecraft:crimson_fence",
+   "properties": "east=true;north=false;south=true;waterlogged=false;west=false",
+   "count": 85
+  },
+  {
+   "name": "minecraft:crimson_trapdoor",
+   "properties": "facing=east;half=bottom;open=true;powered=false;waterlogged=false",
+   "count": 84
+  },
+  {
+   "name": "minecraft:red_stained_glass_pane",
+   "properties": "east=false;north=true;south=true;waterlogged=false;west=false",
+   "count": 84
+  },
+  {
+   "name": "minecraft:crimson_fence",
+   "properties": "east=false;north=true;south=false;waterlogged=false;west=true",
+   "count": 83
+  },
+  {
+   "name": "minecraft:crimson_slab",
+   "properties": "type=bottom;waterlogged=false",
+   "count": 82
+  },
+  {
+   "name": "minecraft:black_stained_glass_pane",
+   "properties": "east=true;north=true;south=true;waterlogged=false;west=false",
+   "count": 79
+  },
+  {
+   "name": "minecraft:emerald_block",
+   "properties": "",
+   "count": 79
+  },
+  {
+   "name": "minecraft:composter",
+   "properties": "level=0",
+   "count": 78
+  },
+  {
+   "name": "minecraft:acacia_leaves",
+   "properties": "distance=1;persistent=true",
+   "count": 78
+  },
+  {
+   "name": "minecraft:lever",
+   "properties": "face=ceiling;facing=west;powered=true",
+   "count": 77
+  },
+  {
+   "name": "minecraft:diorite_slab",
+   "properties": "type=bottom;waterlogged=false",
+   "count": 76
+  },
+  {
+   "name": "minecraft:spruce_leaves",
+   "properties": "distance=5;persistent=false",
+   "count": 76
+  },
+  {
+   "name": "minecraft:acacia_fence",
+   "properties": "east=false;north=true;south=true;waterlogged=false;west=false",
+   "count": 76
+  },
+  {
+   "name": "minecraft:birch_leaves",
+   "properties": "distance=1;persistent=true",
+   "count": 75
+  },
+  {
+   "name": "minecraft:conduit",
+   "properties": "waterlogged=false",
+   "count": 73
+  },
+  {
+   "name": "minecraft:nether_brick_fence",
+   "properties": "east=false;north=true;south=true;waterlogged=false;west=false",
+   "count": 73
+  },
+  {
+   "name": "minecraft:white_stained_glass_pane",
+   "properties": "east=true;north=false;south=false;waterlogged=false;west=true",
+   "count": 72
+  },
+  {
+   "name": "minecraft:crimson_trapdoor",
+   "properties": "facing=north;half=bottom;open=true;powered=false;waterlogged=false",
+   "count": 71
+  },
+  {
+   "name": "minecraft:iron_door",
+   "properties": "facing=west;half=lower;hinge=right;open=false;powered=false",
+   "count": 70
+  },
+  {
+   "name": "minecraft:iron_door",
+   "properties": "facing=west;half=upper;hinge=right;open=false;powered=false",
+   "count": 70
+  },
+  {
+   "name": "minecraft:blue_carpet",
+   "properties": "",
+   "count": 70
+  },
+  {
+   "name": "minecraft:crimson_trapdoor",
+   "properties": "facing=south;half=bottom;open=true;powered=false;waterlogged=false",
+   "count": 68
+  },
+  {
+   "name": "minecraft:jungle_planks",
+   "properties": "",
+   "count": 67
+  },
+  {
+   "name": "minecraft:acacia_leaves",
+   "properties": "distance=5;persistent=true",
+   "count": 67
+  },
+  {
+   "name": "minecraft:smooth_sandstone_slab",
+   "properties": "type=double;waterlogged=false",
+   "count": 67
+  },
+  {
+   "name": "minecraft:dark_oak_leaves",
+   "properties": "distance=7;persistent=true",
+   "count": 66
+  },
+  {
+   "name": "minecraft:dark_oak_stairs",
+   "properties": "facing=west;half=bottom;shape=straight;waterlogged=false",
+   "count": 64
+  },
+  {
+   "name": "minecraft:brown_terracotta",
+   "properties": "",
+   "count": 64
+  },
+  {
+   "name": "minecraft:nether_brick_stairs",
+   "properties": "facing=west;half=bottom;shape=straight;waterlogged=false",
+   "count": 64
+  },
+  {
+   "name": "minecraft:brown_mushroom_block",
+   "properties": "down=true;east=true;north=true;south=true;up=true;west=true",
+   "count": 64
+  },
+  {
+   "name": "minecraft:quartz_stairs",
+   "properties": "facing=east;half=top;shape=straight;waterlogged=false",
+   "count": 63
+  },
+  {
+   "name": "minecraft:oak_wall_sign",
+   "properties": "facing=north;waterlogged=false",
+   "count": 63
+  },
+  {
+   "name": "minecraft:acacia_fence",
+   "properties": "east=true;north=true;south=false;waterlogged=false;west=true",
+   "count": 63
+  },
+  {
+   "name": "minecraft:dark_oak_stairs",
+   "properties": "facing=east;half=bottom;shape=straight;waterlogged=false",
+   "count": 62
+  },
+  {
+   "name": "minecraft:vine",
+   "properties": "east=false;north=false;south=false;up=true;west=true",
+   "count": 62
+  },
+  {
+   "name": "minecraft:stone_stairs",
+   "properties": "facing=south;half=bottom;shape=straight;waterlogged=false",
+   "count": 62
+  },
+  {
+   "name": "minecraft:spruce_trapdoor",
+   "properties": "facing=east;half=bottom;open=true;powered=false;waterlogged=false",
+   "count": 62
+  },
+  {
+   "name": "minecraft:iron_bars",
+   "properties": "east=false;north=true;south=false;waterlogged=false;west=false",
+   "count": 61
+  },
+  {
+   "name": "minecraft:stone_brick_stairs",
+   "properties": "facing=east;half=bottom;shape=straight;waterlogged=false",
+   "count": 61
+  },
+  {
+   "name": "minecraft:glass_pane",
+   "properties": "east=true;north=false;south=false;waterlogged=false;west=false",
+   "count": 61
+  },
+  {
+   "name": "minecraft:jungle_leaves",
+   "properties": "distance=5;persistent=false",
+   "count": 61
+  },
+  {
+   "name": "minecraft:quartz_stairs",
+   "properties": "facing=west;half=top;shape=straight;waterlogged=false",
+   "count": 60
+  },
+  {
+   "name": "minecraft:stone_brick_stairs",
+   "properties": "facing=south;half=bottom;shape=straight;waterlogged=false",
+   "count": 60
+  },
+  {
+   "name": "minecraft:smooth_quartz_slab",
+   "properties": "type=double;waterlogged=false",
+   "count": 60
+  },
+  {
+   "name": "minecraft:glass_pane",
+   "properties": "east=false;north=false;south=false;waterlogged=false;west=true",
+   "count": 59
+  },
+  {
+   "name": "minecraft:white_stained_glass_pane",
+   "properties": "east=true;north=false;south=true;waterlogged=false;west=true",
+   "count": 59
+  },
+  {
+   "name": "minecraft:birch_door",
+   "properties": "facing=north;half=lower;hinge=left;open=false;powered=false",
+   "count": 58
+  },
+  {
+   "name": "minecraft:birch_door",
+   "properties": "facing=north;half=upper;hinge=left;open=false;powered=false",
+   "count": 58
+  },
+  {
+   "name": "minecraft:oak_leaves",
+   "properties": "distance=6;persistent=false",
+   "count": 58
+  },
+  {
+   "name": "minecraft:jungle_leaves",
+   "properties": "distance=2;persistent=true",
+   "count": 58
+  },
+  {
+   "name": "minecraft:brick_stairs",
+   "properties": "facing=east;half=bottom;shape=straight;waterlogged=false",
+   "count": 57
+  },
+  {
+   "name": "minecraft:acacia_fence",
+   "properties": "east=true;north=false;south=true;waterlogged=false;west=true",
+   "count": 57
+  },
+  {
+   "name": "minecraft:barrel",
+   "properties": "facing=north;open=false",
+   "count": 56
+  },
+  {
+   "name": "minecraft:birch_trapdoor",
+   "properties": "facing=north;half=bottom;open=false;powered=false;waterlogged=false",
+   "count": 56
+  },
+  {
+   "name": "minecraft:black_stained_glass_pane",
+   "properties": "east=true;north=true;south=false;waterlogged=false;west=true",
+   "count": 56
+  },
+  {
+   "name": "minecraft:iron_trapdoor",
+   "properties": "facing=west;half=top;open=true;powered=false;waterlogged=false",
+   "count": 55
+  },
+  {
+   "name": "minecraft:birch_door",
+   "properties": "facing=south;half=lower;hinge=left;open=false;powered=false",
+   "count": 55
+  },
+  {
+   "name": "minecraft:birch_door",
+   "properties": "facing=south;half=upper;hinge=left;open=false;powered=false",
+   "count": 55
+  },
+  {
+   "name": "minecraft:smooth_quartz_stairs",
+   "properties": "facing=south;half=bottom;shape=straight;waterlogged=false",
+   "count": 54
+  },
+  {
+   "name": "minecraft:vine",
+   "properties": "east=true;north=false;south=false;up=true;west=false",
+   "count": 54
+  },
+  {
+   "name": "minecraft:iron_trapdoor",
+   "properties": "facing=east;half=top;open=true;powered=false;waterlogged=false",
+   "count": 53
+  },
+  {
+   "name": "minecraft:nether_brick_fence",
+   "properties": "east=false;north=true;south=false;waterlogged=false;west=false",
+   "count": 53
+  },
+  {
+   "name": "minecraft:oak_leaves",
+   "properties": "distance=3;persistent=true",
+   "count": 53
+  },
+  {
+   "name": "minecraft:lantern",
+   "properties": "hanging=true;waterlogged=false",
+   "count": 53
+  },
+  {
+   "name": "minecraft:cracked_polished_blackstone_bricks",
+   "properties": "",
+   "count": 53
+  },
+  {
+   "name": "minecraft:iron_trapdoor",
+   "properties": "facing=south;half=bottom;open=true;powered=false;waterlogged=false",
+   "count": 52
+  },
+  {
+   "name": "minecraft:iron_trapdoor",
+   "properties": "facing=north;half=bottom;open=true;powered=false;waterlogged=false",
+   "count": 52
+  },
+  {
+   "name": "minecraft:vine",
+   "properties": "east=false;north=true;south=false;up=true;west=false",
+   "count": 52
+  },
+  {
+   "name": "minecraft:smooth_sandstone_stairs",
+   "properties": "facing=east;half=bottom;shape=straight;waterlogged=false",
+   "count": 52
+  },
+  {
+   "name": "minecraft:smooth_quartz_stairs",
+   "properties": "facing=west;half=bottom;shape=straight;waterlogged=false",
+   "count": 52
+  },
+  {
+   "name": "minecraft:purpur_slab",
+   "properties": "type=top;waterlogged=false",
+   "count": 52
+  },
+  {
+   "name": "minecraft:birch_planks",
+   "properties": "",
+   "count": 51
+  },
+  {
+   "name": "minecraft:nether_brick_fence",
+   "properties": "east=false;north=false;south=true;waterlogged=false;west=false",
+   "count": 51
+  },
+  {
+   "name": "minecraft:oak_fence",
+   "properties": "east=true;north=true;south=true;waterlogged=false;west=true",
+   "count": 50
+  },
+  {
+   "name": "minecraft:dark_oak_fence",
+   "properties": "east=false;north=true;south=true;waterlogged=false;west=true",
+   "count": 50
+  },
+  {
+   "name": "minecraft:white_stained_glass_pane",
+   "properties": "east=true;north=true;south=false;waterlogged=false;west=true",
+   "count": 48
+  },
+  {
+   "name": "minecraft:redstone_lamp",
+   "properties": "lit=false",
+   "count": 48
+  },
+  {
+   "name": "minecraft:dark_oak_slab",
+   "properties": "type=bottom;waterlogged=false",
+   "count": 47
+  },
+  {
+   "name": "minecraft:birch_door",
+   "properties": "facing=east;half=lower;hinge=left;open=false;powered=false",
+   "count": 46
+  },
+  {
+   "name": "minecraft:birch_door",
+   "properties": "facing=east;half=upper;hinge=left;open=false;powered=false",
+   "count": 46
+  },
+  {
+   "name": "minecraft:white_stained_glass_pane",
+   "properties": "east=true;north=true;south=true;waterlogged=false;west=false",
+   "count": 44
+  },
+  {
+   "name": "minecraft:jungle_leaves",
+   "properties": "distance=3;persistent=true",
+   "count": 44
+  },
+  {
+   "name": "minecraft:birch_trapdoor",
+   "properties": "facing=south;half=top;open=true;powered=false;waterlogged=false",
+   "count": 43
+  },
+  {
+   "name": "minecraft:weeping_vines",
+   "properties": "age=17",
+   "count": 43
+  },
+  {
+   "name": "minecraft:lava",
+   "properties": "level=15",
+   "count": 43
+  },
+  {
+   "name": "minecraft:brick_stairs",
+   "properties": "facing=west;half=bottom;shape=straight;waterlogged=false",
+   "count": 42
+  },
+  {
+   "name": "minecraft:jungle_leaves",
+   "properties": "distance=1;persistent=true",
+   "count": 42
+  },
+  {
+   "name": "minecraft:twisting_vines",
+   "properties": "age=6",
+   "count": 42
+  },
+  {
+   "name": "minecraft:twisting_vines",
+   "properties": "age=23",
+   "count": 42
+  },
+  {
+   "name": "minecraft:bookshelf",
+   "properties": "",
+   "count": 41
+  },
+  {
+   "name": "minecraft:dark_oak_fence",
+   "properties": "east=true;north=true;south=true;waterlogged=false;west=false",
+   "count": 41
+  },
+  {
+   "name": "minecraft:command_block",
+   "properties": "conditional=false;facing=west",
+   "count": 41
+  },
+  {
+   "name": "minecraft:repeater",
+   "properties": "delay=4;facing=east;locked=false;powered=true",
+   "count": 41
+  },
+  {
+   "name": "minecraft:iron_door",
+   "properties": "facing=north;half=lower;hinge=left;open=true;powered=false",
+   "count": 40
+  },
+  {
+   "name": "minecraft:iron_door",
+   "properties": "facing=north;half=lower;hinge=right;open=true;powered=false",
+   "count": 40
+  },
+  {
+   "name": "minecraft:iron_door",
+   "properties": "facing=north;half=upper;hinge=left;open=true;powered=false",
+   "count": 40
+  },
+  {
+   "name": "minecraft:iron_door",
+   "properties": "facing=north;half=upper;hinge=right;open=true;powered=false",
+   "count": 40
+  },
+  {
+   "name": "minecraft:glass_pane",
+   "properties": "east=true;north=true;south=true;waterlogged=false;west=true",
+   "count": 40
+  },
+  {
+   "name": "minecraft:terracotta",
+   "properties": "",
+   "count": 40
+  },
+  {
+   "name": "minecraft:nether_brick_fence",
+   "properties": "east=false;north=true;south=false;waterlogged=false;west=true",
+   "count": 40
+  },
+  {
+   "name": "minecraft:iron_bars",
+   "properties": "east=true;north=false;south=false;waterlogged=false;west=false",
+   "count": 39
+  },
+  {
+   "name": "minecraft:oak_wall_sign",
+   "properties": "facing=south;waterlogged=false",
+   "count": 39
+  },
+  {
+   "name": "minecraft:nether_brick_fence",
+   "properties": "east=true;north=false;south=true;waterlogged=false;west=false",
+   "count": 39
+  },
+  {
+   "name": "minecraft:twisting_vines",
+   "properties": "age=11",
+   "count": 39
+  },
+  {
+   "name": "minecraft:dark_oak_leaves",
+   "properties": "distance=5;persistent=false",
+   "count": 38
+  },
+  {
+   "name": "minecraft:repeater",
+   "properties": "delay=4;facing=north;locked=false;powered=true",
+   "count": 38
+  },
+  {
+   "name": "minecraft:twisting_vines",
+   "properties": "age=19",
+   "count": 38
+  },
+  {
+   "name": "minecraft:weeping_vines",
+   "properties": "age=19",
+   "count": 38
+  },
+  {
+   "name": "minecraft:birch_trapdoor",
+   "properties": "facing=south;half=top;open=false;powered=false;waterlogged=false",
+   "count": 37
+  },
+  {
+   "name": "minecraft:smooth_quartz_stairs",
+   "properties": "facing=south;half=top;shape=straight;waterlogged=false",
+   "count": 37
+  },
+  {
+   "name": "minecraft:oak_leaves",
+   "properties": "distance=4;persistent=true",
+   "count": 37
+  },
+  {
+   "name": "minecraft:twisting_vines",
+   "properties": "age=1",
+   "count": 37
+  },
+  {
+   "name": "minecraft:twisting_vines",
+   "properties": "age=4",
+   "count": 37
+  },
+  {
+   "name": "minecraft:twisting_vines",
+   "properties": "age=16",
+   "count": 37
+  },
+  {
+   "name": "minecraft:glass_pane",
+   "properties": "east=false;north=true;south=false;waterlogged=false;west=false",
+   "count": 36
+  },
+  {
+   "name": "minecraft:oak_fence",
+   "properties": "east=false;north=true;south=true;waterlogged=false;west=false",
+   "count": 36
+  },
+  {
+   "name": "minecraft:smooth_quartz_stairs",
+   "properties": "facing=north;half=top;shape=straight;waterlogged=false",
+   "count": 36
+  },
+  {
+   "name": "minecraft:twisting_vines",
+   "properties": "age=10",
+   "count": 36
+  },
+  {
+   "name": "minecraft:smooth_quartz_stairs",
+   "properties": "facing=north;half=bottom;shape=straight;waterlogged=false",
+   "count": 35
+  },
+  {
+   "name": "minecraft:twisting_vines",
+   "properties": "age=0",
+   "count": 35
+  },
+  {
+   "name": "minecraft:twisting_vines",
+   "properties": "age=20",
+   "count": 35
+  },
+  {
+   "name": "minecraft:twisting_vines",
+   "properties": "age=15",
+   "count": 35
+  },
+  {
+   "name": "minecraft:white_stained_glass_pane",
+   "properties": "east=false;north=true;south=true;waterlogged=false;west=false",
+   "count": 34
+  },
+  {
+   "name": "minecraft:glass_pane",
+   "properties": "east=false;north=false;south=true;waterlogged=false;west=false",
+   "count": 33
+  },
+  {
+   "name": "minecraft:polished_blackstone_brick_stairs",
+   "properties": "facing=west;half=bottom;shape=straight;waterlogged=false",
+   "count": 33
+  },
+  {
+   "name": "minecraft:twisting_vines",
+   "properties": "age=22",
+   "count": 33
+  },
+  {
+   "name": "minecraft:oak_fence",
+   "properties": "east=false;north=true;south=true;waterlogged=false;west=true",
+   "count": 32
+  },
+  {
+   "name": "minecraft:light_gray_carpet",
+   "properties": "",
+   "count": 32
+  },
+  {
+   "name": "minecraft:dark_oak_fence",
+   "properties": "east=true;north=true;south=false;waterlogged=false;west=true",
+   "count": 32
+  },
+  {
+   "name": "minecraft:black_carpet",
+   "properties": "",
+   "count": 32
+  },
+  {
+   "name": "minecraft:water",
+   "properties": "level=0",
+   "count": 31
+  },
+  {
+   "name": "minecraft:stone_slab",
+   "properties": "type=top;waterlogged=false",
+   "count": 31
+  },
+  {
+   "name": "minecraft:vine",
+   "properties": "east=false;north=false;south=true;up=true;west=false",
+   "count": 31
+  },
+  {
+   "name": "minecraft:command_block",
+   "properties": "conditional=false;facing=north",
+   "count": 31
+  },
+  {
+   "name": "minecraft:twisting_vines",
+   "properties": "age=5",
+   "count": 31
+  },
+  {
+   "name": "minecraft:twisting_vines",
+   "properties": "age=9",
+   "count": 31
+  },
+  {
+   "name": "minecraft:white_wall_banner",
+   "properties": "facing=north",
+   "count": 30
+  },
+  {
+   "name": "minecraft:white_wall_banner",
+   "properties": "facing=south",
+   "count": 30
+  },
+  {
+   "name": "minecraft:black_stained_glass_pane",
+   "properties": "east=false;north=true;south=false;waterlogged=false;west=false",
+   "count": 30
+  },
+  {
+   "name": "minecraft:white_stained_glass_pane",
+   "properties": "east=true;north=false;south=false;waterlogged=false;west=false",
+   "count": 30
+  },
+  {
+   "name": "minecraft:white_stained_glass_pane",
+   "properties": "east=false;north=false;south=false;waterlogged=false;west=true",
+   "count": 30
+  },
+  {
+   "name": "minecraft:twisting_vines",
+   "properties": "age=8",
+   "count": 30
+  },
+  {
+   "name": "minecraft:twisting_vines",
+   "properties": "age=3",
+   "count": 30
+  },
+  {
+   "name": "minecraft:twisting_vines",
+   "properties": "age=2",
+   "count": 30
+  },
+  {
+   "name": "minecraft:oak_leaves",
+   "properties": "distance=2;persistent=true",
+   "count": 29
+  },
+  {
+   "name": "minecraft:oak_leaves",
+   "properties": "distance=5;persistent=true",
+   "count": 29
+  },
+  {
+   "name": "minecraft:twisting_vines",
+   "properties": "age=21",
+   "count": 29
+  },
+  {
+   "name": "minecraft:twisting_vines",
+   "properties": "age=7",
+   "count": 29
+  },
+  {
+   "name": "minecraft:lever",
+   "properties": "face=wall;facing=south;powered=false",
+   "count": 28
+  },
+  {
+   "name": "minecraft:prismarine_brick_slab",
+   "properties": "type=bottom;waterlogged=false",
+   "count": 28
+  },
+  {
+   "name": "minecraft:black_stained_glass_pane",
+   "properties": "east=false;north=false;south=true;waterlogged=false;west=false",
+   "count": 28
+  },
+  {
+   "name": "minecraft:chain",
+   "properties": "axis=x;waterlogged=false",
+   "count": 28
+  },
+  {
+   "name": "minecraft:end_stone_brick_stairs",
+   "properties": "facing=west;half=bottom;shape=straight;waterlogged=false",
+   "count": 28
+  },
+  {
+   "name": "minecraft:lava",
+   "properties": "level=14",
+   "count": 28
+  },
+  {
+   "name": "minecraft:twisting_vines",
+   "properties": "age=12",
+   "count": 28
+  },
+  {
+   "name": "minecraft:lever",
+   "properties": "face=ceiling;facing=north;powered=true",
+   "count": 27
+  },
+  {
+   "name": "minecraft:creeper_wall_head",
+   "properties": "facing=west",
+   "count": 27
+  },
+  {
+   "name": "minecraft:oak_fence",
+   "properties": "east=true;north=true;south=true;waterlogged=false;west=false",
+   "count": 27
+  },
+  {
+   "name": "minecraft:stripped_birch_log",
+   "properties": "axis=x",
+   "count": 27
+  },
+  {
+   "name": "minecraft:weeping_vines",
+   "properties": "age=22",
+   "count": 27
+  },
+  {
+   "name": "minecraft:twisting_vines",
+   "properties": "age=17",
+   "count": 27
+  },
+  {
+   "name": "minecraft:twisting_vines",
+   "properties": "age=13",
+   "count": 27
+  },
+  {
+   "name": "minecraft:polished_blackstone_bricks",
+   "properties": "",
+   "count": 27
+  },
+  {
+   "name": "minecraft:creeper_wall_head",
+   "properties": "facing=east",
+   "count": 26
+  },
+  {
+   "name": "minecraft:iron_bars",
+   "properties": "east=false;north=false;south=false;waterlogged=false;west=true",
+   "count": 26
+  },
+  {
+   "name": "minecraft:white_stained_glass_pane",
+   "properties": "east=false;north=true;south=true;waterlogged=false;west=true",
+   "count": 26
+  },
+  {
+   "name": "minecraft:crimson_planks",
+   "properties": "",
+   "count": 26
+  },
+  {
+   "name": "minecraft:smooth_quartz_stairs",
+   "properties": "facing=east;half=bottom;shape=straight;waterlogged=false",
+   "count": 26
+  },
+  {
+   "name": "minecraft:green_carpet",
+   "properties": "",
+   "count": 26
+  },
+  {
+   "name": "minecraft:twisting_vines",
+   "properties": "age=14",
+   "count": 26
+  },
+  {
+   "name": "minecraft:red_nether_brick_wall",
+   "properties": "east=none;north=none;south=tall;up=true;waterlogged=false;west=tall",
+   "count": 25
+  },
+  {
+   "name": "minecraft:observer",
+   "properties": "facing=north;powered=false",
+   "count": 25
+  },
+  {
+   "name": "minecraft:crimson_fence",
+   "properties": "east=false;north=true;south=false;waterlogged=false;west=false",
+   "count": 25
+  },
+  {
+   "name": "minecraft:birch_trapdoor",
+   "properties": "facing=south;half=bottom;open=false;powered=false;waterlogged=false",
+   "count": 25
+  },
+  {
+   "name": "minecraft:birch_door",
+   "properties": "facing=north;half=lower;hinge=right;open=false;powered=false",
+   "count": 25
+  },
+  {
+   "name": "minecraft:birch_door",
+   "properties": "facing=north;half=upper;hinge=right;open=false;powered=false",
+   "count": 25
+  },
+  {
+   "name": "minecraft:brewing_stand",
+   "properties": "has_bottle_0=false;has_bottle_1=false;has_bottle_2=false",
+   "count": 25
+  },
+  {
+   "name": "minecraft:red_tulip",
+   "properties": "",
+   "count": 25
+  },
+  {
+   "name": "minecraft:dark_oak_stairs",
+   "properties": "facing=south;half=bottom;shape=straight;waterlogged=false",
+   "count": 25
+  },
+  {
+   "name": "minecraft:dark_oak_stairs",
+   "properties": "facing=north;half=bottom;shape=straight;waterlogged=false",
+   "count": 25
+  },
+  {
+   "name": "minecraft:weeping_vines",
+   "properties": "age=20",
+   "count": 25
+  },
+  {
+   "name": "minecraft:twisting_vines",
+   "properties": "age=24",
+   "count": 25
+  },
+  {
+   "name": "minecraft:iron_bars",
+   "properties": "east=false;north=false;south=true;waterlogged=false;west=false",
+   "count": 24
+  },
+  {
+   "name": "minecraft:oak_leaves",
+   "properties": "distance=6;persistent=true",
+   "count": 24
+  },
+  {
+   "name": "minecraft:orange_stained_glass",
+   "properties": "",
+   "count": 24
+  },
+  {
+   "name": "minecraft:crimson_fence",
+   "properties": "east=false;north=false;south=true;waterlogged=false;west=false",
+   "count": 23
+  },
+  {
+   "name": "minecraft:oak_fence",
+   "properties": "east=true;north=false;south=true;waterlogged=false;west=true",
+   "count": 23
+  },
+  {
+   "name": "minecraft:black_stained_glass_pane",
+   "properties": "east=true;north=false;south=true;waterlogged=false;west=true",
+   "count": 23
+  },
+  {
+   "name": "minecraft:weeping_vines",
+   "properties": "age=18",
+   "count": 23
+  },
+  {
+   "name": "minecraft:glass_pane",
+   "properties": "east=false;north=false;south=true;waterlogged=false;west=true",
+   "count": 22
+  },
+  {
+   "name": "minecraft:black_stained_glass_pane",
+   "properties": "east=false;north=true;south=false;waterlogged=false;west=true",
+   "count": 22
+  },
+  {
+   "name": "minecraft:stone_button",
+   "properties": "face=wall;facing=south;powered=false",
+   "count": 22
+  },
+  {
+   "name": "minecraft:orange_stained_glass_pane",
+   "properties": "east=false;north=true;south=true;waterlogged=false;west=false",
+   "count": 22
+  },
+  {
+   "name": "minecraft:spruce_trapdoor",
+   "properties": "facing=east;half=top;open=true;powered=false;waterlogged=false",
+   "count": 22
+  },
+  {
+   "name": "minecraft:weeping_vines",
+   "properties": "age=21",
+   "count": 22
+  },
+  {
+   "name": "minecraft:polished_blackstone_brick_stairs",
+   "properties": "facing=east;half=bottom;shape=straight;waterlogged=false",
+   "count": 21
+  },
+  {
+   "name": "minecraft:jungle_leaves",
+   "properties": "distance=6;persistent=false",
+   "count": 21
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=none;north=side;power=14;south=side;west=none",
+   "count": 21
+  },
+  {
+   "name": "minecraft:lava",
+   "properties": "level=13",
+   "count": 21
+  },
+  {
+   "name": "minecraft:crimson_fence",
+   "properties": "east=true;north=true;south=false;waterlogged=false;west=false",
+   "count": 20
+  },
+  {
+   "name": "minecraft:crimson_fence",
+   "properties": "east=false;north=false;south=true;waterlogged=false;west=true",
+   "count": 20
+  },
+  {
+   "name": "minecraft:white_tulip",
+   "properties": "",
+   "count": 20
+  },
+  {
+   "name": "minecraft:red_nether_brick_wall",
+   "properties": "east=low;north=none;south=low;up=true;waterlogged=false;west=none",
+   "count": 20
+  },
+  {
+   "name": "minecraft:prismarine_brick_slab",
+   "properties": "type=top;waterlogged=false",
+   "count": 20
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=side;north=side;power=0;south=side;west=side",
+   "count": 20
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=none;north=side;power=15;south=side;west=none",
+   "count": 20
+  },
+  {
+   "name": "minecraft:twisting_vines",
+   "properties": "age=18",
+   "count": 20
+  },
+  {
+   "name": "minecraft:end_portal",
+   "properties": "",
+   "count": 20
+  },
+  {
+   "name": "minecraft:iron_trapdoor",
+   "properties": "facing=south;half=top;open=true;powered=false;waterlogged=false",
+   "count": 19
+  },
+  {
+   "name": "minecraft:cauldron",
+   "properties": "level=3",
+   "count": 19
+  },
+  {
+   "name": "minecraft:acacia_leaves",
+   "properties": "distance=6;persistent=false",
+   "count": 19
+  },
+  {
+   "name": "minecraft:end_stone_brick_stairs",
+   "properties": "facing=north;half=bottom;shape=straight;waterlogged=false",
+   "count": 19
+  },
+  {
+   "name": "minecraft:acacia_fence",
+   "properties": "east=true;north=false;south=false;waterlogged=false;west=false",
+   "count": 19
+  },
+  {
+   "name": "minecraft:acacia_fence",
+   "properties": "east=false;north=false;south=false;waterlogged=false;west=true",
+   "count": 19
+  },
+  {
+   "name": "minecraft:lantern",
+   "properties": "hanging=false;waterlogged=false",
+   "count": 18
+  },
+  {
+   "name": "minecraft:pink_tulip",
+   "properties": "",
+   "count": 18
+  },
+  {
+   "name": "minecraft:birch_fence",
+   "properties": "east=false;north=false;south=false;waterlogged=false;west=true",
+   "count": 18
+  },
+  {
+   "name": "minecraft:dark_oak_fence",
+   "properties": "east=true;north=false;south=false;waterlogged=false;west=true",
+   "count": 18
+  },
+  {
+   "name": "minecraft:red_nether_brick_wall",
+   "properties": "east=none;north=low;south=none;up=true;waterlogged=false;west=low",
+   "count": 18
+  },
+  {
+   "name": "minecraft:dark_oak_button",
+   "properties": "face=wall;facing=west;powered=false",
+   "count": 18
+  },
+  {
+   "name": "minecraft:red_nether_brick_slab",
+   "properties": "type=top;waterlogged=false",
+   "count": 18
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=none;north=side;power=12;south=side;west=none",
+   "count": 18
+  },
+  {
+   "name": "minecraft:spawner",
+   "properties": "",
+   "count": 18
+  },
+  {
+   "name": "minecraft:redstone_lamp",
+   "properties": "lit=true",
+   "count": 18
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=none;north=side;power=13;south=side;west=none",
+   "count": 18
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=none;north=side;power=10;south=side;west=none",
+   "count": 18
+  },
+  {
+   "name": "minecraft:polished_blackstone_brick_stairs",
+   "properties": "facing=north;half=bottom;shape=straight;waterlogged=false",
+   "count": 17
+  },
+  {
+   "name": "minecraft:iron_bars",
+   "properties": "east=false;north=false;south=false;waterlogged=false;west=false",
+   "count": 16
+  },
+  {
+   "name": "minecraft:birch_door",
+   "properties": "facing=west;half=lower;hinge=right;open=true;powered=false",
+   "count": 16
+  },
+  {
+   "name": "minecraft:birch_door",
+   "properties": "facing=west;half=upper;hinge=right;open=true;powered=false",
+   "count": 16
+  },
+  {
+   "name": "minecraft:white_bed",
+   "properties": "facing=south;occupied=false;part=foot",
+   "count": 16
+  },
+  {
+   "name": "minecraft:white_bed",
+   "properties": "facing=south;occupied=false;part=head",
+   "count": 16
+  },
+  {
+   "name": "minecraft:oak_fence",
+   "properties": "east=false;north=false;south=true;waterlogged=false;west=true",
+   "count": 16
+  },
+  {
+   "name": "minecraft:oak_fence",
+   "properties": "east=true;north=false;south=true;waterlogged=false;west=false",
+   "count": 16
+  },
+  {
+   "name": "minecraft:cartography_table",
+   "properties": "",
+   "count": 16
+  },
+  {
+   "name": "minecraft:chain",
+   "properties": "axis=z;waterlogged=false",
+   "count": 16
+  },
+  {
+   "name": "minecraft:black_stained_glass_pane",
+   "properties": "east=true;north=true;south=true;waterlogged=false;west=true",
+   "count": 16
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=none;north=side;power=11;south=side;west=none",
+   "count": 16
+  },
+  {
+   "name": "minecraft:birch_fence",
+   "properties": "east=true;north=false;south=false;waterlogged=false;west=false",
+   "count": 15
+  },
+  {
+   "name": "minecraft:oak_wall_sign",
+   "properties": "facing=east;waterlogged=false",
+   "count": 15
+  },
+  {
+   "name": "minecraft:acacia_leaves",
+   "properties": "distance=7;persistent=true",
+   "count": 15
+  },
+  {
+   "name": "minecraft:lever",
+   "properties": "face=wall;facing=north;powered=false",
+   "count": 15
+  },
+  {
+   "name": "minecraft:smooth_quartz_stairs",
+   "properties": "facing=south;half=bottom;shape=straight;waterlogged=true",
+   "count": 15
+  },
+  {
+   "name": "minecraft:lime_glazed_terracotta",
+   "properties": "facing=east",
+   "count": 15
+  },
+  {
+   "name": "minecraft:polished_blackstone_button",
+   "properties": "face=wall;facing=east;powered=false",
+   "count": 15
+  },
+  {
+   "name": "minecraft:jungle_stairs",
+   "properties": "facing=east;half=bottom;shape=straight;waterlogged=false",
+   "count": 15
+  },
+  {
+   "name": "minecraft:jungle_stairs",
+   "properties": "facing=west;half=bottom;shape=straight;waterlogged=false",
+   "count": 15
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=none;north=side;power=9;south=side;west=none",
+   "count": 15
+  },
+  {
+   "name": "minecraft:orange_glazed_terracotta",
+   "properties": "facing=west",
+   "count": 15
+  },
+  {
+   "name": "minecraft:enchanting_table",
+   "properties": "",
+   "count": 14
+  },
+  {
+   "name": "minecraft:iron_door",
+   "properties": "facing=south;half=lower;hinge=right;open=true;powered=false",
+   "count": 14
+  },
+  {
+   "name": "minecraft:iron_door",
+   "properties": "facing=south;half=lower;hinge=left;open=true;powered=false",
+   "count": 14
+  },
+  {
+   "name": "minecraft:iron_door",
+   "properties": "facing=south;half=upper;hinge=right;open=true;powered=false",
+   "count": 14
+  },
+  {
+   "name": "minecraft:iron_door",
+   "properties": "facing=south;half=upper;hinge=left;open=true;powered=false",
+   "count": 14
+  },
+  {
+   "name": "minecraft:iron_door",
+   "properties": "facing=north;half=lower;hinge=right;open=false;powered=false",
+   "count": 14
+  },
+  {
+   "name": "minecraft:iron_door",
+   "properties": "facing=north;half=upper;hinge=right;open=false;powered=false",
+   "count": 14
+  },
+  {
+   "name": "minecraft:lime_glazed_terracotta",
+   "properties": "facing=west",
+   "count": 14
+  },
+  {
+   "name": "minecraft:birch_wall_sign",
+   "properties": "facing=west;waterlogged=false",
+   "count": 14
+  },
+  {
+   "name": "minecraft:dark_oak_wood",
+   "properties": "axis=y",
+   "count": 14
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=side;north=none;power=11;south=none;west=side",
+   "count": 14
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=side;north=none;power=10;south=none;west=side",
+   "count": 14
+  },
+  {
+   "name": "minecraft:crying_obsidian",
+   "properties": "",
+   "count": 14
+  },
+  {
+   "name": "minecraft:iron_trapdoor",
+   "properties": "facing=north;half=top;open=true;powered=false;waterlogged=false",
+   "count": 13
+  },
+  {
+   "name": "minecraft:glass_pane",
+   "properties": "east=true;north=false;south=true;waterlogged=false;west=false",
+   "count": 13
+  },
+  {
+   "name": "minecraft:oak_fence",
+   "properties": "east=true;north=true;south=false;waterlogged=false;west=true",
+   "count": 13
+  },
+  {
+   "name": "minecraft:black_stained_glass_pane",
+   "properties": "east=false;north=true;south=true;waterlogged=false;west=true",
+   "count": 13
+  },
+  {
+   "name": "minecraft:crimson_slab",
+   "properties": "type=double;waterlogged=false",
+   "count": 13
+  },
+  {
+   "name": "minecraft:nether_brick_fence",
+   "properties": "east=false;north=false;south=true;waterlogged=false;west=true",
+   "count": 13
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=side;north=none;power=12;south=none;west=side",
+   "count": 13
+  },
+  {
+   "name": "minecraft:end_stone_brick_stairs",
+   "properties": "facing=east;half=bottom;shape=straight;waterlogged=false",
+   "count": 13
+  },
+  {
+   "name": "minecraft:diorite_wall",
+   "properties": "east=none;north=none;south=none;up=true;waterlogged=false;west=none",
+   "count": 13
+  },
+  {
+   "name": "minecraft:command_block",
+   "properties": "conditional=false;facing=up",
+   "count": 13
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=none;north=side;power=7;south=side;west=none",
+   "count": 13
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=none;north=side;power=6;south=side;west=none",
+   "count": 13
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=side;north=none;power=13;south=none;west=side",
+   "count": 13
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=side;north=none;power=9;south=none;west=side",
+   "count": 13
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=none;north=side;power=0;south=side;west=none",
+   "count": 13
+  },
+  {
+   "name": "minecraft:oak_wall_sign",
+   "properties": "facing=west;waterlogged=false",
+   "count": 12
+  },
+  {
+   "name": "minecraft:iron_door",
+   "properties": "facing=south;half=lower;hinge=left;open=false;powered=false",
+   "count": 12
+  },
+  {
+   "name": "minecraft:iron_door",
+   "properties": "facing=south;half=upper;hinge=left;open=false;powered=false",
+   "count": 12
+  },
+  {
+   "name": "minecraft:spruce_door",
+   "properties": "facing=west;half=lower;hinge=left;open=false;powered=false",
+   "count": 12
+  },
+  {
+   "name": "minecraft:spruce_door",
+   "properties": "facing=west;half=upper;hinge=left;open=false;powered=false",
+   "count": 12
+  },
+  {
+   "name": "minecraft:black_stained_glass_pane",
+   "properties": "east=true;north=false;south=true;waterlogged=false;west=false",
+   "count": 12
+  },
+  {
+   "name": "minecraft:quartz_stairs",
+   "properties": "facing=south;half=bottom;shape=straight;waterlogged=true",
+   "count": 12
+  },
+  {
+   "name": "minecraft:redstone_block",
+   "properties": "",
+   "count": 12
+  },
+  {
+   "name": "minecraft:red_nether_brick_stairs",
+   "properties": "facing=south;half=bottom;shape=straight;waterlogged=false",
+   "count": 12
+  },
+  {
+   "name": "minecraft:red_nether_brick_slab",
+   "properties": "type=bottom;waterlogged=false",
+   "count": 12
+  },
+  {
+   "name": "minecraft:orange_tulip",
+   "properties": "",
+   "count": 12
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=none;north=side;power=8;south=side;west=none",
+   "count": 12
+  },
+  {
+   "name": "minecraft:nether_portal",
+   "properties": "axis=z",
+   "count": 12
+  },
+  {
+   "name": "minecraft:nether_portal",
+   "properties": "axis=x",
+   "count": 12
+  },
+  {
+   "name": "minecraft:white_wall_banner",
+   "properties": "facing=west",
+   "count": 11
+  },
+  {
+   "name": "minecraft:oak_leaves",
+   "properties": "distance=1;persistent=true",
+   "count": 11
+  },
+  {
+   "name": "minecraft:birch_fence",
+   "properties": "east=false;north=false;south=false;waterlogged=false;west=false",
+   "count": 11
+  },
+  {
+   "name": "minecraft:birch_door",
+   "properties": "facing=west;half=lower;hinge=left;open=true;powered=false",
+   "count": 11
+  },
+  {
+   "name": "minecraft:birch_door",
+   "properties": "facing=west;half=upper;hinge=left;open=true;powered=false",
+   "count": 11
+  },
+  {
+   "name": "minecraft:oak_fence",
+   "properties": "east=false;north=false;south=true;waterlogged=false;west=false",
+   "count": 11
+  },
+  {
+   "name": "minecraft:black_stained_glass_pane",
+   "properties": "east=true;north=true;south=false;waterlogged=false;west=false",
+   "count": 11
+  },
+  {
+   "name": "minecraft:polished_andesite_stairs",
+   "properties": "facing=west;half=bottom;shape=straight;waterlogged=false",
+   "count": 11
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=side;north=none;power=14;south=none;west=side",
+   "count": 11
+  },
+  {
+   "name": "minecraft:blackstone_stairs",
+   "properties": "facing=south;half=bottom;shape=straight;waterlogged=false",
+   "count": 11
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=side;north=none;power=7;south=none;west=side",
+   "count": 11
+  },
+  {
+   "name": "minecraft:creeper_wall_head",
+   "properties": "facing=south",
+   "count": 10
+  },
+  {
+   "name": "minecraft:iron_trapdoor",
+   "properties": "facing=west;half=top;open=false;powered=false;waterlogged=false",
+   "count": 10
+  },
+  {
+   "name": "minecraft:white_terracotta",
+   "properties": "",
+   "count": 10
+  },
+  {
+   "name": "minecraft:oak_fence",
+   "properties": "east=false;north=true;south=false;waterlogged=false;west=true",
+   "count": 10
+  },
+  {
+   "name": "minecraft:iron_door",
+   "properties": "facing=north;half=lower;hinge=left;open=false;powered=false",
+   "count": 10
+  },
+  {
+   "name": "minecraft:iron_door",
+   "properties": "facing=north;half=upper;hinge=left;open=false;powered=false",
+   "count": 10
+  },
+  {
+   "name": "minecraft:white_banner",
+   "properties": "rotation=12",
+   "count": 10
+  },
+  {
+   "name": "minecraft:lodestone",
+   "properties": "",
+   "count": 10
+  },
+  {
+   "name": "minecraft:glass_pane",
+   "properties": "east=true;north=true;south=false;waterlogged=false;west=false",
+   "count": 10
+  },
+  {
+   "name": "minecraft:red_nether_brick_stairs",
+   "properties": "facing=west;half=bottom;shape=straight;waterlogged=false",
+   "count": 10
+  },
+  {
+   "name": "minecraft:jungle_wall_sign",
+   "properties": "facing=west;waterlogged=false",
+   "count": 10
+  },
+  {
+   "name": "minecraft:repeater",
+   "properties": "delay=4;facing=west;locked=false;powered=true",
+   "count": 10
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=none;north=side;power=5;south=side;west=none",
+   "count": 10
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=none;north=side;power=4;south=side;west=none",
+   "count": 10
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=none;north=side;power=3;south=side;west=none",
+   "count": 10
+  },
+  {
+   "name": "minecraft:repeater",
+   "properties": "delay=1;facing=south;locked=false;powered=true",
+   "count": 10
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=side;north=none;power=8;south=none;west=side",
+   "count": 10
+  },
+  {
+   "name": "minecraft:nether_brick_fence",
+   "properties": "east=false;north=false;south=false;waterlogged=false;west=true",
+   "count": 10
+  },
+  {
+   "name": "minecraft:magenta_wall_banner",
+   "properties": "facing=north",
+   "count": 10
+  },
+  {
+   "name": "minecraft:magenta_wall_banner",
+   "properties": "facing=west",
+   "count": 10
+  },
+  {
+   "name": "minecraft:magenta_wall_banner",
+   "properties": "facing=east",
+   "count": 10
+  },
+  {
+   "name": "minecraft:magenta_wall_banner",
+   "properties": "facing=south",
+   "count": 10
+  },
+  {
+   "name": "minecraft:birch_door",
+   "properties": "facing=south;half=lower;hinge=right;open=false;powered=false",
+   "count": 9
+  },
+  {
+   "name": "minecraft:birch_door",
+   "properties": "facing=south;half=upper;hinge=right;open=false;powered=false",
+   "count": 9
+  },
+  {
+   "name": "minecraft:polished_blackstone_brick_stairs",
+   "properties": "facing=south;half=bottom;shape=straight;waterlogged=false",
+   "count": 9
+  },
+  {
+   "name": "minecraft:dark_oak_fence",
+   "properties": "east=true;north=false;south=true;waterlogged=false;west=true",
+   "count": 9
+  },
+  {
+   "name": "minecraft:polished_blackstone_button",
+   "properties": "face=wall;facing=south;powered=false",
+   "count": 9
+  },
+  {
+   "name": "minecraft:nether_brick_fence",
+   "properties": "east=true;north=true;south=false;waterlogged=false;west=false",
+   "count": 9
+  },
+  {
+   "name": "minecraft:end_portal_frame",
+   "properties": "eye=false;facing=north",
+   "count": 9
+  },
+  {
+   "name": "minecraft:dark_oak_leaves",
+   "properties": "distance=1;persistent=true",
+   "count": 9
+  },
+  {
+   "name": "minecraft:dark_oak_leaves",
+   "properties": "distance=2;persistent=true",
+   "count": 9
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=side;north=none;power=0;south=none;west=side",
+   "count": 9
+  },
+  {
+   "name": "minecraft:birch_door",
+   "properties": "facing=east;half=lower;hinge=left;open=true;powered=false",
+   "count": 8
+  },
+  {
+   "name": "minecraft:birch_door",
+   "properties": "facing=east;half=upper;hinge=left;open=true;powered=false",
+   "count": 8
+  },
+  {
+   "name": "minecraft:oak_stairs",
+   "properties": "facing=north;half=bottom;shape=straight;waterlogged=false",
+   "count": 8
+  },
+  {
+   "name": "minecraft:jungle_fence",
+   "properties": "east=true;north=true;south=true;waterlogged=false;west=true",
+   "count": 8
+  },
+  {
+   "name": "minecraft:birch_wall_sign",
+   "properties": "facing=east;waterlogged=false",
+   "count": 8
+  },
+  {
+   "name": "minecraft:oak_fence",
+   "properties": "east=true;north=true;south=false;waterlogged=false;west=false",
+   "count": 8
+  },
+  {
+   "name": "minecraft:oak_fence",
+   "properties": "east=true;north=false;south=false;waterlogged=false;west=true",
+   "count": 8
+  },
+  {
+   "name": "minecraft:red_carpet",
+   "properties": "",
+   "count": 8
+  },
+  {
+   "name": "minecraft:lever",
+   "properties": "face=wall;facing=east;powered=false",
+   "count": 8
+  },
+  {
+   "name": "minecraft:black_stained_glass_pane",
+   "properties": "east=false;north=false;south=false;waterlogged=false;west=true",
+   "count": 8
+  },
+  {
+   "name": "minecraft:campfire",
+   "properties": "facing=north;lit=false;signal_fire=false;waterlogged=false",
+   "count": 8
+  },
+  {
+   "name": "minecraft:chest",
+   "properties": "facing=east;type=left;waterlogged=false",
+   "count": 8
+  },
+  {
+   "name": "minecraft:chest",
+   "properties": "facing=east;type=right;waterlogged=false",
+   "count": 8
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=side;north=none;power=15;south=none;west=side",
+   "count": 8
+  },
+  {
+   "name": "minecraft:dark_oak_leaves",
+   "properties": "distance=3;persistent=true",
+   "count": 8
+  },
+  {
+   "name": "minecraft:prismarine_bricks",
+   "properties": "",
+   "count": 8
+  },
+  {
+   "name": "minecraft:prismarine_brick_slab",
+   "properties": "type=double;waterlogged=false",
+   "count": 8
+  },
+  {
+   "name": "minecraft:lectern",
+   "properties": "facing=east;has_book=false;powered=false",
+   "count": 8
+  },
+  {
+   "name": "minecraft:repeater",
+   "properties": "delay=4;facing=south;locked=false;powered=true",
+   "count": 8
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=side;north=none;power=15;south=side;west=none",
+   "count": 8
+  },
+  {
+   "name": "minecraft:white_wall_banner",
+   "properties": "facing=east",
+   "count": 7
+  },
+  {
+   "name": "minecraft:oak_stairs",
+   "properties": "facing=east;half=bottom;shape=straight;waterlogged=false",
+   "count": 7
+  },
+  {
+   "name": "minecraft:stone_button",
+   "properties": "face=wall;facing=north;powered=false",
+   "count": 7
+  },
+  {
+   "name": "minecraft:black_stained_glass_pane",
+   "properties": "east=false;north=false;south=true;waterlogged=false;west=true",
+   "count": 7
+  },
+  {
+   "name": "minecraft:iron_door",
+   "properties": "facing=south;half=lower;hinge=right;open=false;powered=false",
+   "count": 7
+  },
+  {
+   "name": "minecraft:iron_door",
+   "properties": "facing=south;half=upper;hinge=right;open=false;powered=false",
+   "count": 7
+  },
+  {
+   "name": "minecraft:spruce_stairs",
+   "properties": "facing=north;half=bottom;shape=straight;waterlogged=false",
+   "count": 7
+  },
+  {
+   "name": "minecraft:black_stained_glass_pane",
+   "properties": "east=true;north=false;south=false;waterlogged=false;west=false",
+   "count": 7
+  },
+  {
+   "name": "minecraft:spruce_stairs",
+   "properties": "facing=south;half=bottom;shape=straight;waterlogged=false",
+   "count": 7
+  },
+  {
+   "name": "minecraft:red_nether_brick_stairs",
+   "properties": "facing=east;half=top;shape=straight;waterlogged=false",
+   "count": 7
+  },
+  {
+   "name": "minecraft:red_nether_brick_stairs",
+   "properties": "facing=east;half=bottom;shape=straight;waterlogged=false",
+   "count": 7
+  },
+  {
+   "name": "minecraft:command_block",
+   "properties": "conditional=false;facing=east",
+   "count": 7
+  },
+  {
+   "name": "minecraft:scaffolding",
+   "properties": "bottom=false;distance=1;waterlogged=false",
+   "count": 7
+  },
+  {
+   "name": "minecraft:birch_leaves",
+   "properties": "distance=6;persistent=true",
+   "count": 7
+  },
+  {
+   "name": "minecraft:repeater",
+   "properties": "delay=1;facing=west;locked=false;powered=true",
+   "count": 7
+  },
+  {
+   "name": "minecraft:red_nether_brick_wall",
+   "properties": "east=low;north=low;south=none;up=true;waterlogged=false;west=none",
+   "count": 7
+  },
+  {
+   "name": "minecraft:red_nether_brick_wall",
+   "properties": "east=none;north=none;south=low;up=true;waterlogged=false;west=low",
+   "count": 7
+  },
+  {
+   "name": "minecraft:nether_brick_fence",
+   "properties": "east=true;north=false;south=false;waterlogged=false;west=false",
+   "count": 7
+  },
+  {
+   "name": "minecraft:birch_stairs",
+   "properties": "facing=north;half=bottom;shape=straight;waterlogged=false",
+   "count": 6
+  },
+  {
+   "name": "minecraft:iron_door",
+   "properties": "facing=east;half=lower;hinge=right;open=false;powered=false",
+   "count": 6
+  },
+  {
+   "name": "minecraft:iron_door",
+   "properties": "facing=east;half=upper;hinge=right;open=false;powered=false",
+   "count": 6
+  },
+  {
+   "name": "minecraft:white_shulker_box",
+   "properties": "facing=east",
+   "count": 6
+  },
+  {
+   "name": "minecraft:jungle_fence",
+   "properties": "east=true;north=true;south=true;waterlogged=false;west=false",
+   "count": 6
+  },
+  {
+   "name": "minecraft:jungle_fence",
+   "properties": "east=false;north=true;south=true;waterlogged=false;west=true",
+   "count": 6
+  },
+  {
+   "name": "minecraft:acacia_leaves",
+   "properties": "distance=6;persistent=true",
+   "count": 6
+  },
+  {
+   "name": "minecraft:command_block",
+   "properties": "conditional=false;facing=south",
+   "count": 6
+  },
+  {
+   "name": "minecraft:water",
+   "properties": "level=8",
+   "count": 6
+  },
+  {
+   "name": "minecraft:oak_fence",
+   "properties": "east=false;north=true;south=false;waterlogged=false;west=false",
+   "count": 6
+  },
+  {
+   "name": "minecraft:crimson_door",
+   "properties": "facing=east;half=lower;hinge=left;open=false;powered=false",
+   "count": 6
+  },
+  {
+   "name": "minecraft:crimson_door",
+   "properties": "facing=east;half=upper;hinge=left;open=false;powered=false",
+   "count": 6
+  },
+  {
+   "name": "minecraft:smooth_quartz_stairs",
+   "properties": "facing=north;half=bottom;shape=straight;waterlogged=true",
+   "count": 6
+  },
+  {
+   "name": "minecraft:orange_stained_glass_pane",
+   "properties": "east=false;north=true;south=false;waterlogged=false;west=false",
+   "count": 6
+  },
+  {
+   "name": "minecraft:orange_stained_glass_pane",
+   "properties": "east=false;north=false;south=false;waterlogged=false;west=false",
+   "count": 6
+  },
+  {
+   "name": "minecraft:orange_stained_glass_pane",
+   "properties": "east=false;north=false;south=true;waterlogged=false;west=false",
+   "count": 6
+  },
+  {
+   "name": "minecraft:prismarine_stairs",
+   "properties": "facing=west;half=top;shape=straight;waterlogged=false",
+   "count": 6
+  },
+  {
+   "name": "minecraft:chest",
+   "properties": "facing=north;type=left;waterlogged=false",
+   "count": 6
+  },
+  {
+   "name": "minecraft:chest",
+   "properties": "facing=north;type=right;waterlogged=false",
+   "count": 6
+  },
+  {
+   "name": "minecraft:chest",
+   "properties": "facing=west;type=right;waterlogged=false",
+   "count": 6
+  },
+  {
+   "name": "minecraft:chest",
+   "properties": "facing=west;type=left;waterlogged=false",
+   "count": 6
+  },
+  {
+   "name": "minecraft:spruce_leaves",
+   "properties": "distance=7;persistent=false",
+   "count": 6
+  },
+  {
+   "name": "minecraft:diorite_wall",
+   "properties": "east=low;north=none;south=none;up=false;waterlogged=false;west=low",
+   "count": 6
+  },
+  {
+   "name": "minecraft:diorite_wall",
+   "properties": "east=none;north=low;south=low;up=false;waterlogged=false;west=none",
+   "count": 6
+  },
+  {
+   "name": "minecraft:scaffolding",
+   "properties": "bottom=true;distance=1;waterlogged=false",
+   "count": 6
+  },
+  {
+   "name": "minecraft:hopper",
+   "properties": "enabled=false;facing=down",
+   "count": 6
+  },
+  {
+   "name": "minecraft:repeater",
+   "properties": "delay=1;facing=east;locked=false;powered=false",
+   "count": 6
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=side;north=none;power=14;south=side;west=none",
+   "count": 6
+  },
+  {
+   "name": "minecraft:repeater",
+   "properties": "delay=1;facing=north;locked=false;powered=true",
+   "count": 6
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=side;north=none;power=6;south=none;west=side",
+   "count": 6
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=side;north=none;power=0;south=side;west=side",
+   "count": 6
+  },
+  {
+   "name": "minecraft:red_nether_brick_wall",
+   "properties": "east=none;north=low;south=low;up=false;waterlogged=false;west=none",
+   "count": 6
+  },
+  {
+   "name": "minecraft:red_nether_brick_wall",
+   "properties": "east=low;north=none;south=none;up=false;waterlogged=false;west=low",
+   "count": 6
+  },
+  {
+   "name": "minecraft:ladder",
+   "properties": "facing=north;waterlogged=false",
+   "count": 6
+  },
+  {
+   "name": "minecraft:chest",
+   "properties": "facing=south;type=single;waterlogged=false",
+   "count": 5
+  },
+  {
+   "name": "minecraft:wall_torch",
+   "properties": "facing=east",
+   "count": 5
+  },
+  {
+   "name": "minecraft:wall_torch",
+   "properties": "facing=west",
+   "count": 5
+  },
+  {
+   "name": "minecraft:oak_door",
+   "properties": "facing=south;half=lower;hinge=left;open=false;powered=false",
+   "count": 5
+  },
+  {
+   "name": "minecraft:oak_door",
+   "properties": "facing=south;half=upper;hinge=left;open=false;powered=false",
+   "count": 5
+  },
+  {
+   "name": "minecraft:black_stained_glass",
+   "properties": "",
+   "count": 5
+  },
+  {
+   "name": "minecraft:nether_brick_stairs",
+   "properties": "facing=east;half=bottom;shape=straight;waterlogged=false",
+   "count": 5
+  },
+  {
+   "name": "minecraft:black_stained_glass_pane",
+   "properties": "east=true;north=false;south=false;waterlogged=false;west=true",
+   "count": 5
+  },
+  {
+   "name": "minecraft:anvil",
+   "properties": "facing=west",
+   "count": 5
+  },
+  {
+   "name": "minecraft:yellow_wall_banner",
+   "properties": "facing=east",
+   "count": 5
+  },
+  {
+   "name": "minecraft:red_nether_brick_stairs",
+   "properties": "facing=west;half=top;shape=straight;waterlogged=false",
+   "count": 5
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=side;north=side;power=13;south=none;west=side",
+   "count": 5
+  },
+  {
+   "name": "minecraft:fletching_table",
+   "properties": "",
+   "count": 5
+  },
+  {
+   "name": "minecraft:jungle_leaves",
+   "properties": "distance=5;persistent=true",
+   "count": 5
+  },
+  {
+   "name": "minecraft:jungle_leaves",
+   "properties": "distance=4;persistent=true",
+   "count": 5
+  },
+  {
+   "name": "minecraft:birch_leaves",
+   "properties": "distance=5;persistent=true",
+   "count": 5
+  },
+  {
+   "name": "minecraft:ladder",
+   "properties": "facing=south;waterlogged=false",
+   "count": 5
+  },
+  {
+   "name": "minecraft:chest",
+   "properties": "facing=west;type=single;waterlogged=false",
+   "count": 5
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=side;north=none;power=4;south=none;west=side",
+   "count": 5
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=side;north=none;power=5;south=none;west=side",
+   "count": 5
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=side;north=side;power=0;south=none;west=side",
+   "count": 5
+  },
+  {
+   "name": "minecraft:bone_block",
+   "properties": "axis=y",
+   "count": 5
+  },
+  {
+   "name": "minecraft:repeating_command_block",
+   "properties": "conditional=false;facing=east",
+   "count": 4
+  },
+  {
+   "name": "minecraft:crimson_fence",
+   "properties": "east=false;north=false;south=false;waterlogged=false;west=true",
+   "count": 4
+  },
+  {
+   "name": "minecraft:observer",
+   "properties": "facing=south;powered=false",
+   "count": 4
+  },
+  {
+   "name": "minecraft:red_stained_glass_pane",
+   "properties": "east=false;north=false;south=true;waterlogged=false;west=false",
+   "count": 4
+  },
+  {
+   "name": "minecraft:red_bed",
+   "properties": "facing=east;occupied=false;part=foot",
+   "count": 4
+  },
+  {
+   "name": "minecraft:red_bed",
+   "properties": "facing=east;occupied=false;part=head",
+   "count": 4
+  },
+  {
+   "name": "minecraft:oak_stairs",
+   "properties": "facing=south;half=bottom;shape=straight;waterlogged=false",
+   "count": 4
+  },
+  {
+   "name": "minecraft:polished_basalt",
+   "properties": "axis=y",
+   "count": 4
+  },
+  {
+   "name": "minecraft:oak_fence",
+   "properties": "east=true;north=false;south=false;waterlogged=false;west=false",
+   "count": 4
+  },
+  {
+   "name": "minecraft:hopper",
+   "properties": "enabled=false;facing=south",
+   "count": 4
+  },
+  {
+   "name": "minecraft:orange_stained_glass_pane",
+   "properties": "east=true;north=true;south=true;waterlogged=false;west=false",
+   "count": 4
+  },
+  {
+   "name": "minecraft:oak_sign",
+   "properties": "rotation=4;waterlogged=false",
+   "count": 4
+  },
+  {
+   "name": "minecraft:oak_sign",
+   "properties": "rotation=8;waterlogged=false",
+   "count": 4
+  },
+  {
+   "name": "minecraft:warped_wall_sign",
+   "properties": "facing=north;waterlogged=false",
+   "count": 4
+  },
+  {
+   "name": "minecraft:composter",
+   "properties": "level=8",
+   "count": 4
+  },
+  {
+   "name": "minecraft:piston",
+   "properties": "extended=true;facing=up",
+   "count": 4
+  },
+  {
+   "name": "minecraft:piston_head",
+   "properties": "facing=up;short=false;type=normal",
+   "count": 4
+  },
+  {
+   "name": "minecraft:stone_stairs",
+   "properties": "facing=west;half=bottom;shape=straight;waterlogged=false",
+   "count": 4
+  },
+  {
+   "name": "minecraft:quartz_stairs",
+   "properties": "facing=north;half=bottom;shape=straight;waterlogged=true",
+   "count": 4
+  },
+  {
+   "name": "minecraft:chest",
+   "properties": "facing=north;type=single;waterlogged=false",
+   "count": 4
+  },
+  {
+   "name": "minecraft:tripwire",
+   "properties": "attached=false;disarmed=false;east=false;north=false;powered=false;south=false;west=false",
+   "count": 4
+  },
+  {
+   "name": "minecraft:birch_leaves",
+   "properties": "distance=2;persistent=true",
+   "count": 4
+  },
+  {
+   "name": "minecraft:spruce_planks",
+   "properties": "",
+   "count": 4
+  },
+  {
+   "name": "minecraft:light_gray_wall_banner",
+   "properties": "facing=west",
+   "count": 4
+  },
+  {
+   "name": "minecraft:dark_oak_leaves",
+   "properties": "distance=4;persistent=true",
+   "count": 4
+  },
+  {
+   "name": "minecraft:loom",
+   "properties": "facing=west",
+   "count": 4
+  },
+  {
+   "name": "minecraft:snow",
+   "properties": "layers=1",
+   "count": 4
+  },
+  {
+   "name": "minecraft:prismarine_brick_stairs",
+   "properties": "facing=east;half=bottom;shape=straight;waterlogged=false",
+   "count": 4
+  },
+  {
+   "name": "minecraft:prismarine_brick_stairs",
+   "properties": "facing=west;half=bottom;shape=straight;waterlogged=false",
+   "count": 4
+  },
+  {
+   "name": "minecraft:dark_oak_trapdoor",
+   "properties": "facing=north;half=top;open=true;powered=false;waterlogged=false",
+   "count": 4
+  },
+  {
+   "name": "minecraft:acacia_leaves",
+   "properties": "distance=7;persistent=false",
+   "count": 4
+  },
+  {
+   "name": "minecraft:dark_oak_fence",
+   "properties": "east=true;north=false;south=true;waterlogged=false;west=false",
+   "count": 4
+  },
+  {
+   "name": "minecraft:dark_oak_fence",
+   "properties": "east=false;north=false;south=true;waterlogged=false;west=true",
+   "count": 4
+  },
+  {
+   "name": "minecraft:dark_oak_fence",
+   "properties": "east=true;north=true;south=false;waterlogged=false;west=false",
+   "count": 4
+  },
+  {
+   "name": "minecraft:dark_oak_fence",
+   "properties": "east=false;north=true;south=false;waterlogged=false;west=true",
+   "count": 4
+  },
+  {
+   "name": "minecraft:vine",
+   "properties": "east=true;north=true;south=false;up=false;west=false",
+   "count": 4
+  },
+  {
+   "name": "minecraft:birch_leaves",
+   "properties": "distance=4;persistent=true",
+   "count": 4
+  },
+  {
+   "name": "minecraft:acacia_fence",
+   "properties": "east=false;north=true;south=true;waterlogged=false;west=true",
+   "count": 4
+  },
+  {
+   "name": "minecraft:stone_pressure_plate",
+   "properties": "powered=false",
+   "count": 4
+  },
+  {
+   "name": "minecraft:acacia_fence",
+   "properties": "east=true;north=true;south=true;waterlogged=false;west=false",
+   "count": 4
+  },
+  {
+   "name": "minecraft:repeater",
+   "properties": "delay=1;facing=east;locked=false;powered=true",
+   "count": 4
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=side;north=none;power=3;south=none;west=side",
+   "count": 4
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=none;north=side;power=15;south=none;west=side",
+   "count": 4
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=side;north=side;power=8;south=none;west=none",
+   "count": 4
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=side;north=side;power=12;south=none;west=side",
+   "count": 4
+  },
+  {
+   "name": "minecraft:repeater",
+   "properties": "delay=4;facing=north;locked=false;powered=false",
+   "count": 4
+  },
+  {
+   "name": "minecraft:repeater",
+   "properties": "delay=4;facing=east;locked=false;powered=false",
+   "count": 4
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=none;north=up;power=5;south=side;west=none",
+   "count": 4
+  },
+  {
+   "name": "minecraft:end_gateway",
+   "properties": "",
+   "count": 4
+  },
+  {
+   "name": "minecraft:repeating_command_block",
+   "properties": "conditional=false;facing=north",
+   "count": 3
+  },
+  {
+   "name": "minecraft:wall_torch",
+   "properties": "facing=south",
+   "count": 3
+  },
+  {
+   "name": "minecraft:wall_torch",
+   "properties": "facing=north",
+   "count": 3
+  },
+  {
+   "name": "minecraft:glass_pane",
+   "properties": "east=false;north=true;south=false;waterlogged=false;west=true",
+   "count": 3
+  },
+  {
+   "name": "minecraft:smooth_red_sandstone_stairs",
+   "properties": "facing=east;half=bottom;shape=straight;waterlogged=false",
+   "count": 3
+  },
+  {
+   "name": "minecraft:iron_door",
+   "properties": "facing=east;half=lower;hinge=left;open=true;powered=false",
+   "count": 3
+  },
+  {
+   "name": "minecraft:iron_door",
+   "properties": "facing=east;half=lower;hinge=right;open=true;powered=false",
+   "count": 3
+  },
+  {
+   "name": "minecraft:iron_door",
+   "properties": "facing=east;half=upper;hinge=left;open=true;powered=false",
+   "count": 3
+  },
+  {
+   "name": "minecraft:iron_door",
+   "properties": "facing=east;half=upper;hinge=right;open=true;powered=false",
+   "count": 3
+  },
+  {
+   "name": "minecraft:stone_brick_slab",
+   "properties": "type=double;waterlogged=false",
+   "count": 3
+  },
+  {
+   "name": "minecraft:iron_trapdoor",
+   "properties": "facing=north;half=bottom;open=false;powered=false;waterlogged=false",
+   "count": 3
+  },
+  {
+   "name": "minecraft:red_nether_brick_wall",
+   "properties": "east=none;north=none;south=tall;up=true;waterlogged=false;west=none",
+   "count": 3
+  },
+  {
+   "name": "minecraft:brick_stairs",
+   "properties": "facing=east;half=top;shape=straight;waterlogged=false",
+   "count": 3
+  },
+  {
+   "name": "minecraft:brick_stairs",
+   "properties": "facing=west;half=top;shape=straight;waterlogged=false",
+   "count": 3
+  },
+  {
+   "name": "minecraft:chain_command_block",
+   "properties": "conditional=true;facing=east",
+   "count": 3
+  },
+  {
+   "name": "minecraft:brick_stairs",
+   "properties": "facing=north;half=top;shape=straight;waterlogged=false",
+   "count": 3
+  },
+  {
+   "name": "minecraft:birch_slab",
+   "properties": "type=top;waterlogged=true",
+   "count": 3
+  },
+  {
+   "name": "minecraft:potted_blue_orchid",
+   "properties": "",
+   "count": 3
+  },
+  {
+   "name": "minecraft:birch_trapdoor",
+   "properties": "facing=east;half=top;open=true;powered=false;waterlogged=false",
+   "count": 3
+  },
+  {
+   "name": "minecraft:crimson_door",
+   "properties": "facing=east;half=lower;hinge=right;open=false;powered=false",
+   "count": 3
+  },
+  {
+   "name": "minecraft:crimson_door",
+   "properties": "facing=east;half=upper;hinge=right;open=false;powered=false",
+   "count": 3
+  },
+  {
+   "name": "minecraft:polished_blackstone_slab",
+   "properties": "type=bottom;waterlogged=false",
+   "count": 3
+  },
+  {
+   "name": "minecraft:blackstone_stairs",
+   "properties": "facing=east;half=bottom;shape=straight;waterlogged=false",
+   "count": 3
+  },
+  {
+   "name": "minecraft:smooth_quartz_stairs",
+   "properties": "facing=east;half=bottom;shape=straight;waterlogged=true",
+   "count": 3
+  },
+  {
+   "name": "minecraft:crimson_trapdoor",
+   "properties": "facing=west;half=top;open=true;powered=false;waterlogged=false",
+   "count": 3
+  },
+  {
+   "name": "minecraft:lever",
+   "properties": "face=wall;facing=west;powered=false",
+   "count": 3
+  },
+  {
+   "name": "minecraft:anvil",
+   "properties": "facing=east",
+   "count": 3
+  },
+  {
+   "name": "minecraft:lime_glazed_terracotta",
+   "properties": "facing=north",
+   "count": 3
+  },
+  {
+   "name": "minecraft:spruce_door",
+   "properties": "facing=south;half=lower;hinge=left;open=true;powered=false",
+   "count": 3
+  },
+  {
+   "name": "minecraft:spruce_door",
+   "properties": "facing=south;half=upper;hinge=left;open=true;powered=false",
+   "count": 3
+  },
+  {
+   "name": "minecraft:spruce_leaves",
+   "properties": "distance=1;persistent=true",
+   "count": 3
+  },
+  {
+   "name": "minecraft:birch_leaves",
+   "properties": "distance=3;persistent=true",
+   "count": 3
+  },
+  {
+   "name": "minecraft:spruce_leaves",
+   "properties": "distance=3;persistent=true",
+   "count": 3
+  },
+  {
+   "name": "minecraft:comparator",
+   "properties": "facing=south;mode=compare;powered=true",
+   "count": 3
+  },
+  {
+   "name": "minecraft:comparator",
+   "properties": "facing=north;mode=compare;powered=true",
+   "count": 3
+  },
+  {
+   "name": "minecraft:hopper",
+   "properties": "enabled=false;facing=north",
+   "count": 3
+  },
+  {
+   "name": "minecraft:crimson_trapdoor",
+   "properties": "facing=south;half=bottom;open=false;powered=false;waterlogged=false",
+   "count": 3
+  },
+  {
+   "name": "minecraft:dark_oak_leaves",
+   "properties": "distance=6;persistent=false",
+   "count": 3
+  },
+  {
+   "name": "minecraft:glass_pane",
+   "properties": "east=false;north=false;south=false;waterlogged=false;west=false",
+   "count": 3
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=none;north=side;power=0;south=side;west=side",
+   "count": 3
+  },
+  {
+   "name": "minecraft:chest",
+   "properties": "facing=east;type=single;waterlogged=false",
+   "count": 3
+  },
+  {
+   "name": "minecraft:light_blue_wool",
+   "properties": "",
+   "count": 3
+  },
+  {
+   "name": "minecraft:piston",
+   "properties": "extended=false;facing=east",
+   "count": 3
+  },
+  {
+   "name": "minecraft:birch_fence",
+   "properties": "east=false;north=true;south=false;waterlogged=false;west=true",
+   "count": 3
+  },
+  {
+   "name": "minecraft:tripwire",
+   "properties": "attached=true;disarmed=false;east=false;north=false;powered=false;south=false;west=false",
+   "count": 3
+  },
+  {
+   "name": "minecraft:piston",
+   "properties": "extended=false;facing=west",
+   "count": 3
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=side;north=side;power=12;south=side;west=none",
+   "count": 3
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=up;north=none;power=10;south=none;west=side",
+   "count": 3
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=none;north=up;power=9;south=side;west=none",
+   "count": 3
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=none;north=up;power=11;south=side;west=none",
+   "count": 3
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=side;north=none;power=13;south=side;west=side",
+   "count": 3
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=none;north=side;power=0;south=none;west=side",
+   "count": 3
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=side;north=side;power=15;south=none;west=none",
+   "count": 3
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=none;north=side;power=2;south=side;west=none",
+   "count": 3
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=side;north=side;power=14;south=none;west=side",
+   "count": 3
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=none;north=none;power=4;south=side;west=none",
+   "count": 3
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=side;north=side;power=11;south=none;west=none",
+   "count": 3
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=none;north=side;power=15;south=side;west=side",
+   "count": 3
+  },
+  {
+   "name": "minecraft:repeating_command_block",
+   "properties": "conditional=false;facing=down",
+   "count": 2
+  },
+  {
+   "name": "minecraft:repeating_command_block",
+   "properties": "conditional=false;facing=south",
+   "count": 2
+  },
+  {
+   "name": "minecraft:bee_nest",
+   "properties": "facing=south;honey_level=0",
+   "count": 2
+  },
+  {
+   "name": "minecraft:birch_stairs",
+   "properties": "facing=south;half=bottom;shape=straight;waterlogged=false",
+   "count": 2
+  },
+  {
+   "name": "minecraft:smooth_red_sandstone_stairs",
+   "properties": "facing=west;half=bottom;shape=straight;waterlogged=false",
+   "count": 2
+  },
+  {
+   "name": "minecraft:red_nether_brick_wall",
+   "properties": "east=none;north=tall;south=tall;up=true;waterlogged=false;west=none",
+   "count": 2
+  },
+  {
+   "name": "minecraft:light_gray_stained_glass_pane",
+   "properties": "east=false;north=false;south=true;waterlogged=false;west=true",
+   "count": 2
+  },
+  {
+   "name": "minecraft:chiseled_polished_blackstone",
+   "properties": "",
+   "count": 2
+  },
+  {
+   "name": "minecraft:lectern",
+   "properties": "facing=west;has_book=false;powered=false",
+   "count": 2
+  },
+  {
+   "name": "minecraft:light_gray_stained_glass_pane",
+   "properties": "east=false;north=true;south=true;waterlogged=false;west=true",
+   "count": 2
+  },
+  {
+   "name": "minecraft:white_stained_glass",
+   "properties": "",
+   "count": 2
+  },
+  {
+   "name": "minecraft:blackstone_slab",
+   "properties": "type=top;waterlogged=false",
+   "count": 2
+  },
+  {
+   "name": "minecraft:blackstone_stairs",
+   "properties": "facing=east;half=top;shape=straight;waterlogged=false",
+   "count": 2
+  },
+  {
+   "name": "minecraft:blackstone_stairs",
+   "properties": "facing=south;half=top;shape=straight;waterlogged=false",
+   "count": 2
+  },
+  {
+   "name": "minecraft:acacia_fence",
+   "properties": "east=true;north=true;south=false;waterlogged=false;west=false",
+   "count": 2
+  },
+  {
+   "name": "minecraft:birch_button",
+   "properties": "face=wall;facing=north;powered=false",
+   "count": 2
+  },
+  {
+   "name": "minecraft:anvil",
+   "properties": "facing=south",
+   "count": 2
+  },
+  {
+   "name": "minecraft:oak_sign",
+   "properties": "rotation=13;waterlogged=false",
+   "count": 2
+  },
+  {
+   "name": "minecraft:iron_trapdoor",
+   "properties": "facing=north;half=top;open=false;powered=false;waterlogged=false",
+   "count": 2
+  },
+  {
+   "name": "minecraft:prismarine_stairs",
+   "properties": "facing=west;half=bottom;shape=straight;waterlogged=false",
+   "count": 2
+  },
+  {
+   "name": "minecraft:oak_sign",
+   "properties": "rotation=12;waterlogged=false",
+   "count": 2
+  },
+  {
+   "name": "minecraft:oak_trapdoor",
+   "properties": "facing=east;half=top;open=true;powered=false;waterlogged=false",
+   "count": 2
+  },
+  {
+   "name": "minecraft:birch_slab",
+   "properties": "type=double;waterlogged=false",
+   "count": 2
+  },
+  {
+   "name": "minecraft:yellow_wall_banner",
+   "properties": "facing=south",
+   "count": 2
+  },
+  {
+   "name": "minecraft:brown_bed",
+   "properties": "facing=east;occupied=false;part=foot",
+   "count": 2
+  },
+  {
+   "name": "minecraft:brown_bed",
+   "properties": "facing=east;occupied=false;part=head",
+   "count": 2
+  },
+  {
+   "name": "minecraft:stone_slab",
+   "properties": "type=double;waterlogged=false",
+   "count": 2
+  },
+  {
+   "name": "minecraft:iron_trapdoor",
+   "properties": "facing=west;half=bottom;open=false;powered=false;waterlogged=false",
+   "count": 2
+  },
+  {
+   "name": "minecraft:red_nether_brick_slab",
+   "properties": "type=double;waterlogged=false",
+   "count": 2
+  },
+  {
+   "name": "minecraft:spruce_leaves",
+   "properties": "distance=2;persistent=true",
+   "count": 2
+  },
+  {
+   "name": "minecraft:birch_sapling",
+   "properties": "stage=1",
+   "count": 2
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=side;north=side;power=11;south=side;west=none",
+   "count": 2
+  },
+  {
+   "name": "minecraft:sticky_piston",
+   "properties": "extended=true;facing=south",
+   "count": 2
+  },
+  {
+   "name": "minecraft:piston_head",
+   "properties": "facing=south;short=false;type=sticky",
+   "count": 2
+  },
+  {
+   "name": "minecraft:hopper",
+   "properties": "enabled=true;facing=north",
+   "count": 2
+  },
+  {
+   "name": "minecraft:sticky_piston",
+   "properties": "extended=false;facing=north",
+   "count": 2
+  },
+  {
+   "name": "minecraft:hopper",
+   "properties": "enabled=true;facing=south",
+   "count": 2
+  },
+  {
+   "name": "minecraft:iron_trapdoor",
+   "properties": "facing=east;half=bottom;open=true;powered=true;waterlogged=false",
+   "count": 2
+  },
+  {
+   "name": "minecraft:stone_brick_wall",
+   "properties": "east=none;north=tall;south=tall;up=false;waterlogged=false;west=none",
+   "count": 2
+  },
+  {
+   "name": "minecraft:crimson_fence",
+   "properties": "east=true;north=false;south=false;waterlogged=false;west=false",
+   "count": 2
+  },
+  {
+   "name": "minecraft:diorite_stairs",
+   "properties": "facing=north;half=bottom;shape=straight;waterlogged=false",
+   "count": 2
+  },
+  {
+   "name": "minecraft:snow",
+   "properties": "layers=3",
+   "count": 2
+  },
+  {
+   "name": "minecraft:snow",
+   "properties": "layers=2",
+   "count": 2
+  },
+  {
+   "name": "minecraft:snow",
+   "properties": "layers=4",
+   "count": 2
+  },
+  {
+   "name": "minecraft:dark_oak_door",
+   "properties": "facing=north;half=lower;hinge=left;open=false;powered=false",
+   "count": 2
+  },
+  {
+   "name": "minecraft:dark_oak_door",
+   "properties": "facing=north;half=lower;hinge=right;open=false;powered=false",
+   "count": 2
+  },
+  {
+   "name": "minecraft:dark_oak_door",
+   "properties": "facing=north;half=upper;hinge=left;open=false;powered=false",
+   "count": 2
+  },
+  {
+   "name": "minecraft:dark_oak_door",
+   "properties": "facing=north;half=upper;hinge=right;open=false;powered=false",
+   "count": 2
+  },
+  {
+   "name": "minecraft:jungle_door",
+   "properties": "facing=west;half=lower;hinge=left;open=false;powered=false",
+   "count": 2
+  },
+  {
+   "name": "minecraft:jungle_door",
+   "properties": "facing=west;half=upper;hinge=left;open=false;powered=false",
+   "count": 2
+  },
+  {
+   "name": "minecraft:end_stone_brick_stairs",
+   "properties": "facing=south;half=bottom;shape=straight;waterlogged=false",
+   "count": 2
+  },
+  {
+   "name": "minecraft:end_stone_brick_slab",
+   "properties": "type=double;waterlogged=false",
+   "count": 2
+  },
+  {
+   "name": "minecraft:diorite_wall",
+   "properties": "east=none;north=tall;south=none;up=true;waterlogged=false;west=none",
+   "count": 2
+  },
+  {
+   "name": "minecraft:light_gray_wool",
+   "properties": "",
+   "count": 2
+  },
+  {
+   "name": "minecraft:campfire",
+   "properties": "facing=west;lit=true;signal_fire=false;waterlogged=false",
+   "count": 2
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=side;north=side;power=4;south=side;west=side",
+   "count": 2
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=side;north=side;power=3;south=side;west=side",
+   "count": 2
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=side;north=side;power=2;south=side;west=side",
+   "count": 2
+  },
+  {
+   "name": "minecraft:repeater",
+   "properties": "delay=1;facing=west;locked=false;powered=false",
+   "count": 2
+  },
+  {
+   "name": "minecraft:tripwire_hook",
+   "properties": "attached=true;facing=south;powered=false",
+   "count": 2
+  },
+  {
+   "name": "minecraft:birch_fence",
+   "properties": "east=true;north=false;south=true;waterlogged=false;west=false",
+   "count": 2
+  },
+  {
+   "name": "minecraft:tripwire_hook",
+   "properties": "attached=true;facing=north;powered=false",
+   "count": 2
+  },
+  {
+   "name": "minecraft:acacia_stairs",
+   "properties": "facing=north;half=top;shape=straight;waterlogged=false",
+   "count": 2
+  },
+  {
+   "name": "minecraft:acacia_stairs",
+   "properties": "facing=south;half=top;shape=straight;waterlogged=false",
+   "count": 2
+  },
+  {
+   "name": "minecraft:campfire",
+   "properties": "facing=north;lit=true;signal_fire=false;waterlogged=false",
+   "count": 2
+  },
+  {
+   "name": "minecraft:heavy_weighted_pressure_plate",
+   "properties": "power=0",
+   "count": 2
+  },
+  {
+   "name": "minecraft:beacon",
+   "properties": "",
+   "count": 2
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=side;north=side;power=6;south=side;west=side",
+   "count": 2
+  },
+  {
+   "name": "minecraft:repeater",
+   "properties": "delay=1;facing=south;locked=false;powered=false",
+   "count": 2
+  },
+  {
+   "name": "minecraft:anvil",
+   "properties": "facing=north",
+   "count": 2
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=side;north=side;power=8;south=side;west=side",
+   "count": 2
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=side;north=side;power=9;south=none;west=side",
+   "count": 2
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=none;north=none;power=8;south=side;west=none",
+   "count": 2
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=side;north=none;power=8;south=side;west=none",
+   "count": 2
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=side;north=none;power=7;south=side;west=side",
+   "count": 2
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=side;north=side;power=5;south=none;west=none",
+   "count": 2
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=none;north=side;power=13;south=up;west=none",
+   "count": 2
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=side;north=side;power=12;south=none;west=none",
+   "count": 2
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=none;north=none;power=3;south=side;west=none",
+   "count": 2
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=side;north=side;power=13;south=none;west=none",
+   "count": 2
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=none;north=none;power=9;south=side;west=side",
+   "count": 2
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=none;north=side;power=7;south=up;west=none",
+   "count": 2
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=none;north=side;power=6;south=side;west=side",
+   "count": 2
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=none;north=side;power=5;south=none;west=side",
+   "count": 2
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=none;north=side;power=10;south=none;west=side",
+   "count": 2
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=none;north=none;power=10;south=side;west=none",
+   "count": 2
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=side;north=none;power=0;south=side;west=none",
+   "count": 2
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=side;north=side;power=0;south=none;west=none",
+   "count": 2
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=side;north=side;power=15;south=none;west=side",
+   "count": 2
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=side;north=none;power=11;south=side;west=none",
+   "count": 2
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=side;north=none;power=12;south=side;west=none",
+   "count": 2
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=up;north=none;power=11;south=none;west=side",
+   "count": 2
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=none;north=none;power=10;south=none;west=side",
+   "count": 2
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=none;north=up;power=8;south=side;west=none",
+   "count": 2
+  },
+  {
+   "name": "minecraft:lever",
+   "properties": "face=floor;facing=west;powered=false",
+   "count": 2
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=none;north=side;power=13;south=none;west=side",
+   "count": 2
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=up;north=none;power=9;south=none;west=side",
+   "count": 2
+  },
+  {
+   "name": "minecraft:polished_granite_stairs",
+   "properties": "facing=north;half=bottom;shape=straight;waterlogged=false",
+   "count": 2
+  },
+  {
+   "name": "minecraft:polished_granite_stairs",
+   "properties": "facing=north;half=top;shape=straight;waterlogged=false",
+   "count": 2
+  },
+  {
+   "name": "minecraft:polished_granite_stairs",
+   "properties": "facing=south;half=top;shape=straight;waterlogged=false",
+   "count": 2
+  },
+  {
+   "name": "minecraft:polished_granite_stairs",
+   "properties": "facing=south;half=bottom;shape=straight;waterlogged=false",
+   "count": 2
+  },
+  {
+   "name": "minecraft:cobblestone_wall",
+   "properties": "east=none;north=none;south=none;up=true;waterlogged=false;west=none",
+   "count": 1
+  },
+  {
+   "name": "minecraft:oak_door",
+   "properties": "facing=south;half=upper;hinge=left;open=true;powered=false",
+   "count": 1
+  },
+  {
+   "name": "minecraft:oak_door",
+   "properties": "facing=east;half=upper;hinge=left;open=true;powered=false",
+   "count": 1
+  },
+  {
+   "name": "minecraft:oak_door",
+   "properties": "facing=east;half=lower;hinge=left;open=true;powered=false",
+   "count": 1
+  },
+  {
+   "name": "minecraft:oak_door",
+   "properties": "facing=south;half=lower;hinge=left;open=true;powered=false",
+   "count": 1
+  },
+  {
+   "name": "minecraft:structure_block",
+   "properties": "mode=load",
+   "count": 1
+  },
+  {
+   "name": "minecraft:oak_trapdoor",
+   "properties": "facing=east;half=bottom;open=false;powered=false;waterlogged=false",
+   "count": 1
+  },
+  {
+   "name": "minecraft:jungle_fence",
+   "properties": "east=true;north=false;south=true;waterlogged=false;west=true",
+   "count": 1
+  },
+  {
+   "name": "minecraft:red_nether_brick_wall",
+   "properties": "east=none;north=low;south=tall;up=true;waterlogged=false;west=none",
+   "count": 1
+  },
+  {
+   "name": "minecraft:red_nether_brick_wall",
+   "properties": "east=none;north=none;south=low;up=true;waterlogged=false;west=none",
+   "count": 1
+  },
+  {
+   "name": "minecraft:white_stained_glass_pane",
+   "properties": "east=false;north=true;south=false;waterlogged=false;west=false",
+   "count": 1
+  },
+  {
+   "name": "minecraft:brick_stairs",
+   "properties": "facing=south;half=top;shape=straight;waterlogged=false",
+   "count": 1
+  },
+  {
+   "name": "minecraft:chest",
+   "properties": "facing=south;type=right;waterlogged=false",
+   "count": 1
+  },
+  {
+   "name": "minecraft:chest",
+   "properties": "facing=south;type=left;waterlogged=false",
+   "count": 1
+  },
+  {
+   "name": "minecraft:iron_door",
+   "properties": "facing=west;half=lower;hinge=left;open=true;powered=false",
+   "count": 1
+  },
+  {
+   "name": "minecraft:iron_door",
+   "properties": "facing=west;half=upper;hinge=left;open=true;powered=false",
+   "count": 1
+  },
+  {
+   "name": "minecraft:red_nether_brick_wall",
+   "properties": "east=none;north=tall;south=none;up=true;waterlogged=false;west=none",
+   "count": 1
+  },
+  {
+   "name": "minecraft:light_gray_stained_glass_pane",
+   "properties": "east=true;north=false;south=true;waterlogged=false;west=true",
+   "count": 1
+  },
+  {
+   "name": "minecraft:skeleton_wall_skull",
+   "properties": "facing=west",
+   "count": 1
+  },
+  {
+   "name": "minecraft:stone_brick_stairs",
+   "properties": "facing=west;half=bottom;shape=straight;waterlogged=false",
+   "count": 1
+  },
+  {
+   "name": "minecraft:birch_pressure_plate",
+   "properties": "powered=true",
+   "count": 1
+  },
+  {
+   "name": "minecraft:crimson_stairs",
+   "properties": "facing=west;half=bottom;shape=straight;waterlogged=false",
+   "count": 1
+  },
+  {
+   "name": "minecraft:light_gray_stained_glass_pane",
+   "properties": "east=true;north=true;south=false;waterlogged=false;west=true",
+   "count": 1
+  },
+  {
+   "name": "minecraft:light_gray_stained_glass_pane",
+   "properties": "east=false;north=true;south=false;waterlogged=false;west=true",
+   "count": 1
+  },
+  {
+   "name": "minecraft:light_gray_stained_glass_pane",
+   "properties": "east=true;north=false;south=true;waterlogged=false;west=false",
+   "count": 1
+  },
+  {
+   "name": "minecraft:light_gray_stained_glass_pane",
+   "properties": "east=true;north=true;south=true;waterlogged=false;west=false",
+   "count": 1
+  },
+  {
+   "name": "minecraft:light_gray_stained_glass_pane",
+   "properties": "east=true;north=true;south=false;waterlogged=false;west=false",
+   "count": 1
+  },
+  {
+   "name": "minecraft:jukebox",
+   "properties": "has_record=false",
+   "count": 1
+  },
+  {
+   "name": "minecraft:blackstone_stairs",
+   "properties": "facing=north;half=top;shape=straight;waterlogged=false",
+   "count": 1
+  },
+  {
+   "name": "minecraft:crimson_door",
+   "properties": "facing=west;half=lower;hinge=right;open=true;powered=false",
+   "count": 1
+  },
+  {
+   "name": "minecraft:note_block",
+   "properties": "instrument=harp;note=0;powered=false",
+   "count": 1
+  },
+  {
+   "name": "minecraft:crimson_door",
+   "properties": "facing=west;half=upper;hinge=right;open=true;powered=false",
+   "count": 1
+  },
+  {
+   "name": "minecraft:sandstone_slab",
+   "properties": "type=double;waterlogged=false",
+   "count": 1
+  },
+  {
+   "name": "minecraft:oak_sign",
+   "properties": "rotation=5;waterlogged=false",
+   "count": 1
+  },
+  {
+   "name": "minecraft:potted_allium",
+   "properties": "",
+   "count": 1
+  },
+  {
+   "name": "minecraft:potted_dandelion",
+   "properties": "",
+   "count": 1
+  },
+  {
+   "name": "minecraft:oak_sign",
+   "properties": "rotation=6;waterlogged=false",
+   "count": 1
+  },
+  {
+   "name": "minecraft:crimson_door",
+   "properties": "facing=west;half=lower;hinge=left;open=true;powered=false",
+   "count": 1
+  },
+  {
+   "name": "minecraft:crimson_door",
+   "properties": "facing=west;half=upper;hinge=left;open=true;powered=false",
+   "count": 1
+  },
+  {
+   "name": "minecraft:dispenser",
+   "properties": "facing=up;triggered=false",
+   "count": 1
+  },
+  {
+   "name": "minecraft:dispenser",
+   "properties": "facing=east;triggered=false",
+   "count": 1
+  },
+  {
+   "name": "minecraft:warped_wall_sign",
+   "properties": "facing=south;waterlogged=false",
+   "count": 1
+  },
+  {
+   "name": "minecraft:birch_slab",
+   "properties": "type=top;waterlogged=false",
+   "count": 1
+  },
+  {
+   "name": "minecraft:oak_sign",
+   "properties": "rotation=7;waterlogged=false",
+   "count": 1
+  },
+  {
+   "name": "minecraft:oak_sign",
+   "properties": "rotation=9;waterlogged=false",
+   "count": 1
+  },
+  {
+   "name": "minecraft:vine",
+   "properties": "east=false;north=false;south=false;up=true;west=false",
+   "count": 1
+  },
+  {
+   "name": "minecraft:grindstone",
+   "properties": "face=floor;facing=north",
+   "count": 1
+  },
+  {
+   "name": "minecraft:repeating_command_block",
+   "properties": "conditional=false;facing=up",
+   "count": 1
+  },
+  {
+   "name": "minecraft:iron_trapdoor",
+   "properties": "facing=south;half=top;open=false;powered=false;waterlogged=false",
+   "count": 1
+  },
+  {
+   "name": "minecraft:lever",
+   "properties": "face=floor;facing=north;powered=false",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=none;north=none;power=0;south=side;west=side",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=side;north=side;power=4;south=side;west=none",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=side;north=side;power=14;south=side;west=none",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=side;north=side;power=1;south=side;west=none",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=none;north=none;power=0;south=side;west=none",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=none;north=side;power=0;south=up;west=side",
+   "count": 1
+  },
+  {
+   "name": "minecraft:white_bed",
+   "properties": "facing=north;occupied=false;part=head",
+   "count": 1
+  },
+  {
+   "name": "minecraft:white_bed",
+   "properties": "facing=north;occupied=false;part=foot",
+   "count": 1
+  },
+  {
+   "name": "minecraft:stone_brick_wall",
+   "properties": "east=none;north=none;south=tall;up=true;waterlogged=false;west=none",
+   "count": 1
+  },
+  {
+   "name": "minecraft:stone_brick_wall",
+   "properties": "east=tall;north=none;south=tall;up=true;waterlogged=false;west=none",
+   "count": 1
+  },
+  {
+   "name": "minecraft:diorite_wall",
+   "properties": "east=low;north=none;south=low;up=true;waterlogged=false;west=none",
+   "count": 1
+  },
+  {
+   "name": "minecraft:diorite_wall",
+   "properties": "east=none;north=none;south=low;up=true;waterlogged=false;west=low",
+   "count": 1
+  },
+  {
+   "name": "minecraft:diorite_wall",
+   "properties": "east=low;north=low;south=none;up=true;waterlogged=false;west=none",
+   "count": 1
+  },
+  {
+   "name": "minecraft:diorite_wall",
+   "properties": "east=none;north=low;south=none;up=true;waterlogged=false;west=low",
+   "count": 1
+  },
+  {
+   "name": "minecraft:snow",
+   "properties": "layers=8",
+   "count": 1
+  },
+  {
+   "name": "minecraft:diorite_stairs",
+   "properties": "facing=east;half=bottom;shape=straight;waterlogged=false",
+   "count": 1
+  },
+  {
+   "name": "minecraft:polished_diorite_stairs",
+   "properties": "facing=north;half=bottom;shape=straight;waterlogged=false",
+   "count": 1
+  },
+  {
+   "name": "minecraft:polished_diorite_stairs",
+   "properties": "facing=south;half=bottom;shape=straight;waterlogged=false",
+   "count": 1
+  },
+  {
+   "name": "minecraft:blackstone_stairs",
+   "properties": "facing=west;half=top;shape=straight;waterlogged=false",
+   "count": 1
+  },
+  {
+   "name": "minecraft:jungle_door",
+   "properties": "facing=east;half=lower;hinge=left;open=false;powered=false",
+   "count": 1
+  },
+  {
+   "name": "minecraft:jungle_door",
+   "properties": "facing=east;half=lower;hinge=right;open=false;powered=false",
+   "count": 1
+  },
+  {
+   "name": "minecraft:jungle_door",
+   "properties": "facing=east;half=upper;hinge=left;open=false;powered=false",
+   "count": 1
+  },
+  {
+   "name": "minecraft:jungle_door",
+   "properties": "facing=east;half=upper;hinge=right;open=false;powered=false",
+   "count": 1
+  },
+  {
+   "name": "minecraft:tripwire_hook",
+   "properties": "attached=false;facing=east;powered=false",
+   "count": 1
+  },
+  {
+   "name": "minecraft:jungle_leaves",
+   "properties": "distance=7;persistent=false",
+   "count": 1
+  },
+  {
+   "name": "minecraft:dark_oak_door",
+   "properties": "facing=south;half=lower;hinge=left;open=true;powered=false",
+   "count": 1
+  },
+  {
+   "name": "minecraft:dark_oak_door",
+   "properties": "facing=south;half=upper;hinge=left;open=true;powered=false",
+   "count": 1
+  },
+  {
+   "name": "minecraft:jungle_sapling",
+   "properties": "stage=1",
+   "count": 1
+  },
+  {
+   "name": "minecraft:oak_sign",
+   "properties": "rotation=0;waterlogged=false",
+   "count": 1
+  },
+  {
+   "name": "minecraft:diorite_wall",
+   "properties": "east=none;north=low;south=none;up=true;waterlogged=false;west=none",
+   "count": 1
+  },
+  {
+   "name": "minecraft:acacia_fence",
+   "properties": "east=true;north=false;south=true;waterlogged=false;west=false",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=side;north=side;power=1;south=side;west=side",
+   "count": 1
+  },
+  {
+   "name": "minecraft:acacia_fence",
+   "properties": "east=false;north=false;south=true;waterlogged=false;west=true",
+   "count": 1
+  },
+  {
+   "name": "minecraft:campfire",
+   "properties": "facing=east;lit=true;signal_fire=false;waterlogged=false",
+   "count": 1
+  },
+  {
+   "name": "minecraft:repeater",
+   "properties": "delay=2;facing=north;locked=false;powered=false",
+   "count": 1
+  },
+  {
+   "name": "minecraft:repeater",
+   "properties": "delay=1;facing=north;locked=false;powered=false",
+   "count": 1
+  },
+  {
+   "name": "minecraft:acacia_fence_gate",
+   "properties": "facing=east;in_wall=false;open=false;powered=false",
+   "count": 1
+  },
+  {
+   "name": "minecraft:light_blue_bed",
+   "properties": "facing=east;occupied=false;part=foot",
+   "count": 1
+  },
+  {
+   "name": "minecraft:light_blue_bed",
+   "properties": "facing=east;occupied=false;part=head",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=side;north=side;power=5;south=side;west=side",
+   "count": 1
+  },
+  {
+   "name": "minecraft:stone_button",
+   "properties": "face=floor;facing=south;powered=false",
+   "count": 1
+  },
+  {
+   "name": "minecraft:repeater",
+   "properties": "delay=2;facing=south;locked=false;powered=false",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=side;north=side;power=0;south=side;west=none",
+   "count": 1
+  },
+  {
+   "name": "minecraft:red_bed",
+   "properties": "facing=west;occupied=false;part=head",
+   "count": 1
+  },
+  {
+   "name": "minecraft:red_bed",
+   "properties": "facing=west;occupied=false;part=foot",
+   "count": 1
+  },
+  {
+   "name": "minecraft:acacia_fence_gate",
+   "properties": "facing=west;in_wall=false;open=false;powered=false",
+   "count": 1
+  },
+  {
+   "name": "minecraft:campfire",
+   "properties": "facing=south;lit=true;signal_fire=false;waterlogged=false",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=side;north=side;power=7;south=side;west=side",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=side;north=side;power=9;south=side;west=side",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=side;north=side;power=10;south=side;west=side",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=side;north=side;power=11;south=side;west=side",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=side;north=side;power=12;south=side;west=side",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=side;north=side;power=13;south=side;west=side",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=side;north=side;power=14;south=side;west=side",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=side;north=side;power=15;south=side;west=side",
+   "count": 1
+  },
+  {
+   "name": "minecraft:acacia_fence",
+   "properties": "east=false;north=true;south=false;waterlogged=false;west=true",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=none;north=none;power=15;south=side;west=side",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=side;north=side;power=13;south=side;west=none",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=side;north=side;power=10;south=side;west=none",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=none;north=side;power=9;south=side;west=side",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=side;north=none;power=8;south=side;west=side",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=none;north=side;power=4;south=up;west=none",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=up;north=side;power=13;south=none;west=none",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=up;north=none;power=12;south=none;west=side",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=side;north=none;power=14;south=none;west=up",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=none;north=side;power=3;south=none;west=none",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=none;north=none;power=2;south=side;west=side",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=none;north=side;power=1;south=side;west=none",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=none;north=up;power=4;south=side;west=none",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=side;north=none;power=15;south=none;west=up",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=none;north=side;power=14;south=up;west=side",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=none;north=none;power=14;south=up;west=side",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=up;north=none;power=12;south=side;west=up",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=none;north=none;power=11;south=side;west=side",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=side;north=none;power=10;south=side;west=side",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=none;north=up;power=10;south=side;west=none",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=none;north=none;power=7;south=side;west=side",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=side;north=none;power=6;south=up;west=none",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=side;north=none;power=5;south=side;west=none",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=up;north=none;power=5;south=none;west=side",
+   "count": 1
+  },
+  {
+   "name": "minecraft:repeater",
+   "properties": "delay=3;facing=east;locked=false;powered=true",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=side;north=side;power=15;south=side;west=none",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=side;north=side;power=14;south=none;west=none",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=up;north=none;power=4;south=none;west=side",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=side;north=none;power=6;south=side;west=up",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=side;north=none;power=7;south=up;west=side",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=none;north=side;power=11;south=none;west=none",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=none;north=up;power=12;south=side;west=side",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=none;north=side;power=12;south=side;west=side",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=none;north=none;power=14;south=side;west=side",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=side;north=side;power=9;south=side;west=none",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=none;north=none;power=6;south=side;west=side",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=side;north=none;power=15;south=none;west=none",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=none;north=side;power=14;south=none;west=side",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=none;north=none;power=12;south=side;west=side",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=none;north=side;power=12;south=none;west=side",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=none;north=side;power=4;south=none;west=side",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=side;north=side;power=6;south=none;west=none",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=none;north=side;power=6;south=none;west=side",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=none;north=up;power=14;south=side;west=none",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=none;north=side;power=11;south=none;west=side",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=none;north=side;power=11;south=up;west=side",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=side;north=side;power=10;south=none;west=none",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=none;north=up;power=7;south=side;west=none",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=side;north=none;power=5;south=side;west=side",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=side;north=none;power=4;south=side;west=side",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=none;north=side;power=3;south=side;west=side",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=side;north=none;power=1;south=side;west=none",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=none;north=side;power=7;south=none;west=side",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=none;north=none;power=7;south=up;west=side",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=side;north=none;power=8;south=none;west=up",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=side;north=none;power=6;south=side;west=none",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=none;north=none;power=4;south=side;west=side",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=none;north=side;power=14;south=up;west=none",
+   "count": 1
+  },
+  {
+   "name": "minecraft:polished_blackstone_pressure_plate",
+   "properties": "powered=false",
+   "count": 1
+  },
+  {
+   "name": "minecraft:stone_button",
+   "properties": "face=wall;facing=east;powered=true",
+   "count": 1
+  },
+  {
+   "name": "minecraft:command_block",
+   "properties": "conditional=false;facing=down",
+   "count": 1
+  },
+  {
+   "name": "minecraft:chain_command_block",
+   "properties": "conditional=true;facing=down",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=side;north=up;power=15;south=none;west=none",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=up;north=none;power=15;south=none;west=side",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=none;north=none;power=13;south=side;west=side",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=side;north=none;power=13;south=side;west=up",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=side;north=none;power=11;south=side;west=up",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=side;north=side;power=11;south=none;west=side",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=up;north=none;power=12;south=side;west=side",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=side;north=side;power=8;south=none;west=side",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=none;north=side;power=8;south=none;west=side",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=none;north=none;power=7;south=side;west=none",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=side;north=up;power=5;south=none;west=none",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=none;north=up;power=6;south=side;west=none",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=side;north=side;power=1;south=none;west=none",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=none;north=none;power=10;south=side;west=side",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=none;north=up;power=13;south=side;west=none",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=none;north=none;power=12;south=side;west=none",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=side;north=none;power=11;south=none;west=up",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=up;north=none;power=7;south=none;west=side",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=none;north=none;power=6;south=none;west=side",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=none;north=none;power=9;south=none;west=side",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=side;north=side;power=9;south=none;west=none",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=side;north=side;power=14;south=none;west=up",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=side;north=none;power=13;south=none;west=up",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=none;north=none;power=13;south=none;west=side",
+   "count": 1
+  },
+  {
+   "name": "minecraft:redstone_wire",
+   "properties": "east=none;north=up;power=5;south=side;west=side",
+   "count": 1
+  },
+  {
+   "name": "minecraft:fire",
+   "properties": "age=2;east=false;north=false;south=false;up=false;west=false",
+   "count": 1
+  },
+  {
+   "name": "minecraft:bone_block",
+   "properties": "axis=x",
+   "count": 1
+  }
+ ]
+}

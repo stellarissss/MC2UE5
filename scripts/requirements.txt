@@ -1,0 +1,8 @@
+# MC2UE5 parse layer dependencies (Python 3.11)
+# Install into a venv:  python3 -m venv .venv && .venv/bin/pip install -r scripts/requirements.txt
+nbt==1.5.1        # NBT decoding for level.dat and chunk NBT
+numpy>=1.24       # vectorised (non-stretch) palette index unpacking
+
+# Optional, only needed for `parse_world.py --selftest`, which cross-checks the
+# bit-unpacking against an independent implementation:
+#   anvil-parser==0.9.0

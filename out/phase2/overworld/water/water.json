@@ -1,0 +1,22 @@
+{
+  "dimension": "overworld",
+  "has_water": true,
+  "columns": 6,
+  "sea_level_blocks": 20.0,
+  "sea_level_cm": 2000.0,
+  "min_blocks": 20.0,
+  "max_blocks": 37.0,
+  "min_cm": 2000.0,
+  "max_cm": 3700.0,
+  "mean_cm": 2566.666603088379,
+  "block_origin": [
+    -272,
+    -672
+  ],
+  "block_size": [
+    720,
+    1040
+  ],
+  "lava_columns": 0,
+  "note": "6 liquid columns but no 2x2 neighbourhood, so no planar surface; these are isolated sources (fountains, wells), not a water body"
+}

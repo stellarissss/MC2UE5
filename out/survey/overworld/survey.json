@@ -1,0 +1,93 @@
+{
+  "dimension": "overworld",
+  "voxel_file": "/workspace/MC2UE5/voxel_data/full/overworld.bin",
+  "grid": [
+    4320,
+    3376
+  ],
+  "origin": [
+    -1552,
+    -1152
+  ],
+  "world_x_range": [
+    -1552,
+    2767
+  ],
+  "world_z_range": [
+    -1152,
+    2223
+  ],
+  "y_range": [
+    2,
+    111
+  ],
+  "columns_total": 14584320,
+  "columns_solid": 3475712,
+  "columns_built": 112887,
+  "columns_natural": 3372336,
+  "built_pct_of_solid": 3.2478812974147457,
+  "threshold": 0.1,
+  "cell": 32,
+  "regions": {
+    "campus": {
+      "x": [
+        -144,
+        303
+      ],
+      "z": [
+        -544,
+        223
+      ],
+      "blocks": [
+        448,
+        768
+      ]
+    }
+  },
+  "region": {
+    "x": [
+      1408,
+      1856
+    ],
+    "z": [
+      608,
+      1376
+    ],
+    "cells": 157,
+    "built_fraction": 0.011075837742504408,
+    "diag": {
+      "cells_total": 14175,
+      "cells_nonzero": 185,
+      "frac_max": 1.0,
+      "frac_p99": 0.2785742187500002,
+      "frac_p95": 0.0,
+      "cells_over_threshold": 158,
+      "bbox_cells": [
+        19,
+        42,
+        44,
+        57
+      ],
+      "bbox_blocks_axis0_z": [
+        608,
+        1376
+      ],
+      "bbox_blocks_axis1_x": [
+        1408,
+        1856
+      ]
+    },
+    "world_x": [
+      -144,
+      303
+    ],
+    "world_z": [
+      -544,
+      223
+    ],
+    "blocks": [
+      448,
+      768
+    ]
+  }
+}
