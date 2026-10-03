@@ -141,7 +141,7 @@ MC2UE5/
 │   ├── build_material_manifest.py
 │   └── hism_estimate.py         HISM 组件数估算
 ├── assets/                      material_manifest.json + 736 张方块贴图（LFS）
-├── voxel_data/full/             *.bin（143.7 MiB，LFS）
+├── voxel_data/full/             *.bin（143.7 MiB，可重建，不入库）
 ├── out/
 │   ├── survey/<dim>/            勘测产物（中间态，不入库）
 │   └── phase2/<dim>/            层2 产物（4.9 MB，入库）
@@ -155,8 +155,13 @@ MC2UE5/
 ```
 
 **Git LFS 分层**：源码、JSON 清单、debug 图与 landscape heightmap 走普通 Git
-（可在 GitHub 直接预览、能 diff 核对）；736 张贴图与 144 MB voxel bin 走 LFS。
-详见 [`.gitattributes`](.gitattributes)。
+（可在 GitHub 直接预览、能 diff 核对）；736 张方块贴图与将来的 UE 资产走 LFS。
+
+`voxel_data/`（144 MB 体素导出）与 `out/survey/*.npy`（84 MB 稠密中间数组）
+**不入库**：两者都能由 `parse_world.py --full` 与 `survey.py` 从存档一键重建，
+而存档本身才是 source of truth。入库只会在存档更新时产生 144 MB 的无意义二进制
+diff。需要复现时按 `README.md` §快速开始 的步骤 1、2 重跑即可。
+详见 [`.gitattributes`](.gitattributes) 与 [`.gitignore`](.gitignore)。
 
 ---
 
