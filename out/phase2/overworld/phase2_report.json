@@ -39,7 +39,6 @@
         63.0
       ],
       "y_span_blocks": 59.0,
-      "seconds": 0.3773531913757324,
       "landscape": {
         "dir": "landscape",
         "resolution": [
@@ -96,6 +95,5 @@
       ]
     }
   },
-  "seconds": 1.2823197841644287,
   "problems": []
 }
