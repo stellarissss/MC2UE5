@@ -152,9 +152,12 @@ def stage_terrain(dim, chunk_range, args, out_dir):
     log("  height range for encoding: [%.1f .. %.1f] blocks (span %.1f)"
         % (gmin, gmax, gspan))
 
+    # No timing field: the artefacts are committed to git, and a per-run
+    # duration would make every rerun produce a meaningless binary-ish diff
+    # while carrying zero information about the data. Elapsed time goes to the
+    # log only.
     result = {"block_origin": [bx0, bz0], "block_size": [bw, bh],
-              "y_range_blocks": [gmin, gmax], "y_span_blocks": gspan,
-              "seconds": time.time() - t0}
+              "y_range_blocks": [gmin, gmax], "y_span_blocks": gspan}
 
     # ---- primary: Landscape heightmaps ---------------------------------- #
     if not args.skip_landscape:
@@ -195,9 +198,9 @@ def stage_terrain(dim, chunk_range, args, out_dir):
     np.save(os.path.join(out_dir, "heightmap_valid.npy"), valid)
     np.save(os.path.join(out_dir, "heightmap_labels.npy"), top_lab)
 
-    result["seconds"] = time.time() - t0
+    elapsed = time.time() - t0
     terr.save_metadata(os.path.join(out_dir, "terrain.json"), result)
-    return result
+    return dict(result, seconds=elapsed)      # timing for logs, not the file
 
 
 def _mesh_pass(dim, chunk_range, args, out_dir, h_raw, valid, gmin, gmax):
@@ -588,7 +591,12 @@ def main(argv=None):
         log("\n[%s] %s" % (name.upper(), name))
         try:
             res = fns[name](args.dim, chunk_range, args, out_dir)
-            report["stages"][name] = res
+            # Stage helpers may report how long they took; that is log-only.
+            # Strip it before the dict lands in the committed report so reruns
+            # on unchanged input stay byte-identical.
+            report["stages"][name] = {k: v for k, v in res.items()
+                                      if k != "seconds"}
+            res.pop("seconds", None)
             if name == "terrain":
                 lmeta = res.get("landscape")
                 if not lmeta:
@@ -611,14 +619,15 @@ def main(argv=None):
             problems.append("%s failed: %r" % (name, exc))
             report["stages"][name] = {"error": repr(exc)}
 
-    report["seconds"] = time.time() - t0
+    # The persisted report stays free of wall-clock timings so that reruns on
+    # unchanged input produce byte-identical JSON. See stage_terrain().
     report["problems"] = problems
     if not args.dry_run:
         with open(os.path.join(out_dir, "phase2_report.json"), "w") as f:
             json.dump(report, f, indent=2, ensure_ascii=False)
 
     log("\n" + "=" * 68)
-    log("done in %.1fs -> %s" % (report["seconds"], out_dir))
+    log("done in %.1fs -> %s" % (time.time() - t0, out_dir))
     for k, v in report["stages"].items():
         log("  %-8s %s" % (k, json.dumps(v, ensure_ascii=False)[:150]))
     if problems:

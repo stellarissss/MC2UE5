@@ -437,6 +437,62 @@ def test_landscape_xy_scale_is_minecraft():
                       "tile origin_cm is block_origin * 100"))
 
 
+def test_phase2_artifacts_are_reproducible():
+    """
+    Rerunning the pipeline on unchanged input must produce identical bytes.
+
+    The phase-2 outputs are committed to git and are meant to be reviewable, so
+    a wall-clock field in any manifest makes every rerun show up as a diff and
+    trains reviewers to ignore the file. A "seconds" key did exactly that: it was
+    the only difference between two runs of the same code on the same input.
+
+    This checks the property directly on the shipped artefacts -- no rerun
+    needed -- by asserting no timing key survived into the manifests.
+    """
+    print("\n[phase2] artefacts are byte-reproducible")
+    ok = True
+    p2 = os.path.join(ROOT, "out", "phase2", "overworld")
+
+    for rel in ("terrain.json", "phase2_report.json",
+                "landscape/landscape.json", "props/prop_placements.json",
+                "water/water.json"):
+        path = os.path.join(p2, rel)
+        if not os.path.isfile(path):
+            print("  SKIP  %s missing (run the pipeline first)" % rel)
+            continue
+        with open(path) as fh:
+            meta = json.load(fh)
+
+        found = []
+
+        def walk(node, trail):
+            if isinstance(node, dict):
+                for k, v in node.items():
+                    if k in ("seconds", "elapsed", "duration", "runtime",
+                             "timestamp", "generated_at"):
+                        found.append("%s/%s" % (trail, k))
+                    walk(v, "%s/%s" % (trail, k))
+            elif isinstance(node, list):
+                for i, v in enumerate(node):
+                    walk(v, "%s[%d]" % (trail, i))
+
+        walk(meta, rel)
+        ok &= check(not found, "%s carries no wall-clock field" % rel,
+                    "found %s" % found)
+
+    # The landscape manifest additionally records a self-check of the encoding;
+    # it must be present and tiny, otherwise the file is not self-describing.
+    lj = os.path.join(p2, "landscape", "landscape.json")
+    if os.path.isfile(lj):
+        with open(lj) as fh:
+            tile = json.load(fh)["tiles"][0]["height_cm_meta"]
+        err = tile.get("roundtrip_max_err_blocks")
+        ok &= check(err is not None and err < 0.01,
+                    "landscape.json records its own encode/decode proof",
+                    "roundtrip_max_err_blocks=%r" % err)
+    return ok
+
+
 # --------------------------------------------------------------------------- #
 # phase 2: connected components
 # --------------------------------------------------------------------------- #
@@ -646,6 +702,7 @@ def main():
                test_landscape_height_roundtrip, test_landscape_no_stretch,
                test_landscape_resolution_is_legal,
                test_landscape_xy_scale_is_minecraft,
+               test_phase2_artifacts_are_reproducible,
                test_connected_components,
                test_ground_alignment_stays_in_world_coordinates,
                test_water_mesh):
