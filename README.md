@@ -93,18 +93,25 @@ python3 phase2/run_phase2.py --dim overworld --region campus --min-prop-blocks 6
 ### 4. 回归测试
 
 ```bash
-python3 tests/run_tests.py
+python3 tests/run_tests.py                      # 主套件
+python3 tests/test_import_phase2_offline.py     # 导入脚本离线验证（无需引擎）
 ```
 
-15 组测试，锁住开发中真实出现过的每一个 bug（详见文件头注释）：
+两套测试，锁住开发中真实出现过的每一个 bug（详见各文件头注释）：
 
-- 层1：位打包 round-trip、假错误归零、范围统计与 `.bin` 一致
-- 层2：Landscape 高度编码往返、**重采样不缩放世界**、分辨率合法性、XY Scale = 100
-- 层2：连通域（U 形 / 环形 / 3D 壳体）、**地面对齐用世界坐标**、水体网格按需生成顶点
+- **层1**：位打包 round-trip、假错误归零、范围统计与 `.bin` 一致
+- **层2**：Landscape 高度编码往返、**重采样不缩放世界**、分辨率合法性、XY Scale = 100
+- **层2**：连通域（U 形 / 环形 / 3D 壳体）、**地面对齐用世界坐标**、水体网格按需生成顶点
+- **导入层**：PNG 解码器与 PIL 逐字节一致、高度解码与编码端互逆、
+  篡改编码被拒绝、`DRY_RUN` 结构上不可能碰到关卡、Z Scale 传参链正确
+
+> 最后一条尤其重要：曾经 `_apply_landscape_scale` 被重复定义，
+> 后者把 `quads`（31）当 Z Scale 传了出去，地形会高出 512 倍且**不报任何错**。
+> 现在有专门的测试守住这条参数链。
 
 ### 5. UE5 装配（**须在 Windows + UE 5.5.4 上执行**）
 
-见 [`project/README.md`](project/README.md)。
+见 [`project/README.md`](project/README.md)，§13 是首次本机验证的分步清单。
 
 ---
 
@@ -126,16 +133,19 @@ MC2UE5/
 │   ├── water.py                 水面提取与平面网格
 │   ├── props.py                 连通域 / 分类 / 地面对齐 / 模型 provider
 │   └── run_phase2.py            端到端流水线
-├── tests/run_tests.py           回归测试（层1 + 层2）
+├── tests/
+│   ├── run_tests.py                    回归测试（层1 + 层2）
+│   └── test_import_phase2_offline.py   导入脚本离线验证（stub 掉 unreal）
 ├── scripts/
 │   ├── doctor.py                环境体检
 │   ├── build_material_manifest.py
 │   └── hism_estimate.py         HISM 组件数估算
-├── assets/                      material_manifest.json + 736 张方块贴图
-├── voxel_data/full/             *.bin（143.7 MiB）
+├── assets/                      material_manifest.json + 736 张方块贴图（LFS）
+├── voxel_data/full/             *.bin（143.7 MiB，LFS）
 ├── out/
-│   ├── survey/<dim>/            勘测产物
-│   └── phase2/<dim>/            层2 产物
+│   ├── survey/<dim>/            勘测产物（中间态，不入库）
+│   └── phase2/<dim>/            层2 产物（4.9 MB，入库）
+├── PHASE2_PLAN.md               层2 规划与契约（坐标 / 尺寸 / 高度编码）
 └── project/                     UE5 工程
     ├── MCReplica.uproject
     ├── Config/
@@ -143,6 +153,10 @@ MC2UE5/
         ├── import_world.py      层1 → HISM 方块层
         └── import_phase2.py     层2 → Landscape / 水体 / 物体层
 ```
+
+**Git LFS 分层**：源码、JSON 清单、debug 图与 landscape heightmap 走普通 Git
+（可在 GitHub 直接预览、能 diff 核对）；736 张贴图与 144 MB voxel bin 走 LFS。
+详见 [`.gitattributes`](.gitattributes)。
 
 ---
 
@@ -170,6 +184,26 @@ smooth height-map"。Surface Nets 保留在 `terrain.py` 中，供 overhang 占�
 **不做无谓的预放大。**
 Landscape 网格是 1 顶点 = 1 block，所以去阶梯在 block 空间做，而不是先 4× 上采样。
 建成区稠密高度图因此只有 3 MB，而非 48 MB。
+
+**Landscape 高度编码只有一个真值函数。**
+UE5 把 16-bit 样本 `v` 映射为有符号局部高度再乘 Z Scale：
+
+```text
+local(v) = (v - 32768) / 128            # -256 .. +255.992
+z_cm(v)  = actor_offset_z_cm + local(v) * z_scale_cm
+```
+
+满量程是 **512 × z_scale_cm**，`v = 32768` 恰好落在 actor 的 Z 位置。所以本项目取
+`z_scale_cm = y_span × 100 / 512`、`actor_offset_z = y_min × 100 + 256 × z_scale_cm`。
+
+**除数是 512，不是 65535。** 归一化用 65535 会让地形高出 128 倍，而且视口里
+看不出来、不报任何错。编码端（`phase2/landscape.py::ue_decode`）与导入端
+（`import_phase2.py::_decode_height_cm`）调用同一个公式，两侧不可能悄悄分叉。
+
+**XY Scale 恒为 100，靠数据保证而非事后修正。**
+Landscape 尺寸求解时把多余格数用**边缘填充**吸收，而不是缩放网格去迁就组件尺寸；
+`resample_to_grid()` 保持原始区域严格 1:1 索引映射。全域缩放会在 700+ block 的
+远端造成数米漂移，而 XY Scale 一旦偏离 100，地形就与层1 的 HISM 方块层错位。
 
 ---
 

@@ -251,19 +251,41 @@ python3 -m py_compile project/Content/Python/import_world.py
 ```python
 DRY_RUN = True
 DIMENSION = "overworld"
+USE_EXISTING_LEVEL = True
+LEVEL_PATH = "/Game/Maps/MCReplica"
 ```
 
-`DRY_RUN=True` 会做这些事（**不建任何资产**）：
+### 9.1 DRY_RUN 是真正只读的
+
+`DRY_RUN=True` 时脚本**不会**：
+
+- 打开或创建任何关卡（不 `load_level`、不 `new_level`）
+- 创建任何资产（不 spawn actor、不建材质）
+- 保存任何 package（不 `save_dirty_packages`）
+
+它只读取 `out/phase2/<dim>/` 下的元数据与 PNG 并打印一份计划。
+这一点很重要：第一阶段尚未验收，dry run 绝不能有替换 `MCReplica` 关卡的风险。
+该行为由 `tests/test_import_phase2_offline.py::test_dry_run_never_touches_world`
+结构性锁定。
+
+### 9.2 DRY_RUN 会做的校验
+
+`DRY_RUN=True` 会做这些事：
 
 - 读 `out/phase2/overworld/landscape/landscape.json`
 - 校验尺寸是否满足 `components × quads + 1`（UE5 的硬约束，不满足会拒绝放置）
 - 校验 `xy_scale_cm == 100.0`（与层1 方块层对齐的必要条件）
-- **抽样扫描整张 PNG**（约 64 行，130 ms），按 UE5 真实解码公式验证高度落在记录范围内
+- **抽样扫描整张 PNG**（约 64 行），按 UE5 真实解码公式验证高度落在记录范围内
+- 检查目标关卡是否存在（只报告，不打开）
 - 打印水体与物体的统计
 
-> 为什么值得多花 130 ms：UE5 的 Landscape 高度解码是
-> `z_cm = offset + (v - 32768) / 128 × z_scale_cm`（除以 **128**，不是 65535）。
-> 编码错一个系数，地形会整体歪掉而**不报任何错**。抽样扫描能在进引擎前抓住它。
+> 为什么值得多花这几十毫秒：UE5 的 Landscape 高度解码是
+> `z_cm = offset + (v - 32768) / 128 × z_scale_cm`（除以 **128**，不是 65535；
+> 满量程 = **512 × z_scale_cm**）。编码错一个系数，地形会整体高出 128 倍
+> 而**不报任何错**。抽样扫描能在进引擎前抓住它。
+
+抽样是**跨全图**而非只看四角：本存档的建成区是台地，四角高度都是 y=4，
+只看四角的话，一张上下颠倒的高度图也能通过检查。
 
 确认无误后改成 `DRY_RUN = False` 再跑。
 
@@ -278,18 +300,28 @@ DIMENSION = "overworld"
 **本存档实测（建成区 720×1040 blocks）**：
 
 - Landscape：745×1055 顶点，24×34 组件 @31 quads，XY Scale = 100 cm
-- 高度范围 y = [4, 63] blocks（Z Scale = 11.523 cm，actor Z = 3350 cm）
+- 高度范围 y = [4, 63] blocks，跨度 59 blocks
+- **Z Scale = 11.5234375**，满量程 = 512 × 11.5234375 = 5900 cm = 59 blocks
+- Actor 位置 = `(-27200, -67200, 3350)` cm，Scale3D = `(100, 100, 11.5234375)`
 - 物体：218 实例（tree 51 / plant 86 / structure 74 / building 3 / prop 4）
 - 水体：6 个孤立水柱，形不成 2×2 面片 → 无网格（数据实情，非缺陷）
+
+> ⚠️ Z Scale 是 100 cm 单位还是厘米，取决于引擎的 Transform 面板语义。
+> 本项目按 **厘米** 处理（`z_scale_cm = span × 100 / 512`）。若你在
+> UE 5.5.4 里看到地形高度不对，第一个要核对的就是这个值：它必须让
+> `512 × Z Scale` 恰好等于 `y_span × 100` cm。
 
 ## 11. 已知限制（第二阶段）
 
 1. **Landscape 高度导入依赖引擎版本。** 脚本依次尝试
    `LandscapeEditorObject.import_height_data` → `LandscapeSubsystem.import_heightmap_from_file`
    → `LandscapeEditorSubsystem.import_heightmap_from_file`。
-   若三者都不可用，脚本会**明确报 `needs_manual_import`** 并提示手动
-   `Landscape > Import from File`，**不会**静默留下一个平地冒充成功。
+   若三者都不可用，脚本会**明确报 `needs_manual_import`**，并打印手工导入
+   所需的全部参数（Section Size / Components / XY Scale / Z Scale / Actor 位置），
+   **不会**静默留下一个平地冒充成功。
    若遇到这种情况请告知我具体引擎版本，我按该版本 API 调整。
+
+   手工导入路径：`Landscape 模式 > Import > Import from File`，参数见上表。
 
 2. **物体模型是配方不是文件。** `builtin:tree:cone_on_cylinder` 这类没有实际网格，
    脚本会跳过并提示。接真实模型：
@@ -302,6 +334,10 @@ DIMENSION = "overworld"
    熔岩湖 / 末地浮岛）。命令一样，换 `--dim` 即可；先跑各自的 `survey.py` 定范围。
 
 4. **水体材质是最简半透明面。** 深度渐变需要渲染目标或 SceneDepth，那是美术活不是数据导入。
+
+5. **尚未在真实编辑器中验证。** 脚本经过离线验证（PNG 解码与 PIL 逐字节一致、
+   高度往返误差 ≤0.9 mm、篡改检测有效），但从未在 UE 5.5.4 里执行过。
+   §13 给出首次本机验证步骤。
 
 ## 12. 第二阶段的沙箱侧复现
 
@@ -316,9 +352,77 @@ python3 phase2/survey.py --dim overworld
 python3 phase2/run_phase2.py --dim overworld --region campus \
     --min-prop-blocks 6 --strict
 
-# 4) 回归测试（15 组，锁住开发中真实出现过的 bug）
+# 4) 回归测试（锁住开发中真实出现过的 bug）
 python3 tests/run_tests.py
 
-# 5) 语法检查
+# 5) import_phase2 离线验证（用真实产物，stub 掉 unreal）
+python3 tests/test_import_phase2_offline.py
+
+# 6) 语法检查
 python3 -m py_compile project/Content/Python/import_phase2.py
 ```
+
+`test_import_phase2_offline.py` 是**不需要引擎**的那一半：它用真实的
+`landscape.json` 与 heightmap PNG 验证纯标准库 PNG 解码器（与 PIL 逐字节比对）、
+高度解码与编码端互为逆运算、篡改的编码会被拒绝、`DRY_RUN` 不可能碰到关卡。
+本机装 UE 之前先跑它，能省掉一轮往返。
+
+## 13. UE 5.5.4 首次本机验证步骤
+
+按顺序做，每步都有明确的通过判据。**不要跳过第 1 步。**
+
+### 13.1 Dry run（只读，安全）
+
+1. 打开 `project\Content\Python\import_phase2.py`，确认 `DRY_RUN = True`
+2. 编辑器 Python 控制台（`Output Log > Python Console`）执行：
+   ```python
+   import import_phase2; import_phase2.run()
+   ```
+   或命令行：
+   ```cmd
+   UnrealEditor.exe MCReplica.uproject ^
+       -ExecutePythonScript="Content/Python/import_phase2.py"
+   ```
+3. **通过判据**：输出里出现
+   ```text
+   overworld_00_00.png 745x1055  sampled y=[4.00 .. 61.96] blocks  OK
+   DRY_RUN complete -- nothing was created, opened or saved.
+   ```
+   且 `sampled y` 落在 `[4, 63]` 区间内、`resolution` 是 `745x1055`。
+4. 关掉编辑器，确认**磁盘上没有任何新资产**——dry run 不该产生任何 `.uasset`。
+
+### 13.2 正式导入
+
+1. 确认第 1 步无误后，把 `DRY_RUN` 改为 `False`
+2. 再次执行 `import_phase2.run()`
+3. **通过判据**：输出里 `heightmaps_imported` 等于 tile 数（1）。
+   如果是 0，会明确打印 `needs_manual_import` 以及手工参数，按 §10 的表填写。
+
+### 13.3 对齐验证（最关键的一步）
+
+地形和方块层必须严格对齐。抽查三个已知地物：
+
+| 检查 | 期望 |
+|---|---|
+| Landscape actor 位置 | `(-27200, -67200, 3350)` cm |
+| Landscape actor Scale3D | `(100, 100, 11.5234375)` |
+| 校园围墙（地图坐标约 x∈[-144,303], z∈[-544,223]） | 墙体方块应贴在地面上，不悬空、不陷入 |
+| 操场与中轴道路 | 道路低于周边草地，与 debug 图 `overworld_height_color.png` 一致 |
+
+最容易出错的是 **XY Scale 被改动**。若你看到地形整体缩放或偏移，
+检查 Scale3D 的 X/Y 是否仍是 100；**不要用移动 actor 的方式去对齐**，
+那会让地形与 HISM 方块层产生累积漂移。
+
+### 13.4 保存与打包
+
+1. `File > Save All`（或让脚本的 `save_level()` 执行）
+2. 按 §6 打包 Win64
+
+### 13.5 出问题时
+
+把以下信息发我，我能直接定位：
+
+- UE 的完整版本号（`Help > About`）
+- Output Log 里 `import_phase2` 的全部输出
+- 若报 `needs_manual_import`，说明三条 API 路径都失败了，需要按版本调整
+- 视口截图（尤其是地形与方块层交界处）

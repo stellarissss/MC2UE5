@@ -1,32 +1,43 @@
 # Git LFS —— 大体积二进制资产
 #
-# 策略：源码、JSON 清单、debug 图、landscape heightmap 全部以普通 Git 对象
-# 存储（可直接 diff、可在 GitHub 网页预览）；只有真正不可读的二进制走 LFS。
+# 策略分三层：
+#   1. 源码 / JSON 清单 / markdown      -> 普通 Git（可 diff、可 review）
+#   2. 高度图与 debug 图（小、需人眼核对）-> 普通 Git（可在 GitHub 直接预览）
+#   3. 贴图 / 体素 bin / UE 资产        -> LFS
 #
-# 为什么这样切分
-#   * landscape heightmap（145 KB）保持普通对象 —— 它是本项目最该被 review
-#     的产物，存成 LFS pointer 就没法在网页上直接看，也没法用文本 diff 核对。
-#   * 736 张方块贴图（3 MB）走 LFS —— 数量多、二进制、几乎不改。
-#   * voxel bin（144 MB）走 LFS —— 层2 的解析输入，入库后无需重跑 MC2WV2
-#     导出即可复核。
+# 为什么高度图不进 LFS
+#   out/phase2 里的 16-bit heightmap 是本项目最该被 review 的产物：它直接
+#   决定地形形状。存成 LFS pointer 就不能在 GitHub 网页上预览，也无法用
+#   文本工具核对尺寸与内容，所以显式排除。
+#
+# 注意：.gitattributes **不支持** `!negation` 语法（git 会直接忽略并告警）。
+#   排除只能靠"后置的精确规则覆盖前面的通配"。gitattributes 自上而下匹配，
+#   后匹配者胜出，因此下面的 phase2 规则必须写在通配规则之后。
 #
 # 安装：git lfs install
-# 克隆：git clone <url>  （LFS 文件会自动拉取）
-# 若克隆时跳过了 LFS：git lfs pull
+# 克隆后如未自动拉取：git lfs pull
 
-# ---- Minecraft 方块贴图 -------------------------------------------------
-*.png filter=lfs diff=lfs merge=lfs -text
-assets/textures/**/*.png filter=lfs diff=lfs merge=lfs -text
-
-# ---- 体素导出 -----------------------------------------------------------
-*.bin filter=lfs diff=lfs merge=lfs -text
-voxel_data/**/*.bin filter=lfs diff=lfs merge=lfs -text
-
-# ---- UE5 资产（若日后导出模型/贴图）--------------------------------------
+# ---- 通配：二进制默认走 LFS ----------------------------------------------
+*.png   filter=lfs diff=lfs merge=lfs -text
+*.bin   filter=lfs diff=lfs merge=lfs -text
 *.uasset filter=lfs diff=lfs merge=lfs -text
-*.umap   filter=lfs diff=lfs merge=lfs -text
+*.umap  filter=lfs diff=lfs merge=lfs -text
 
-# ---- 明确不用 LFS 的路径 -------------------------------------------------
-# 高度图与 debug 图体积小、且需要人眼直接 review，强制走普通 Git。
-!out/phase2/**/*.png filter=
-!out/phase2/**/*.json filter=
+# ---- 精确覆盖：phase2 产物与可重建资产留在普通 Git ----------------------
+# 顺序要紧：这几行必须在上面的 *.png 之后。
+#
+# out/phase2 是本项目最该被 review 的产物：它直接决定地形形状。存成 LFS
+# pointer 就不能在 GitHub 网页上预览，也无法用文本工具核对尺寸与内容。
+out/phase2/**/*.png    filter= diff= merge= -text
+out/phase2/**/*.json   filter= diff= merge= -text
+out/phase2/**/*.npy    filter= diff= merge= -text
+
+# assets/textures/ 是 Minecraft 1.16.5 官方贴图（第三方，可再分发），
+# 由 `bash scripts/fetch_mc_assets.sh` 从
+# InventivetalentDev/minecraft-assets@1.16.5 一键重建。
+# 把它们放进 LFS 会让仓库白白多出 163 MB，而这些内容本来就能下载 ——
+# 所以这里显式排除，改由脚本按需拉取。
+assets/textures/**     filter= diff= merge= -text
+
+# UI 截图、图标等仓库自有图片同样保持普通 Git，便于直接预览。
+assets/README.md       filter= diff= merge= -text
