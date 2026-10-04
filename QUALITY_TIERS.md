@@ -14,11 +14,13 @@
 2. **温和降级优先保观感。** 用户明确选择：低配档不砍几何、不砍地形，
    优先降阴影 / 后处理 / 剔除距离 / 分辨率。方块世界的观感主要来自
    几何轮廓和亮度层次，砍掉这两样比砍特效更伤观感。
-3. **Nanite 在低配档保留。** 本项目的 HISM 几何是 12 面单位立方体，
-   Nanite 对它收益很低（有实测表明 <50 万面网格开 Nanite 反而掉帧），
-   但它也不构成主要开销；关闭它省下的帧时有限，却会让 Nanite Landscape
-   与 Nanite Fallback 路径失效。因此低配档保留 Nanite 开关，
-   通过 **Landscape LOD / 剔除距离 / 阴影 / 后处理** 拿回性能。
+3. **Nanite 在低配档保留。** 用户明确要求。本项目的 HISM 几何是 12 面单位立方体，
+   Nanite 对它收益本就有限（<50 万面量级开 Nanite 可能反而掉帧），
+   开关本身不是主要开销。真正的开销在**像素预算与流式内存**，所以低配档
+   保留 `r.Nanite=1`，改用 `r.Nanite.MaxPixelsPerEdge`（4 → 1）和
+   `r.Nanite.Streaming.StreamingPoolSize`（128 → 1024）分档——
+   这两个才是真正吃帧时和显存的东西，性能从
+   **Landscape LOD / 剔除距离 / 阴影 / 后处理** 拿。
 
 ---
 
@@ -378,10 +380,13 @@ if (AvailableProfiles.Contains(FString::Printf(TEXT("%s DeviceProfile"), *TmpPro
 
 ### 6.4 打包后的路径
 
-- 启动默认档：DeviceProfile 的 Medium 地板（引擎原生，零代码）；
-- 自动选档：`apply_quality.py` 需要 Python 插件，打包时启用
-  `DefaultPythonScriptPlugin.ini` 已配好；
-- 玩家手动切换：`~/.mcreplica/quality.json` + 控制台调用。
+- 启动默认档：`DefaultScalability.ini` 的 `[ScalabilityGroups]` 段（Medium = 1），
+  加上 `[Windows DeviceProfile]` 的地板值。两者都是引擎原生，零代码。
+- 自动选档：`apply_quality.py` 需要 Python 插件，`MCReplica.uproject` 已启用
+  `PythonScriptPlugin`。
+- 玩家手动切换：`apply_quality.set_tier(n)` 把档位名写进
+  `~/.mcreplica/quality.json`，下次启动由 `auto()` 读回；`set_tier(None)` 清除。
+  落盘的键是**档位名**（`Low` / `Medium` / …）而不是数字，便于手改和排查。
 
 > 刻意的边界：`apply_quality.py` 定位为「编辑器内诊断 + 一键调档」，
 > 不是游戏内设置菜单。游戏内菜单属于玩家界面工作，不在本次范围。
@@ -455,7 +460,10 @@ PerfIndexThresholds_ShadingQuality="GPU 30 120 400"
 
 - **Nanite Landscape 的取舍**：UE 5.3 起支持 Nanite Landscape，但多份实测
   表明在 RTX 3060 级别及以下硬件上比传统 Landscape **慢约 20%**。
-  本方案**不启用**，靠传统 LOD 拿性能。有意选择，不是遗漏。
+  本方案的 `Landscape` actor **未启用 Nanite**，靠传统 LOD 拿性能。
+  有意选择，不是遗漏——这与 §1 第 3 条并不矛盾：那条说的是
+  **`r.Nanite` 开关本身**（影响 HISM 与 fallback 路径）在低配档保留，
+  这里说的是 **Landscape actor 的 Nanite 优化**不启用。两者是不同层次的东西。
 - **HISM 剔除距离是静态基准**：不随相机动态调整。动态密度衰减需要
   HLOD 或自定义 C++ 组件，超出 Python-only 范围。
 - **属性名跨版本漂移**：`instance_start_cull_distance` 等 Python 属性名
@@ -464,6 +472,15 @@ PerfIndexThresholds_ShadingQuality="GPU 30 120 400"
   **按 key 去重告警一次**并继续导入——缺一个剔除距离只掉帧，
   让导入崩掉则丢掉整个关卡。
 - **超采样不随档位走**：见 6.3，引擎在 100% 处钳制。
-- **`r.LandscapeLOD0DistributionScale` 未使用**：它不持久化，
-  只适合编辑器里手动试参数。持久设置走 `lod0_screen_size`。
+- **地形 LOD 的分档值下界是引擎钳制，不是 1.0。** 乘积
+  `LOD0DistributionSetting × Scale` 被钳在 1.01，所以 `Scale` 低于
+  `1.01 / 1.25 ≈ 0.81` 之后**再怎么调都没有效果**，且引擎不给任何提示。
+  这也是本方案只在 Cinematic 档用到 0.85 的原因——再往下就是自我安慰了。
+- **`bUseScalableLODSettings` 未启用。** `LandscapeProxy` 上还有一组
+  `FPerQualityLevelFloat` 字段（`ScalableLOD0ScreenSize` 等），打开
+  `bUseScalableLODSettings` 就能把 LOD 分布直接做成引擎原生的每档数组，
+  比现在的「actor 基线 + ini cvar」更贴合引擎设计。本方案没走这条路，
+  因为 Python 侧写 `FPerQualityLevelFloat` 的行为缺少文档与实测验证，
+  按本项目「不确定的机制不写进生产配置」的原则留给实机验证阶段。
+  一旦验证通过，§4.2 的两组 cvar 可直接由该机制取代。
 

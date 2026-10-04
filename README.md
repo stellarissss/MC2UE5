@@ -131,7 +131,7 @@ python3 tests/test_hism_culling.py              # HISM 剔除与地形 LOD（无
 
 ### 5. UE5 装配（**须在 Windows + UE 5.5.4 上执行**）
 
-见 [`project/README.md`](project/README.md)，§13 是首次本机验证的分步清单。
+见 [`project/README.md`](project/README.md)，§14 是首次本机验证的分步清单。
 
 ---
 
@@ -262,7 +262,7 @@ Landscape 尺寸求解时把多余格数用**边缘填充**吸收，而不是缩
    剔除带配置），但**从未对真实引擎 API 执行过**。
 2. **帧率与观感未实测。** 五档画质与 HISM 剔除的配置正确性有测试保证，
    但实际收益必须在 Windows + UE 5.5.4 上测。验收清单见
-   `project/README.md` §13.4。**未实测的部分不会被声称为「已验证」。**
+   `project/README.md` §14。**未实测的部分不会被声称为「已验证」。**
 3. **物体模型是「配方」而非文件。** `BuiltinModelProvider` 输出
    `builtin:tree:cone_on_cylinder` 这类图元配方，没有实际网格。接真实 CC0 模型：
    `--models library --model-root <Poly Haven/Kenney/Quaternius 目录>`。

@@ -153,15 +153,60 @@ import import_world; import_world.run()
 
 ---
 
-## 6. 打包 Win64
+## 6. 切换画质档位
 
-### 6.1 用现成脚本（本机 Windows / Windows 容器）
+五档方案见 [`../QUALITY_TIERS.md`](../QUALITY_TIERS.md)。本节只讲怎么用。
+
+### 6.1 自动选档（打包后默认行为）
+
+`Content/Python/apply_quality.py` 会在启动时按硬件选档：
+
+```python
+import apply_quality
+apply_quality.auto()            # 按 GPU/CPU 基准分选档，写入 GameUserSettings.ini
+apply_quality.benchmark()        # 可选：先跑一次硬件基准（会卡几秒）
+apply_quality.set_tier(2)        # 手动钉住：0=Low 1=Medium 2=High 3=Epic 4=Cinematic
+apply_quality.set_tier(None)     # 取消钉住，回到自动
+apply_quality.report()           # 打印当前档位、基准分、适配器与阈值
+```
+
+`auto()` 会把选择持久化，之后每次启动沿用，直到玩家改档。
+`set_tier()` 是**钉住**语义（覆盖硬件探测），底层 `apply_tier()` 只应用不落盘——
+一般用 `set_tier()`。
+
+### 6.2 命令行强制档位（调试 / 验收用）
+
+打包后的 exe 支持 `-ExecCmds`，比改配置更干净：
+
+```
+MCReplica.exe -ExecCmds="py import apply_quality; apply_quality.set_tier(0)"
+```
+
+不写 `-ExecCmds` 会弹出确认框；带 `quit` 则应用后立即退出。
+
+### 6.3 低配机上先做的事
+
+按收益排序，前两条通常就够：
+
+1. **`sg.ResolutionQuality`** —— 拉低它对帧时最直接。引擎上限是 100
+   （百分比），**超采样要另走** `apply_quality.set_supersampling(130)`。
+2. **跑一次 `benchmark()`** —— 集显和共享内存机器的基准分偏低，自动档位据此
+   选得更保守，这比自己猜档位准。
+3. 若仍然吃力，再依次降 `sg.ShadowQuality` → `sg.GlobalIlluminationQuality`
+   → `sg.EffectsQuality`。**不要动 `sg.ViewDistanceQuality` 以外的 Nanite
+   开关**，见 `../QUALITY_TIERS.md` §1 的设计原则。
+
+---
+
+## 7. 打包 Win64
+
+### 7.1 用现成脚本（本机 Windows / Windows 容器）
 
 `/workspace/package_win64.sh` 是给 **Linux 容器** 用的（挂载工程到镜像里跑 `RunUAT.sh`）。
 在 Windows 上跑它需要 bash 环境（Git Bash / WSL），且脚本内写死了容器镜像，
 **不建议直接用**。Windows 上请直接用下面的等价命令。
 
-### 6.2 等价的 Windows 命令（推荐）
+### 7.2 等价的 Windows 命令（推荐）
 
 ```
 "<UE安装目录>\Engine\Build\BatchFiles\RunUAT.bat" BuildCookRun ^
@@ -178,7 +223,7 @@ import import_world; import_world.run()
 > 镜像内也没有 MSVC/Windows SDK）。详见 `UE5_WIN_CROSSCOMPILE.md`。所以 Win64 必须在
 > Windows 上出，或者在 Windows 容器里跑上面的 RunUAT。
 
-### 6.3 打包前注意
+### 7.3 打包前注意
 
 - 打包前确保世界已建好并保存（`Content\Maps\MCReplica.umap` + `__ExternalActors__`）。
 - Cook 阶段会按 World Partition 网格切包，3700 万实例 cook 可能耗时数小时。
@@ -186,7 +231,7 @@ import import_world; import_world.run()
 
 ---
 
-## 7. 已知限制（本版）
+## 8. 已知限制（本版）
 
 1. **non_cube 方块按立方体近似**——133 种（台阶/楼梯/门/栅栏/工作台等）本版都画成整方块，
    形状、朝向、half（下半格）全部丢失。`material_manifest.json` 里有 `shapeHint: non_cube` 标记，
@@ -213,7 +258,7 @@ import import_world; import_world.run()
 
 ---
 
-## 8. 复现（沙箱侧，可重跑）
+## 9. 复现（沙箱侧，可重跑）
 
 ```bash
 # 1) 全量导出三维度体素（已执行过，约 3.5 s）
@@ -244,7 +289,7 @@ python3 -m py_compile project/Content/Python/import_world.py
 （Landscape 地形层）** —— 两者写进同一个 World Partition 关卡、共享同一坐标系，
 但地形层必须在方块层之后跑，这样视口里能立刻看到「地形托住方块」的效果。
 
-## 9. 先跑 DRY_RUN
+## 10. 先跑 DRY_RUN
 
 打开 `project\Content\Python\import_phase2.py`，确认顶部：
 
@@ -289,7 +334,7 @@ LEVEL_PATH = "/Game/Maps/MCReplica"
 
 确认无误后改成 `DRY_RUN = False` 再跑。
 
-## 10. 产物对应关系
+## 11. 产物对应关系
 
 | phase2 产物 | UE5 里的样子 | 包路径 |
 |---|---|---|
@@ -311,7 +356,7 @@ LEVEL_PATH = "/Game/Maps/MCReplica"
 > UE 5.5.4 里看到地形高度不对，第一个要核对的就是这个值：它必须让
 > `512 × Z Scale` 恰好等于 `y_span × 100` cm。
 
-## 11. 已知限制（第二阶段）
+## 12. 已知限制（第二阶段）
 
 1. **Landscape 高度导入依赖引擎版本。** 脚本依次尝试
    `LandscapeEditorObject.import_height_data` → `LandscapeSubsystem.import_heightmap_from_file`
@@ -337,9 +382,9 @@ LEVEL_PATH = "/Game/Maps/MCReplica"
 
 5. **尚未在真实编辑器中验证。** 脚本经过离线验证（PNG 解码与 PIL 逐字节一致、
    高度往返误差 ≤0.9 mm、篡改检测有效），但从未在 UE 5.5.4 里执行过。
-   §13 给出首次本机验证步骤。
+   §14 给出首次本机验证步骤。
 
-## 12. 第二阶段的沙箱侧复现
+## 13. 第二阶段的沙箱侧复现
 
 ```bash
 # 1) 环境体检
@@ -386,7 +431,7 @@ python3 -m py_compile project/Content/Python/apply_quality.py
 这三处都不会报错，只是让分级系统**不起作用**。本机装 UE 之前先跑这四套
 测试，能省掉一轮往返。
 
-## 13. UE 5.5.4 首次本机验证步骤
+## 14. UE 5.5.4 首次本机验证步骤
 
 按顺序做，每步都有明确的通过判据。**不要跳过第 1 步。**
 

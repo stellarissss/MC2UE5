@@ -629,6 +629,71 @@ def test_supersampling_is_separate_from_tiers(mod):
     return ok
 
 
+def test_docs_reference_sections_that_exist(mod):
+    """
+    Cross-document ``§N`` references must still point at a real section.
+
+    A stale section reference is the documentation twin of a dead cvar: the
+    sentence reads perfectly, the link resolves to nothing, and nothing reports
+    an error. This project has already been bitten once -- inserting the
+    quality-tier section renumbered ``project/README.md`` from 6 onward and
+    left the root README pointing at "§13", which by then was "§9. 复现".
+
+    Only cross-file references are checked, and only the numbered form. The
+    alternative is a full markdown link checker, which would mostly assert that
+    markdown works.
+    """
+    print("\n[quality] doc cross-references still resolve")
+    docs = {
+        "README.md": os.path.join(ROOT, "README.md"),
+        "QUALITY_TIERS.md": os.path.join(ROOT, "QUALITY_TIERS.md"),
+        "PHASE2_PLAN.md": os.path.join(ROOT, "PHASE2_PLAN.md"),
+        "project/README.md": os.path.join(PROJECT, "README.md"),
+    }
+    ok = True
+
+    for label, path in docs.items():
+        if not os.path.isfile(path):
+            ok &= check(False, "%s exists" % label)
+            continue
+        with open(path, encoding="utf-8") as fh:
+            text = fh.read()
+
+        # Top-level sections of *this* document: "## 6. 切换画质档位".
+        own = set()
+        for m in re.finditer(r"^## (\d+)\.", text, re.M):
+            own.add(int(m.group(1)))
+        # Plus the sub-sections, so "§4.2" style references are checkable.
+        for m in re.finditer(r"^### (\d+)\.(\d+)", text, re.M):
+            own.add(int(m.group(1)))
+
+        # Every "§N" that is not followed by ".N" refers to another file.
+        # The project README is the usual target.
+        for m in re.finditer(r"§(\d+)(\.\d+)?", text):
+            target = int(m.group(1))
+            line = text[:m.start()].count("\n") + 1
+            if target in own:
+                continue
+            # A reference into another document: it must match that
+            # document's own section numbers.
+            others = []
+            for other_label, other_path in docs.items():
+                if other_path == path:
+                    continue
+                if not os.path.isfile(other_path):
+                    continue
+                with open(other_path, encoding="utf-8") as fh:
+                    others.append(set(int(x.group(1))
+                                     for x in re.finditer(r"^## (\d+)\.",
+                                                           fh.read(), re.M)))
+            if any(target in s for s in others):
+                continue
+            ok &= check(False,
+                        "%s:%d points at §%s, which exists in no document"
+                        % (label, line, target))
+    return ok
+
+
 def main():
     mod = load_apply_quality()
     results = [
@@ -648,6 +713,7 @@ def main():
         test_adapter_heuristic,
         test_perf_index_is_cpu_biased,
         test_supersampling_is_separate_from_tiers,
+        test_docs_reference_sections_that_exist,
     ]
     ok = True
     for fn in results:

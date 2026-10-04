@@ -256,13 +256,30 @@ out/phase2/overworld/
 |---|---|
 | `--strict` 全流程 | 零问题 |
 | `tests/run_tests.py` | ALL PASS |
-| `tests/test_import_phase2_offline.py` | 44 / 44 |
+| `tests/test_import_phase2_offline.py` | 46 / 46 |
+| `tests/test_quality_tiers.py` | ALL PASS |
+| `tests/test_hism_culling.py` | ALL PASS |
 | Landscape 尺寸合法性 | 745×1055 = 24×31+1 × 34×31+1 ✓ |
 | 高度往返误差 | ≤ 0.0009 blocks（0.9 mm，一个量化步长） |
 | 尺度保持重采样 | 原始区域与源数组 `array_equal` ✓ |
 | 纯标准库 PNG 解码 | 与 PIL 逐字节一致（264 采样点 0 失配） |
 | 篡改检测 | 512× 错误编码被正确拒绝 ✓ |
 | UE 5.5.4 编辑器内 | **未验证** |
+
+### 10.1 性能配置（离线已定档，待实测）
+
+本阶段落地的三处性能配置，全部写进了自动化测试——因为它们错的时候
+**不报错**，只是帧时悄悄变差：
+
+| 位置 | 配置 | 详见 |
+|---|---|---|
+| `import_world.py::_add_hism` | 方块层剔除 30000→40000 cm 淡出带，per-leaf 64 | `QUALITY_TIERS.md` §5 |
+| `import_phase2.py::_spawn_hism` | 物件按 5 个语义类分别设定剔除距离 | 同上 |
+| `import_phase2.py::_apply_landscape_lod` | actor 基线 `lod0_screen_size=1.0`、`lod_blend_range=1.0` | 同上 §5.1 |
+| `DefaultScalability.ini` | 两个 Landscape LOD 分布 cvar 按五档差异化 | 同上 §4.2 |
+
+> 剔除距离此前是**完全缺失**的——`~1.6 M` 个 1 m 方块实例一路画到远平面。
+> 这是本项目最大的单一性能杠杆，也是本阶段最实质的改动。
 
 ---
 
@@ -272,4 +289,6 @@ out/phase2/overworld/
 2. 核对输出的组件数 / XY Scale / Z Scale 与 §5.2、§5.3 一致
 3. 切 `DRY_RUN=False` 正式导入
 4. 验证 Landscape 与第一阶段 HISM 精确对齐（抽样比对同一 block 坐标的 Z）
-5. 保存关卡，打包 Win64
+5. 跑 `apply_quality.benchmark()` 后用 `set_tier()` 逐档验证帧时与观感，
+   确认 §10.1 的分档假设在真实硬件上成立
+6. 保存关卡，打包 Win64
