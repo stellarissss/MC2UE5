@@ -1,8 +1,8 @@
 {
 	"FileVersion": 3,
-	"EngineAssociation": "5.5",
+	"EngineAssociation": "",
 	"Category": "",
-	"Description": "Minecraft 1.16.5 (SYFZ_1.16.5) voxel world replica, assembled with HISM + Nanite + World Partition.",
+	"Description": "Minecraft 1.16.5 (SYFZ_1.16.5) campus terrain rebuilt in UE5: Landscape heightfield from the phase-2 semantic rebuild.",
 	"Modules": [],
 	"Plugins": [
 		{
@@ -11,10 +11,6 @@
 		},
 		{
 			"Name": "EditorScriptingUtilities",
-			"Enabled": true
-		},
-		{
-			"Name": "LevelEditorEditorExtensions",
 			"Enabled": true
 		},
 		{

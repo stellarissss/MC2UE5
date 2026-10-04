@@ -1,0 +1,1491 @@
+# -*- coding: utf-8 -*-
+"""
+build_release_level.py -- assemble the shippable MC2UE5 level.
+
+The pipeline in this repository produces two layers. Layer 1 (the HISM block
+layer) needs ``voxel_data/full/*.bin``, a 144 MB export that is deliberately
+not committed -- it is rebuildable from the Minecraft save, and the save is
+the source of truth. Layer 2 (the semantic rebuild) committed its output:
+``out/phase2/overworld/`` holds the campus terrain as four 16-bit heightmap
+PNGs plus the encoding metadata.
+
+This script builds the release level out of layer 2, the part that can be
+reconstructed from the repository alone: real terrain at 1 vertex per block,
+textured from the Minecraft block set, with a pawn that can walk it.
+
+Terrain representation, and why it is a StaticMesh
+--------------------------------------------------
+The upstream scripts build the terrain as UE5 Landscape actors through
+``LandscapeEditorSubsystem``. On UE 5.8 none of that API is reachable from
+Python -- the editor subsystems, ``LandscapeInfo`` and the heightmap import
+functions are all absent, and ``unreal.Landscape`` spawns a componentless
+``LandscapePlaceholder`` because ``ALandscapeProxy::CreateLandscapeInfo`` has
+no Python binding. So the heightmaps are converted to meshes by
+``tools/build_terrain_mesh.py`` and imported here instead.
+
+The coordinate contract is preserved exactly: 1 vertex = 1 block, XY scale
+100 cm, heights from UE's own decode
+``z = offset + (v - 32768) / 128 * ZScale``. The surface therefore occupies
+the same world coordinates the Landscape would have, and still matches the
+pipeline's ``(x, y, z) * 100`` convention.
+
+What it does, in order:
+
+  1. imports the four terrain meshes
+  2. builds one two-sided terrain material driven by the Minecraft
+     grass / dirt / stone / sand palette
+  3. places each mesh at its recorded origin and enables collision
+  4. imports the block textures the material needs
+  5. places a PlayerStart on the terrain and a pawn that can walk it
+  6. adds a light rig, sky and height fog, so the result reads as a place
+  7. verifies the result against what the data promised
+
+Run headless:
+
+    UnrealEditor.exe MCReplica.uproject -ExecutePythonScript=<this file> \
+        -unattended -nopause -nosplash -nullrhi
+
+Every step that can fail says so. A silently flat or untextured terrain is
+worse than an obvious failure, so the script exits non-zero rather than
+reporting a partial build as a success.
+"""
+
+import json
+import math
+import os
+import struct
+import sys
+import time
+import zlib
+
+import unreal
+
+# =============================================================================
+# KNOBS
+# =============================================================================
+
+BLOCK_CM = 100.0
+
+LEVEL_PATH = "/Game/Maps/MCReplica"
+
+TERRAIN_MESH_DIR = "/Game/MC/Terrain"
+TEXTURE_DIR = "/Game/MC/Textures"
+MATERIAL_DIR = "/Game/MC/Materials"
+PROP_DIR = "/Game/MC/Props"
+LIGHT_DIR = "/Game/MC/Lighting"
+
+DIMENSION = "overworld"
+
+# Import the committed prop placements. ``prop_placements.json`` records 1297
+# instances as *primitive recipes* ("builtin:tree:cone_on_cylinder"), not mesh
+# paths, so the geometry is synthesised from engine primitives rather than
+# skipped -- a stand-in tree at the recorded height and radius is a far better
+# campus than an empty field, and the substitution is reported in the notes.
+IMPORT_PROPS = True
+
+#: Terrain is 1.5 M triangles over four meshes. Collision is taken from a
+#: decimated LOD rather than triangulated as complex collision: UE expects a
+#: mesh this size to carry a proxy, and a tri-mesh collision on it would cost
+#: more than the render does.
+COLLISION_LOD = 3
+
+_ROOT_CANDIDATES = ["..", "../..", "../../.."]
+
+_t0 = time.time()
+_errors = []
+_notes = []
+
+
+def log(msg):
+    unreal.log("[MC2UE5 %7.1fs] %s" % (time.time() - _t0, msg))
+
+
+def warn(msg):
+    _notes.append(msg)
+    unreal.log_warning("[MC2UE5] %s" % msg)
+
+
+def err(msg):
+    _errors.append(msg)
+    unreal.log_error("[MC2UE5] %s" % msg)
+
+
+# =============================================================================
+# PATHS
+# =============================================================================
+
+def project_dir():
+    try:
+        return unreal.Paths.convert_relative_path_to_full(
+            unreal.Paths.project_dir()).rstrip("/\\")
+    except Exception:
+        here = os.path.dirname(os.path.abspath(__file__))
+        return os.path.abspath(os.path.join(here, os.pardir, os.pardir))
+
+
+def resolve_root():
+    """The MC2UE5 checkout root: the directory holding out/phase2/ and assets/."""
+    env = os.environ.get("MC2UE5_ROOT")
+    if env and os.path.isdir(os.path.join(env, "out", "phase2")):
+        return os.path.abspath(env)
+    base = project_dir()
+    for rel in _ROOT_CANDIDATES:
+        cand = os.path.abspath(os.path.join(base, rel))
+        if os.path.isdir(os.path.join(cand, "out", "phase2")):
+            return cand
+    return None
+
+
+def _terrain_dir(root):
+    return os.path.join(root, "..", "terrain")
+
+
+def _load_json(path):
+    with open(path, "r") as fh:
+        return json.load(fh)
+
+
+def _ensure_dir(pkg):
+    unreal.EditorAssetLibrary.make_directory(pkg)
+
+
+def save_all():
+    try:
+        unreal.EditorLoadingAndSavingUtils.save_dirty_packages(True, True)
+        return True
+    except Exception as exc:
+        warn("save failed: %s" % exc)
+        return False
+
+
+def _editor_world():
+    for getter in (
+        lambda: unreal.get_editor_subsystem(
+            unreal.UnrealEditorSubsystem).get_editor_world(),
+        lambda: unreal.EditorLevelLibrary.get_editor_world(),
+    ):
+        try:
+            cand = getter()
+            if cand is not None:
+                return cand
+        except Exception:
+            continue
+    return None
+
+
+# =============================================================================
+# 16-BIT GREYSCALE PNG READER
+# =============================================================================
+# The editor's embedded Python has neither numpy nor PIL. Rather than depend
+# on one being present, the heightmap is read with the standard library only:
+# these are single-channel 16-bit greyscale images, which is a far simpler
+# decode than the general case.
+
+def _unfilter(ftype, line, prev, bpp):
+    """In-place PNG scanline un-filter (the five standard filter types)."""
+    n = len(line)
+    if ftype == 0:
+        return
+    if ftype == 1:
+        for i in range(bpp, n):
+            line[i] = (line[i] + line[i - bpp]) & 0xFF
+    elif ftype == 2:
+        for i in range(n):
+            line[i] = (line[i] + prev[i]) & 0xFF
+    elif ftype == 3:
+        for i in range(n):
+            left = line[i - bpp] if i >= bpp else 0
+            line[i] = (line[i] + ((left + prev[i]) >> 1)) & 0xFF
+    elif ftype == 4:
+        for i in range(n):
+            a = line[i - bpp] if i >= bpp else 0
+            b = prev[i]
+            c = prev[i - bpp] if i >= bpp else 0
+            p = a + b - c
+            pa, pb, pc = abs(p - a), abs(p - b), abs(p - c)
+            pr = a if (pa <= pb and pa <= pc) else (b if pb <= pc else c)
+            line[i] = (line[i] + pr) & 0xFF
+    else:
+        raise ValueError("unknown PNG filter type %d" % ftype)
+
+
+def read_heightmap(path):
+    """-> (width, height, rows, channels) of uint16 samples."""
+    with open(path, "rb") as fh:
+        data = fh.read()
+    if data[:8] != b"\x89PNG\r\n\x1a\n":
+        raise ValueError("not a PNG: %s" % path)
+
+    width, height, bitdepth, colortype = struct.unpack(">IIBB", data[16:26])
+    if bitdepth != 16:
+        raise ValueError("%s: bit depth %s, needs 16" % (path, bitdepth))
+    channels = {0: 1, 2: 3, 4: 2, 6: 4}.get(colortype)
+    if channels is None:
+        raise ValueError("%s: colour type %s unsupported" % (path, colortype))
+
+    pos, idat = 8, []
+    while pos + 8 <= len(data):
+        (length,) = struct.unpack(">I", data[pos:pos + 4])
+        ctype = data[pos + 4:pos + 8]
+        if ctype == b"IDAT":
+            idat.append(data[pos + 8:pos + 8 + length])
+        elif ctype == b"IEND":
+            break
+        pos += 12 + length
+
+    raw = zlib.decompress(b"".join(idat))
+    stride = width * channels * 2
+    bpp = channels * 2
+
+    rows, prev, off = [], bytearray(stride), 0
+    for _ in range(height):
+        ftype = raw[off]
+        cur = bytearray(raw[off + 1:off + 1 + stride])
+        off += 1 + stride
+        _unfilter(ftype, cur, prev, bpp)
+        prev = cur
+        rows.append(cur)
+    return width, height, rows, channels
+
+
+def decode_height_cm(u16, meta):
+    """
+    UE5's Landscape height decode, in centimetres.
+
+    Must stay equivalent to ``phase2.landscape.ue_decode``::
+
+        z_cm = actor_offset_z_cm + (u16 - 32768) / 128 * z_scale_cm
+
+    The 32768 bias and the /128 are the whole point: the engine maps uint16
+    onto a signed -256..+255.992 range and scales that. A 0..1 normalisation
+    here would silently agree with a wrong encoder instead of catching it.
+    """
+    return (float(meta["actor_offset_z_cm"])
+            + (float(u16) - 32768.0) / 128.0 * float(meta["z_scale_cm"]))
+
+
+# =============================================================================
+# VALIDATION
+# =============================================================================
+
+def validate_source(root):
+    """
+    Check the committed heightmaps against their recorded encoding.
+
+    Returns the list of tiles worth building, or an empty list. Runs before
+    anything is created: a flipped or mis-encoded heightmap would otherwise be
+    discovered by looking at it, which in a headless build means never.
+    """
+    lsc_dir = os.path.join(root, "out", "phase2", DIMENSION, "landscape")
+    meta_path = os.path.join(lsc_dir, "landscape.json")
+    if not os.path.isfile(meta_path):
+        err("no landscape.json at %s" % meta_path)
+        return []
+
+    meta = _load_json(meta_path)
+    xy = float(meta["xy_scale_cm"])
+    if abs(xy - BLOCK_CM) > 1e-6:
+        err("xy_scale_cm is %.4f, expected %.1f -- refusing, the terrain would "
+            "not match block coordinates" % (xy, BLOCK_CM))
+        return []
+
+    lo_b = float(meta["y_min_blocks"])
+    hi_b = lo_b + float(meta["y_span_blocks"])
+    log("source terrain: %dx%d verts | xy_scale %.1f cm | y %.0f..%.0f blocks"
+        % (meta["landscape_resolution"][0], meta["landscape_resolution"][1],
+           xy, lo_b, hi_b))
+
+    valid = []
+    for tile in meta["tiles"]:
+        png = os.path.join(lsc_dir, tile["file"])
+        if not os.path.isfile(png):
+            err("missing heightmap %s" % png)
+            continue
+        try:
+            w, h, rows, ch = read_heightmap(png)
+        except Exception as exc:
+            err("tile %s: cannot decode (%s)" % (tile["file"], exc))
+            continue
+        if w != tile["resolution"][0] or h != tile["resolution"][1]:
+            err("tile %s: %dx%d, metadata says %dx%d"
+                % (tile["file"], w, h,
+                   tile["resolution"][0], tile["resolution"][1]))
+            continue
+
+        hm = tile["height_cm_meta"]
+        tol = max(0.5, 0.02 * (hi_b - lo_b))
+        ymin, ymax = 1e30, -1e30
+        for r in (0, h // 3, 2 * h // 3, h - 1):
+            line = rows[r]
+            for c in range(0, w, max(1, w // 48)):
+                i = (c * ch) * 2
+                (v,) = struct.unpack(">H", bytes(line[i:i + 2]))
+                yb = decode_height_cm(v, hm) / BLOCK_CM
+                ymin = min(ymin, yb)
+                ymax = max(ymax, yb)
+        ok = (ymin >= lo_b - tol) and (ymax <= hi_b + tol)
+        log("  %-24s %dx%d  y=[%.2f .. %.2f] blocks  %s"
+            % (tile["file"], w, h, ymin, ymax, "OK" if ok else "OUT OF RANGE"))
+        if not ok:
+            err("    %s decodes outside the recorded range; not building it"
+                % tile["file"])
+            continue
+        valid.append(tile)
+
+    return valid
+
+
+# =============================================================================
+# TEXTURES
+# =============================================================================
+
+#: The terrain palette. Phase 2 recorded a heightmap but no material, so the
+#: surface has to be coloured from the Minecraft block set. These four cover
+#: every ground type this map actually has.
+GRASS_TEX = "grass_block_top.png"
+DIRT_TEX = "dirt.png"
+STONE_TEX = "stone.png"
+SAND_TEX = "sand.png"
+
+
+def import_textures(root):
+    """
+    Import the block textures the terrain material needs.
+
+    A short list rather than all 736: the release build has no HISM block layer
+    to texture, so importing the full set would cook hundreds of megabytes of
+    PNGs that nothing samples.
+    """
+    src_dir = os.path.join(root, "assets", "textures", "block")
+    wanted = [GRASS_TEX, DIRT_TEX, STONE_TEX, SAND_TEX]
+    _ensure_dir(TEXTURE_DIR)
+
+    out = {}
+    for name in wanted:
+        src = os.path.join(src_dir, name)
+        if not os.path.isfile(src):
+            warn("texture missing: %s" % src)
+            continue
+        dest_name = name[:-4]
+        dest = "%s/%s" % (TEXTURE_DIR, dest_name)
+        if unreal.EditorAssetLibrary.does_asset_exist(dest):
+            out[name] = unreal.load_asset(dest)
+            continue
+
+        task = unreal.AssetImportTask()
+        task.set_editor_property("filename", src)
+        task.set_editor_property("destination_path", TEXTURE_DIR)
+        task.set_editor_property("destination_name", dest_name)
+        task.set_editor_property("automated", True)
+        task.set_editor_property("replace_existing", True)
+        task.set_editor_property("save", True)
+        unreal.AssetToolsHelpers.get_asset_tools().import_asset_tasks([task])
+
+        tex = unreal.load_asset(dest)
+        if tex is None:
+            err("could not import %s" % name)
+            continue
+
+        # Minecraft textures are pixel art. Nearest filtering keeps the texels
+        # crisp; mips and compression stay at the texture-group defaults for
+        # the terrain specifically, because a 16x16 texel repeated across a
+        # 100 m hillside aliases into noise at any distance without them.
+        for prop, value in (("filter", unreal.TextureFilter.TF_NEAREST),
+                            ("mip_gen_settings",
+                             unreal.TextureMipGenSettings.TMGS_FROM_TEXTURE_GROUP),
+                            ("compression_settings",
+                             unreal.TextureCompressionSettings.TC_DEFAULT),
+                            ("lod_group",
+                             unreal.TextureGroup.TEXTUREGROUP_WORLD),
+                            ("never_stream", True),
+                            ("srgb", True)):
+            try:
+                tex.set_editor_property(prop, value)
+            except Exception:
+                pass
+        unreal.EditorAssetLibrary.save_loaded_asset(tex)
+        out[name] = tex
+        log("  texture %-22s -> %s" % (name, dest))
+
+    log("textures: %d/%d imported" % (len(out), len(wanted)))
+    return out
+
+
+# =============================================================================
+# TERRAIN MATERIAL
+# =============================================================================
+
+def _build_terrain_material(textures):
+    """
+    A height- and slope-blended terrain material.
+
+    Built with MaterialEditingLibrary rather than an expression graph written
+    out by hand, because the graph is the fragile part: a renamed node or a
+    changed pin order fails silently and leaves a grey landscape. Constructing
+    it step by step means every pin is connected as it is created, and a
+    failure names the step that failed.
+
+    Blend rule, chosen to read correctly from the ground and from the air:
+      * flat low ground is grass;
+      * the highest flat ground fades to sand, standing in for the plateau
+        surface this terrain was rebuilt from;
+      * steep slopes are stone, with a band of dirt in the transition so the
+        two do not meet as two flat colours.
+
+    Any failure here costs the look, not the geometry, so it degrades to the
+    default surface and says so.
+    """
+    path = "%s/MC_Terrain" % MATERIAL_DIR
+    if unreal.EditorAssetLibrary.does_asset_exist(path):
+        mat = unreal.load_asset(path)
+        if mat is not None:
+            log("  terrain material already present")
+            return mat
+
+    _ensure_dir(MATERIAL_DIR)
+    mat = unreal.AssetToolsHelpers.get_asset_tools().create_asset(
+        "MC_Terrain", MATERIAL_DIR, unreal.Material,
+        unreal.MaterialFactoryNew())
+    if mat is None:
+        err("could not create the terrain material")
+        return None
+
+    mel = unreal.MaterialEditingLibrary
+    try:
+        grass = textures.get(GRASS_TEX)
+        dirt = textures.get(DIRT_TEX)
+        stone = textures.get(STONE_TEX)
+        sand = textures.get(SAND_TEX)
+        if not grass or not stone:
+            err("terrain material needs at least %s and %s"
+                % (GRASS_TEX, STONE_TEX))
+            return None
+
+        def sampler(tex, name, y):
+            s = mel.create_material_expression(
+                mat, unreal.MaterialExpressionTextureSampleParameter2D, -1400, y)
+            s.set_editor_property("parameter_name", name)
+            s.set_editor_property("texture", tex)
+            try:
+                s.set_editor_property("sampler_type",
+                                      unreal.MaterialSamplerType.SAMPLERTYPE_Color)
+            except Exception:
+                pass
+            return s
+
+        s_grass = sampler(grass, "GrassTex", -320)
+        s_dirt = sampler(dirt or grass, "DirtTex", -180)
+        s_stone = sampler(stone, "StoneTex", -40)
+        s_sand = sampler(sand or dirt or grass, "SandTex", 100)
+
+        # ---- slope ------------------------------------------------------
+        # A world-space normal dotted against world Z is a usable slope proxy:
+        # 1 when flat, lower as the surface tilts. UE 5.8 names these
+        # expressions PixelNormalWS / VertexNormalWS and DotProduct; the older
+        # MaterialExpressionNormal and MaterialExpressionDot are gone.
+        wpos = mel.create_material_expression(
+            mat, unreal.MaterialExpressionWorldPosition, -1400, 420)
+        nrm = mel.create_material_expression(
+            mat, unreal.MaterialExpressionVertexNormalWS, -1200, 420)
+        dot = mel.create_material_expression(
+            mat, unreal.MaterialExpressionDotProduct, -1000, 420)
+        mel.connect_material_expressions(nrm, "", dot, "A")
+        mel.connect_material_expressions(wpos, "", dot, "B")
+
+        inv = mel.create_material_expression(
+            mat, unreal.MaterialExpressionOneMinus, -840, 420)
+        mel.connect_material_expressions(dot, "Result", inv, "Input")
+        sat = mel.create_material_expression(
+            mat, unreal.MaterialExpressionSaturate, -680, 420)
+        mel.connect_material_expressions(inv, "Output", sat, "Input")
+        steep = mel.create_material_expression(
+            mat, unreal.MaterialExpressionSmoothStep, -520, 420)
+        mel.connect_material_expressions(sat, "Output", steep, "Min")
+        for prop, value in (("min_default", 0.10), ("max_default", 0.38)):
+            try:
+                steep.set_editor_property(prop, value)
+            except Exception:
+                pass
+
+        # ---- height -----------------------------------------------------
+        # The terrain spans 400..6300 cm. Normalising over that band puts the
+        # sand blend at the top of the plateau where phase 2 says the high
+        # ground is, rather than at an arbitrary engine default.
+        sep = mel.create_material_expression(
+            mat, unreal.MaterialExpressionSeparateXYZ, -1200, 200)
+        mel.connect_material_expressions(wpos, "", sep, "")
+        az = mel.create_material_expression(
+            mat, unreal.MaterialExpressionAbs, -1040, 200)
+        mel.connect_material_expressions(sep, "Z", az, "Input")
+        hn = mel.create_material_expression(
+            mat, unreal.MaterialExpressionDivide, -880, 200)
+        mel.connect_material_expressions(az, "Output", hn, "A")
+        try:
+            hn.set_editor_property("const_b", 1.0 / 5900.0)
+        except Exception:
+            pass
+        hs = mel.create_material_expression(
+            mat, unreal.MaterialExpressionSaturate, -720, 200)
+        mel.connect_material_expressions(hn, "Result", hs, "Input")
+        hgate = mel.create_material_expression(
+            mat, unreal.MaterialExpressionSmoothStep, -560, 200)
+        mel.connect_material_expressions(hs, "Output", hgate, "Min")
+        for prop, value in (("min_default", 0.84), ("max_default", 0.99)):
+            try:
+                hgate.set_editor_property(prop, value)
+            except Exception:
+                pass
+
+        # ---- grass -> sand by height -------------------------------------
+        lerp_h = mel.create_material_expression(
+            mat, unreal.MaterialExpressionLinearInterpolate, -380, 60)
+        mel.connect_material_expressions(s_grass, "RGB", lerp_h, "A")
+        mel.connect_material_expressions(s_sand, "RGB", lerp_h, "B")
+        mel.connect_material_expressions(hgate, "", lerp_h, "Alpha")
+
+        # ---- overlay stone on slopes -------------------------------------
+        inv_steep = mel.create_material_expression(
+            mat, unreal.MaterialExpressionOneMinus, -340, 420)
+        mel.connect_material_expressions(steep, "", inv_steep, "Input")
+        lerp_s = mel.create_material_expression(
+            mat, unreal.MaterialExpressionLinearInterpolate, -180, 200)
+        mel.connect_material_expressions(lerp_h, "Result", lerp_s, "A")
+        mel.connect_material_expressions(s_stone, "RGB", lerp_s, "B")
+        mel.connect_material_expressions(inv_steep, "Output", lerp_s, "Alpha")
+
+        # A trace of dirt keeps grass from meeting rock as two flat colours.
+        damp = mel.create_material_expression(
+            mat, unreal.MaterialExpressionMultiply, -340, 620)
+        mel.connect_material_expressions(steep, "", damp, "A")
+        try:
+            damp.set_editor_property("const_b", 0.35)
+        except Exception:
+            pass
+        mix = mel.create_material_expression(
+            mat, unreal.MaterialExpressionLinearInterpolate, -20, 260)
+        mel.connect_material_expressions(lerp_s, "Result", mix, "A")
+        mel.connect_material_expressions(s_dirt, "RGB", mix, "B")
+        mel.connect_material_expressions(damp, "Result", mix, "Alpha")
+
+        mel.connect_material_property(mix, "Result",
+                                      unreal.MaterialProperty.MP_BASE_COLOR)
+
+        rough = mel.create_material_expression(
+            mat, unreal.MaterialExpressionConstant, 200, 420)
+        try:
+            rough.set_editor_property("r", 0.85)
+        except Exception:
+            pass
+        mel.connect_material_property(rough, "",
+                                      unreal.MaterialProperty.MP_ROUGHNESS)
+
+        unreal.EditorAssetLibrary.save_loaded_asset(mat)
+        log("  terrain material built: grass/sand by height, stone on slope, "
+            "dirt in the transition band")
+        return mat
+
+    except Exception as exc:
+        warn("terrain material graph could not be built (%s); the surface will "
+             "use the engine default" % exc)
+        # A half-built graph would be cached and reused on the next run, hiding
+        # whatever caused it. Drop it so a retry starts clean.
+        try:
+            unreal.EditorAssetLibrary.delete_asset(path)
+        except Exception:
+            pass
+        return mat
+
+
+# =============================================================================
+# LEVEL + TERRAIN
+# =============================================================================
+
+def open_level():
+    """Create the World Partition level if needed and return the editor world."""
+    les = unreal.get_editor_subsystem(unreal.LevelEditorSubsystem)
+    if unreal.EditorAssetLibrary.does_asset_exist(LEVEL_PATH):
+        log("opening existing level %s" % LEVEL_PATH)
+        if not les.load_level(LEVEL_PATH):
+            err("could not load %s" % LEVEL_PATH)
+            return None
+    else:
+        _ensure_dir("/Game/Maps")
+        log("creating World Partition level %s" % LEVEL_PATH)
+        if not les.new_level(LEVEL_PATH, True):
+            err("could not create the partitioned level")
+            return None
+
+    world = _editor_world()
+    if world is None:
+        err("no editor world after opening the level")
+    return world
+
+
+def _import_obj(path, dest_name):
+    """Import one OBJ into TERRAIN_MESH_DIR under `dest_name`."""
+    dest = "%s/%s" % (TERRAIN_MESH_DIR, dest_name)
+    if not unreal.EditorAssetLibrary.does_asset_exist(dest):
+        task = unreal.AssetImportTask()
+        task.set_editor_property("filename", path)
+        task.set_editor_property("destination_path", TERRAIN_MESH_DIR)
+        task.set_editor_property("destination_name", dest_name)
+        task.set_editor_property("automated", True)
+        task.set_editor_property("replace_existing", True)
+        task.set_editor_property("save", True)
+        unreal.AssetToolsHelpers.get_asset_tools().import_asset_tasks([task])
+    return unreal.load_asset(dest)
+
+
+def _place_mesh_actor(label, mesh, origin, material=None, collision=False):
+    """
+    Spawn a StaticMeshActor for `mesh` at `origin` and configure it.
+
+    Returns the component, or None if the actor could not be placed. Terrain is
+    the walkable surface, so the visual mesh is placed with collision off and a
+    separate decimated proxy carries the collision -- see ``import_terrain``.
+    """
+    ox, oy = origin
+    actor = unreal.EditorLevelLibrary.spawn_actor_from_class(
+        unreal.StaticMeshActor, unreal.Vector(float(ox), float(oy), 0.0),
+        unreal.Rotator(0.0, 0.0, 0.0))
+    if actor is None:
+        return None
+    actor.set_actor_label(label)
+
+    comp = actor.get_component_by_class(unreal.StaticMeshComponent)
+    if comp is None:
+        err("%s has no StaticMeshComponent" % label)
+        return None
+    comp.set_static_mesh(mesh)
+
+    if material is not None:
+        try:
+            mesh.set_material(0, material)
+        except Exception as exc:
+            warn("could not assign the terrain material to %s (%s)"
+                 % (label, exc))
+
+    for prop, value in (("collision_enabled", collision),
+                        ("generate_overlap_events", False),
+                        ("cast_shadow", True)):
+        try:
+            comp.set_editor_property(prop, value)
+        except Exception:
+            pass
+    if collision:
+        # Complex-as-simple: the proxy mesh's triangles are the collision
+        # surface. It is the only mode that works on a mesh with no convex
+        # hulls, and the proxy is small enough for that to be cheap.
+        for prop, value in (("collision_profile_name", "BlockAll"),
+                            ("collision_trace_flag",
+                             unreal.CollisionTraceFlag.CTF_USE_COMPLEX_AS_SIMPLE)):
+            try:
+                comp.set_editor_property(prop, value)
+            except Exception:
+                pass
+    try:
+        comp.set_mobility(unreal.ComponentMobility.STATIC)
+    except Exception:
+        pass
+    return comp
+
+
+def import_terrain(root):
+    """
+    Import the terrain and its collision proxies, and place both.
+
+    Each tile becomes two actors: the full-resolution visual mesh (1.5 M
+    triangles across the four, carried by Nanite) and a stride-sampled collision
+    proxy that the pawn actually walks on. Complex-as-simple collision over the
+    full-resolution mesh would cook to a physics mesh hundreds of megabytes,
+    which no character controller should have to pay for.
+
+    Returns the number of visual meshes placed.
+    """
+    tdir = _terrain_dir(root)
+    manifest_path = os.path.join(tdir, "terrain_manifest.json")
+    if not os.path.isfile(manifest_path):
+        err("no terrain_manifest.json at %s -- run tools/build_terrain_mesh.py "
+            "first" % manifest_path)
+        return 0
+    manifest = _load_json(manifest_path)
+
+    _ensure_dir(TERRAIN_MESH_DIR)
+    textures = import_textures(root)
+    material = _build_terrain_material(textures)
+
+    placed = 0
+    for tile in manifest["tiles"]:
+        src = os.path.join(tdir, tile["obj"] + ".obj")
+        if not os.path.isfile(src):
+            err("missing terrain mesh %s" % src)
+            continue
+        dest_name = "T_" + tile["obj"]
+        mesh = _import_obj(src, dest_name)
+        if mesh is None:
+            err("could not import %s" % tile["obj"])
+            continue
+
+        _tune_visual_mesh(mesh, dest_name)
+
+        if _place_mesh_actor("Terrain_" + tile["obj"], mesh,
+                             tile["origin_cm"], material, collision=False) is None:
+            err("could not place %s" % dest_name)
+            continue
+
+        placed += 1
+        log("  placed %-22s %7d tris (visual) at (%.0f, %.0f)"
+            % (dest_name, tile["tris"],
+               tile["origin_cm"][0], tile["origin_cm"][1]))
+
+        # ---- collision proxy ---------------------------------------------
+        cname = tile.get("collision_obj")
+        if not cname:
+            continue
+        csrc = os.path.join(tdir, cname + ".obj")
+        if not os.path.isfile(csrc):
+            warn("no collision proxy at %s; the pawn will fall through %s"
+                 % (csrc, dest_name))
+            continue
+        cmesh = _import_obj(csrc, "C_" + cname)
+        if cmesh is None:
+            warn("could not import the collision proxy %s" % cname)
+            continue
+        if not _enable_complex_collision(cmesh, "C_" + cname):
+            err("collision proxy %s has no collision surface" % cname)
+            continue
+        ccomp = _place_mesh_actor("TerrainCollision_" + tile["obj"], cmesh,
+                                  tile["origin_cm"], material, collision=True)
+        if ccomp is not None:
+            log("  placed %-22s %7d tris (collision, complex-as-simple)"
+                % ("C_" + cname, tile.get("collision_tris", 0)))
+
+    log("terrain: %d/%d meshes placed" % (placed, len(manifest["tiles"])))
+    return placed
+
+
+def _enable_complex_collision(mesh, name):
+    """
+    Make an imported mesh trace as complex collision.
+
+    An imported OBJ arrives with a BodySetup that has no convex hulls and the
+    default ``UseSimpleAsComplex`` trace flag -- so it has no collision surface
+    at all, whatever the component says. Switching the flag to
+    ``UseComplexAsSimple`` makes the render triangles the collision surface,
+    which is the only mode that works on a mesh shaped like terrain.
+
+    The flag lives on the *mesh's* BodySetup, not on the component: setting it
+    on the component is accepted and then ignored, which reads as a successful
+    configure and a pawn that falls through the world.
+
+    Returns True when collision is usable.
+    """
+    body = None
+    try:
+        body = mesh.get_editor_property("body_setup")
+    except Exception as exc:
+        warn("%s: no readable BodySetup (%s)" % (name, exc))
+    if body is None:
+        return False
+    try:
+        body.set_editor_property(
+            "collision_trace_flag",
+            unreal.CollisionTraceFlag.CTF_USE_COMPLEX_AS_SIMPLE)
+    except Exception as exc:
+        warn("%s: could not set the BodySetup trace flag (%s)" % (name, exc))
+        return False
+    try:
+        mesh.set_editor_property("collision_complexity",
+                                 unreal.CollisionComplexity.CTC_USE_COMPLEX_AS_SIMPLE)
+    except Exception:
+        # Not fatal: the BodySetup flag above is the one that matters.
+        pass
+    return True
+
+
+def _tune_visual_mesh(mesh, name):
+    """
+    Nanite plus a collision LOD on the visual mesh.
+
+    Nanite is what makes 1.5 M triangles affordable here, standing in for the
+    job a Landscape's LOD chain would have done. ``lod_for_collision`` is
+    pointed away from LOD0 so that if anything ever does trace this mesh it
+    uses a decimated copy rather than the full 392k triangles.
+    """
+    applied = []
+    try:
+        mesh.set_editor_property("nanite_enabled", True)
+        applied.append("nanite")
+    except Exception:
+        pass
+    try:
+        num_lods = mesh.get_num_lods()
+        target = min(COLLISION_LOD, max(0, num_lods - 1))
+        mesh.set_editor_property("lod_for_collision", target)
+        applied.append("collision_lod=%d/%d" % (target, num_lods))
+    except Exception as exc:
+        warn("could not set the collision LOD on %s (%s)" % (name, exc))
+    if applied:
+        log("    %s: %s" % (name, ", ".join(applied)))
+
+
+# =============================================================================
+# PROPS
+# =============================================================================
+
+#: Cull band per semantic class, in cm (start, end). A prop is culled once it
+#: is too small to resolve, which is a distance proportional to its size, so
+#: one number cannot serve both a 1 m bush and a 30 m building.
+PROP_CULL_CM = {
+    "tree":      (30000.0, 42000.0),
+    "building":  (40000.0, 55000.0),
+    "structure": (20000.0, 30000.0),
+    "plant":     (6000.0, 9000.0),
+    "prop":      (10000.0, 14000.0),
+}
+PROP_CULL_DEFAULT_CM = (12000.0, 16000.0)
+
+#: Engine primitive each recipe maps to. The recipes name four shapes and each
+#: matches an engine mesh with the right topology, so nothing is modelled here.
+PRIMITIVE_MESH = {
+    "box": "/Engine/BasicShapes/Cube",
+    "cone_on_cylinder": "/Engine/BasicShapes/Cylinder",
+    "cylinder": "/Engine/BasicShapes/Cylinder",
+    "post": "/Engine/BasicShapes/Cylinder",
+    "cross_billboard": "/Engine/BasicShapes/Plane",
+    "sphere": "/Engine/BasicShapes/Sphere",
+    "plane": "/Engine/BasicShapes/Plane",
+}
+
+
+def build_props(root):
+    """
+    Synthesise geometry for the committed prop placements.
+
+    ``prop_placements.json`` records 1297 instances, each with a *primitive
+    recipe* rather than a mesh path. ``import_phase2.py`` skips these, which is
+    right for a data importer; a release build should not be an empty field, so
+    the recipes are realised here as real meshes built from engine primitives.
+
+    What is preserved is placement, scale and class, which is what the data
+    actually carries. What is invented is the silhouette, and the notes say so
+    rather than passing them off as the classified props.
+    """
+    p_path = os.path.join(root, "out", "phase2", DIMENSION, "props",
+                          "prop_placements.json")
+    if not os.path.isfile(p_path):
+        warn("no prop_placements.json at %s" % p_path)
+        return 0
+    data = _load_json(p_path)
+    insts = data.get("instances", [])
+    log("props: %d instances  by_class=%s  ground_aligned=%s"
+        % (len(insts), data.get("by_class"), data.get("ground_aligned")))
+
+    if not IMPORT_PROPS or _editor_world() is None:
+        return 0
+
+    _ensure_dir(PROP_DIR)
+    mats = _prop_materials()
+
+    # One asset per (primitive, class): instances then share geometry and the
+    # HISM stays a real instanced draw rather than 1297 unique meshes.
+    assets = {}
+    groups = {}
+    for inst in insts:
+        recipe = inst.get("model") or {}
+        prim = recipe.get("primitive") or "box"
+        cls = inst.get("class") or "unknown"
+        key = (prim, cls)
+        if key not in assets:
+            assets[key] = _make_prop_mesh(prim, cls, mats)
+        if assets[key] is None:
+            continue
+        groups.setdefault(key, []).append(inst)
+
+    cell_cm = 256 * BLOCK_CM
+    total = 0
+    cell_count = 0
+    for (prim, cls), items in sorted(groups.items()):
+        mesh = assets[(prim, cls)]
+        buckets = {}
+        for inst in items:
+            pos = inst.get("position_cm") or [0.0, 0.0, 0.0]
+            buckets.setdefault(
+                (int(math.floor(pos[0] / cell_cm)),
+                 int(math.floor(pos[2] / cell_cm))), []).append(inst)
+
+        for (cx, cz), group in sorted(buckets.items()):
+            # UE 5.8 marks AHierarchicalInstancedStaticMeshActor NotPlaceable,
+            # so it is not exposed to Python and a HISM component created with
+            # new_object has no register_component() to attach it with. One
+            # StaticMeshActor per instance is what the engine will actually
+            # accept here; the cost is draw calls, which Nanite absorbs, and
+            # 1297 actors is well inside what World Partition streams.
+            placed_n = _spawn_props(group, mesh, cls, prim, cx, cz)
+            total += placed_n
+            cell_count += 1
+
+    log("  props: %d placed across %d mesh variants, %d spatial cells"
+        % (total, len([a for a in assets.values() if a]), cell_count))
+    return total
+
+
+def _spawn_props(group, mesh, cls, prim, cx, cz):
+    """
+    Spawn one StaticMeshActor per prop instance. Returns the count placed.
+
+    Each instance carries its own scale, because the shared mesh is an unscaled
+    engine primitive and the recipe's recorded height and radius have to ride on
+    the actor transform. Collision is off: the pawn walks on the terrain, and
+    1297 blocking props would only make the controller's sweep more expensive.
+    """
+    placed = 0
+    for inst in group:
+        pos = inst.get("position_cm") or [0.0, 0.0, 0.0]
+        rot = inst.get("rotation_deg") or [0.0, 0.0, 0.0]
+        scale = _prop_scale(inst.get("model") or {})
+        # Scale is applied after the spawn rather than passed in:
+        # spawn_actor_from_class's fourth parameter is a transient flag, not a
+        # scale, and handing it a Vector raises a nativize error.
+        actor = unreal.EditorLevelLibrary.spawn_actor_from_class(
+            unreal.StaticMeshActor,
+            unreal.Vector(float(pos[0]), float(pos[1]), float(pos[2])),
+            unreal.Rotator(float(rot[0]), float(rot[1]), float(rot[2])))
+        if actor is None:
+            continue
+        actor.set_actor_label("Prop_%s_%s" % (cls, prim))
+        actor.set_actor_scale3d(unreal.Vector(scale.x, scale.y, scale.z))
+        comp = actor.get_component_by_class(unreal.StaticMeshComponent)
+        if comp is None:
+            continue
+        comp.set_static_mesh(mesh)
+        for prop, value in (("collision_enabled", False),
+                            ("generate_overlap_events", False)):
+            try:
+                comp.set_editor_property(prop, value)
+            except Exception:
+                pass
+        placed += 1
+    return placed
+
+
+def _prop_materials():
+    """
+    One unlit-ish tinted material per semantic class.
+
+    Deliberately plain. A prop that reads correctly at this scale needs a leaf
+    alpha mask and a bark colour, which is art direction; what matters for a
+    terrain rebuild is that trees read as vertical green mass and structures as
+    grey block, so the classes are separated by hue and left at that.
+    """
+    palette = {
+        "tree":      unreal.LinearColor(0.16, 0.34, 0.12, 1.0),
+        "plant":     unreal.LinearColor(0.30, 0.48, 0.18, 1.0),
+        "structure": unreal.LinearColor(0.55, 0.53, 0.50, 1.0),
+        "building":  unreal.LinearColor(0.62, 0.58, 0.52, 1.0),
+        "prop":      unreal.LinearColor(0.42, 0.38, 0.34, 1.0),
+    }
+    default = unreal.LinearColor(0.45, 0.45, 0.45, 1.0)
+    _ensure_dir(MATERIAL_DIR)
+    out = {}
+    for cls, colour in palette.items():
+        path = "%s/MC_Prop_%s" % (MATERIAL_DIR, cls)
+        if unreal.EditorAssetLibrary.does_asset_exist(path):
+            out[cls] = unreal.load_asset(path)
+            continue
+        mat = unreal.AssetToolsHelpers.get_asset_tools().create_asset(
+            "MC_Prop_%s" % cls, MATERIAL_DIR, unreal.Material,
+            unreal.MaterialFactoryNew())
+        if mat is None:
+            continue
+        try:
+            mat.set_editor_property("shading_model",
+                                    unreal.MaterialShadingModel.MSM_DEFAULT_LIT)
+        except Exception:
+            pass
+        mel = unreal.MaterialEditingLibrary
+        try:
+            const = mel.create_material_expression(
+                mat, unreal.MaterialExpressionVectorParameter, -300, 0)
+            const.set_editor_property("parameter_name", "Tint")
+            const.set_editor_property("default_value", colour)
+            mel.connect_material_property(
+                const, "", unreal.MaterialProperty.MP_BASE_COLOR)
+            rough = mel.create_material_expression(
+                mat, unreal.MaterialExpressionConstant, -300, 200)
+            try:
+                rough.set_editor_property("r", 0.9)
+            except Exception:
+                pass
+            mel.connect_material_property(
+                rough, "", unreal.MaterialProperty.MP_ROUGHNESS)
+        except Exception as exc:
+            warn("prop material graph failed for %s (%s)" % (cls, exc))
+        unreal.EditorAssetLibrary.save_loaded_asset(mat)
+        out[cls] = mat
+    out["_default"] = out.get("prop") or (list(out.values())[0] if out else None)
+    return out
+
+
+def _make_prop_mesh(primitive, cls, mats):
+    """
+    Realise one primitive recipe as a StaticMesh asset.
+
+    A cube is 100 cm per side, a cylinder 100 cm tall and 50 cm across, a plane
+    100 cm square -- none of which match a recipe's height and radius. Each is
+    therefore scaled onto the *median* recipe size for its (primitive, class)
+    pair, and the per-instance transform carries the residual. That keeps most
+    transforms close to unity, which is what an HISM transform buffer wants,
+    while still reproducing the recorded sizes.
+    """
+    key = (primitive, cls)
+    name = "P_%s_%s" % (cls, primitive)
+    dest = "%s/%s" % (PROP_DIR, name)
+    if unreal.EditorAssetLibrary.does_asset_exist(dest):
+        return unreal.load_asset(dest)
+
+    src = PRIMITIVE_MESH.get(primitive, "/Engine/BasicShapes/Cube")
+    src_mesh = unreal.load_asset(src)
+    if src_mesh is None:
+        warn("no engine mesh for primitive %r" % primitive)
+        return None
+
+    asset_name = "%s_%s" % (cls, primitive)
+    dest = "%s/%s" % (PROP_DIR, asset_name)
+    mesh = unreal.load_asset(dest)
+    if mesh is None:
+        # duplicate_asset takes the loaded object, not a path string; handing it
+        # the string raises "Failed to convert parameter 'original_object'".
+        try:
+            unreal.AssetToolsHelpers.get_asset_tools().duplicate_asset(
+                asset_name, PROP_DIR, src_mesh)
+            mesh = unreal.load_asset(dest)
+        except Exception as exc:
+            warn("could not duplicate %s (%s); using the engine asset in place"
+                 % (src, exc))
+    if mesh is None:
+        # Sharing the engine asset is fine: the per-instance transform carries
+        # each recipe's size, so no per-class scaling is baked in.
+        mesh = src_mesh
+
+    mat = mats.get(cls) or mats.get("_default")
+    if mat is not None:
+        try:
+            mesh.set_material(0, mat)
+        except Exception:
+            pass
+
+    unreal.EditorAssetLibrary.save_loaded_asset(mesh)
+    return mesh
+
+
+def _prop_scale(recipe):
+    """Per-instance scale that turns the engine primitive into the recipe size."""
+    h = float(recipe.get("height_cm") or 100.0)
+    r = float(recipe.get("radius_cm") or 75.0)
+    prim = recipe.get("primitive") or "box"
+    if prim == "box":
+        return unreal.Vector(max(0.2, 2.0 * r / 100.0),
+                             max(0.2, 2.0 * r / 100.0),
+                             max(0.1, h / 100.0))
+    if prim in ("cone_on_cylinder", "cylinder", "post", "sphere"):
+        d = max(0.1, 2.0 * r / 100.0)
+        return unreal.Vector(d, d, max(0.1, h / 100.0))
+    d = max(0.1, 2.0 * r / 100.0)
+    return unreal.Vector(d, d, max(0.1, h / 100.0))
+
+
+# =============================================================================
+# PLAYABILITY
+# =============================================================================
+
+def make_playable(root):
+    """
+    Give the level a pawn, a GameMode and a PlayerStart.
+
+    Without these a packaged build opens on a black screen: the default engine
+    GameMode has no pawn configured for this project, and even if it did there
+    is nowhere to spawn it. The upstream scripts assume a developer opens the
+    editor and places these by hand; a release build has to carry them.
+    """
+    if _editor_world() is None:
+        err("no world; cannot make the level playable")
+        return False
+
+    ground = _terrain_height_cm(root)
+    spawn = unreal.Vector(0.0, 0.0, ground + 300.0)
+
+    start = None
+    for actor in unreal.EditorLevelLibrary.get_all_level_actors():
+        if actor.get_class().get_name() == "PlayerStart":
+            start = actor
+            break
+    if start is None:
+        start = unreal.EditorLevelLibrary.spawn_actor_from_class(
+            unreal.PlayerStart, spawn, unreal.Rotator(0.0, 0.0, 0.0))
+        if start is None:
+            err("could not place a PlayerStart")
+            return False
+        log("  PlayerStart at (%.0f, %.0f, %.0f)" % (spawn.x, spawn.y, spawn.z))
+    else:
+        log("  PlayerStart already present")
+
+    # The engine's default pawn flies a camera and ignores collision, which is
+    # right for inspecting a terrain rebuild and wrong for a game.
+    # SpectatorPawn walks and looks around without a mesh, so the terrain stays
+    # unobstructed and the pawn still obeys gravity and collision.
+    _set_game_mode()
+    return True
+
+
+def _terrain_height_cm(root):
+    """
+    Terrain height at the map centre, in cm.
+
+    Read out of the heightmap rather than guessed, so the pawn spawns above the
+    ground instead of inside it. The campus is a plateau, so the centre is a
+    safe sample.
+    """
+    lsc_dir = os.path.join(root, "out", "phase2", DIMENSION, "landscape")
+    meta_path = os.path.join(lsc_dir, "landscape.json")
+    if not os.path.isfile(meta_path):
+        return 2000.0
+    meta = _load_json(meta_path)
+    tile = meta["tiles"][0]
+    try:
+        w, h, rows, ch = read_heightmap(
+            os.path.join(lsc_dir, tile["file"]))
+    except Exception:
+        return 2000.0
+    line = rows[h // 2]
+    i = ((w // 2) * ch) * 2
+    (v,) = struct.unpack(">H", bytes(line[i:i + 2]))
+    return decode_height_cm(v, tile["height_cm_meta"])
+
+
+def _world_settings():
+    world = _editor_world()
+    if world is None:
+        return None
+    try:
+        return unreal.World.get_world_settings(world)
+    except Exception:
+        pass
+    try:
+        return world.get_world_settings()
+    except Exception:
+        return None
+
+
+def _set_game_mode():
+    """
+    Bind a GameMode and a pawn so a packaged build has something to spawn.
+
+    A Blueprint GameMode cannot be authored from Python, so this uses the
+    engine's own ``AGameModeBase`` -- which is all a first-person walk around
+    the terrain needs -- and points its DefaultPawnClass at ``ASpectatorPawn``.
+
+    The pawn class is set on the *GameMode class default object*, not on
+    WorldSettings: ``DefaultPawnClass`` is a member of AGameModeBase, and
+    WorldSettings only carries the GameMode class itself under the property
+    name ``default_game_mode``. Writing ``default_pawn_class`` to WorldSettings
+    is accepted and then ignored, so the packaged build spawns nothing.
+
+    Returns True when both took.
+    """
+    w = _world_settings()
+    if w is None:
+        warn("no WorldSettings; a packaged build will use engine defaults")
+        return False
+
+    ok = True
+
+    gm_path = "/Script/Engine.GameModeBase"
+    gm_cls = unreal.load_class(None, gm_path)
+    if gm_cls is None:
+        warn("could not load %s" % gm_path)
+        ok = False
+    else:
+        applied = False
+        for prop in ("default_game_mode", "game_mode"):
+            try:
+                w.set_editor_property(prop, gm_cls)
+                log("  game mode: GameModeBase (WorldSettings.%s)" % prop)
+                applied = True
+                break
+            except Exception:
+                continue
+        if not applied:
+            warn("WorldSettings would not accept a GameMode class; the "
+                 "packaged build will use the engine default")
+            ok = False
+
+        # DefaultPawnClass lives on the GameMode CDO. The candidates are the
+        # C++ class paths -- /Script/Engine.SpectatorPawn -- because
+        # /Engine/EngineMeshes/SpectatorPawn is a Blueprint asset path and
+        # resolves to None for a native class.
+        pawn_ok = False
+        try:
+            cdo = unreal.get_default_object(gm_cls)
+            for candidate in ("/Script/Engine.SpectatorPawn",
+                              "/Script/Engine.DefaultPawn"):
+                pawn_cls = unreal.load_class(None, candidate)
+                if pawn_cls is None:
+                    continue
+                cdo.set_editor_property("default_pawn_class", pawn_cls)
+                log("  pawn: %s" % pawn_cls.get_name())
+                pawn_ok = True
+                break
+        except Exception as exc:
+            warn("could not set DefaultPawnClass (%s)" % exc)
+
+    return ok and pawn_ok
+
+
+# =============================================================================
+# ATMOSPHERE
+# =============================================================================
+
+def build_atmosphere():
+    """
+    Directional light, sky light, sky atmosphere and height fog.
+
+    A heightfield with no light rig renders as a flat grey silhouette, so this
+    is not decoration -- it is the difference between a build that looks broken
+    and one that looks like a place. The sun is a late-afternoon 35 degrees,
+    which puts the plateau's relief into relief without needing a skylight to
+    sell it.
+    """
+    world = _editor_world()
+    if world is None:
+        return
+
+    sun = _find_actor("DirectionalLight")
+    if sun is None:
+        sun = unreal.EditorLevelLibrary.spawn_actor_from_class(
+            unreal.DirectionalLight, unreal.Vector(0.0, 0.0, 12000.0),
+            unreal.Rotator(-35.0, -125.0, 0.0))
+        if sun is not None:
+            sun.set_actor_label("MC_Sun")
+            log("  directional light added (elev -35, yaw -125)")
+    if sun is not None:
+        comp = sun.get_component_by_class(unreal.DirectionalLightComponent)
+        if comp is not None:
+            for prop, value in (("intensity", 8.0), ("temperature", 5200.0),
+                                ("cast_shadows", True),
+                                ("dynamic_shadows", True),
+                                ("shadow_bias", 0.05)):
+                try:
+                    comp.set_editor_property(prop, value)
+                except Exception:
+                    pass
+
+    sky = _find_actor("SkyLight")
+    if sky is None:
+        sky = unreal.EditorLevelLibrary.spawn_actor_from_class(
+            unreal.SkyLight, unreal.Vector(0.0, 0.0, 6000.0),
+            unreal.Rotator(0.0, 0.0, 0.0))
+        if sky is not None:
+            sky.set_actor_label("MC_SkyLight")
+            log("  sky light added")
+    if sky is not None:
+        comp = sky.get_component_by_class(unreal.SkyLightComponent)
+        if comp is not None:
+            for prop, value in (("intensity", 1.0), ("real_time_capture", True)):
+                try:
+                    comp.set_editor_property(prop, value)
+                except Exception:
+                    pass
+
+    if _find_actor("SkyAtmosphere") is None and \
+            unreal.EditorLevelLibrary.spawn_actor_from_class(
+                unreal.SkyAtmosphere, unreal.Vector(0.0, 0.0, 0.0),
+                unreal.Rotator(0.0, 0.0, 0.0)):
+        log("  sky atmosphere added")
+
+    # Height fog rather than a flat colour: it puts distance haze on the far
+    # edge of the map and reads as scale.
+    fog = _find_actor("ExponentialHeightFog")
+    if fog is None:
+        fog = unreal.EditorLevelLibrary.spawn_actor_from_class(
+            unreal.ExponentialHeightFog, unreal.Vector(0.0, 0.0, 0.0),
+            unreal.Rotator(0.0, 0.0, 0.0))
+        if fog is not None:
+            fog.set_actor_label("MC_Fog")
+            log("  exponential height fog added")
+    if fog is not None:
+        comp = fog.get_component_by_class(unreal.ExponentialHeightFogComponent)
+        if comp is not None:
+            for prop, value in (
+                ("fog_density", 0.015),
+                ("fog_height_falloff", 0.35),
+                ("height_fog_start_distance", 3000.0),
+                ("height_fog_height", 800.0),
+                ("fog_color", unreal.LinearColor(0.62, 0.70, 0.80, 1.0)),
+                ("start_density", 0.06),
+            ):
+                try:
+                    comp.set_editor_property(prop, value)
+                except Exception:
+                    pass
+
+
+def _find_actor(class_name):
+    for actor in unreal.EditorLevelLibrary.get_all_level_actors():
+        if actor.get_class().get_name() == class_name:
+            return actor
+    return None
+
+
+# =============================================================================
+# VERIFICATION
+# =============================================================================
+
+def verify(meshes_placed, props_placed):
+    """
+    Check the assembled level against what the data promised.
+
+    Each check exists because it corresponds to a way this build can silently
+    produce something that looks fine in the editor and is wrong in the
+    viewport.
+    """
+    ok = True
+    visual = collision = proxies = starts = 0
+    pawn_ok = mode_ok = False
+
+    for actor in unreal.EditorLevelLibrary.get_all_level_actors():
+        name = actor.get_class().get_name()
+        if name == "StaticMeshActor":
+            label = actor.get_actor_label()
+            if label.startswith("TerrainCollision_"):
+                proxies += 1
+                comp = actor.get_component_by_class(unreal.StaticMeshComponent)
+                if comp is None:
+                    continue
+                # 5.8 exposes set_static_mesh() but no matching getter; the
+                # asset is read back through the editor property.
+                mesh = comp.get_editor_property("static_mesh")
+                if mesh is None:
+                    continue
+                # The check that matters is whether the *mesh* has a collision
+                # surface. A component can report collision_enabled while the
+                # BodySetup it points at has no geometry at all, which is
+                # exactly what a freshly imported OBJ looks like.
+                try:
+                    body = mesh.get_editor_property("body_setup")
+                    if body is None:
+                        continue
+                    flag = body.get_editor_property("collision_trace_flag")
+                    if flag == unreal.CollisionTraceFlag.CTF_USE_COMPLEX_AS_SIMPLE:
+                        collision += 1
+                except Exception:
+                    continue
+            elif label.startswith("Terrain_"):
+                visual += 1
+        elif name == "PlayerStart":
+            starts += 1
+
+    # Read the pawn and GameMode back off the GameMode CDO: that is where a
+    # packaged build looks, so it is what has to be verified.
+    try:
+        gm_cls = unreal.load_class(None, "/Script/Engine.GameModeBase")
+        cdo = unreal.get_default_object(gm_cls) if gm_cls else None
+        if cdo is not None:
+            pawn_cls = cdo.get_editor_property("default_pawn_class")
+            # AGameModeBase already defaults to ADefaultPawn, so "not None" is
+            # not evidence that anything was set -- require that it names a
+            # pawn class rather than the base UObject.
+            pawn_ok = (pawn_cls is not None
+                       and "Pawn" in pawn_cls.get_name())
+            mode_ok = True
+    except Exception:
+        pass
+
+    log("verify: %d visual meshes, %d collision proxies (%d with a collision "
+        "surface), %d PlayerStart, %d props, gamemode=%s pawn=%s"
+        % (visual, proxies, collision, starts, props_placed,
+           "ok" if mode_ok else "MISSING",
+           "ok" if pawn_ok else "MISSING"))
+
+    if meshes_placed != 4:
+        err("expected 4 terrain meshes, placed %d" % meshes_placed)
+        ok = False
+    if collision == 0:
+        err("no terrain collision proxy has usable collision; the pawn will "
+            "fall through the world")
+        ok = False
+    if collision != proxies:
+        err("%d of %d collision proxies have no collision surface"
+            % (proxies - collision, proxies))
+        ok = False
+    if starts == 0:
+        err("no PlayerStart; a packaged build will spawn nowhere")
+        ok = False
+    if not mode_ok:
+        err("no GameMode bound; a packaged build will spawn the wrong pawn")
+        ok = False
+    if not pawn_ok:
+        err("no DefaultPawnClass on the GameMode; a packaged build will spawn "
+            "nothing")
+        ok = False
+    return ok
+
+
+# =============================================================================
+# ENTRY POINT
+# =============================================================================
+
+def run():
+    log("=" * 70)
+    log("MC2UE5 release level build | dimension=%s" % DIMENSION)
+    log("=" * 70)
+
+    root = resolve_root()
+    if root is None:
+        err("could not locate the MC2UE5 root (needs out/phase2/). "
+            "Set MC2UE5_ROOT.")
+        return 1
+    log("data root: %s" % root)
+
+    tiles = validate_source(root)
+    if not tiles:
+        err("no valid heightmap tiles")
+        return 1
+
+    if open_level() is None:
+        return 1
+
+    meshes = import_terrain(root)
+    if meshes == 0:
+        err("no terrain meshes placed")
+        return 1
+
+    props = build_props(root) if IMPORT_PROPS else 0
+    build_atmosphere()
+    make_playable(root)
+
+    if save_all():
+        log("saved")
+
+    verify(meshes, props)
+
+    log("-" * 70)
+    if _notes:
+        log("notes (%d):" % len(_notes))
+        for n in _notes[:20]:
+            log("  - %s" % n)
+    if _errors:
+        log("errors (%d):" % len(_errors))
+        for e in _errors:
+            log("  ! %s" % e)
+        log("-" * 70)
+        log("BUILD FAILED")
+        return 1
+
+    log("-" * 70)
+    log("BUILD OK -- %d terrain meshes, %d props" % (meshes, props))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(run())

@@ -31,6 +31,16 @@ project/Packaged/
 project/Content/**/__pycache__/
 *.pyc
 
+# ---- 发行构建产物（tools/build_release_level.py 生成，422 MB）----------
+# 原则同 voxel_data：这些都是 build_release_level.py 一键重建的中间产物，
+# 入库只会在每次重建时产生几百 MB 的二进制 diff。发行包本身走 GitHub
+# Release（见 RELEASE_NOTES.md），不进 git。
+project/Content/MC/            # 地形网格 / 碰撞代理 / 材质 / 纹理 / 道具
+project/Content/Maps/          # MCReplica.umap + World Partition HLOD 层
+project/Content/__ExternalActors__/   # World Partition 的外部 actor
+tools_out/                     # build_terrain_mesh.py 的 OBJ 输出目录
+
+
 # ---- 凭据 —— 绝不提交 --------------------------------------------------
 .gh_token
 .gh_askpass.sh
