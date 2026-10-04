@@ -42,21 +42,22 @@
       "landscape": {
         "dir": "landscape",
         "resolution": [
-          745,
-          1055
+          373,
+          528
         ],
         "n_components": [
-          24,
-          34
+          48,
+          68
         ],
         "section_size": 31,
         "quads_per_component": 31,
         "xy_scale_cm": 100.0,
-        "tile_count": 1,
+        "tile_count": 4,
         "tile_grid": [
-          1,
-          1
-        ]
+          2,
+          2
+        ],
+        "max_tile_blocks": 768
       }
     },
     "water": {
@@ -66,15 +67,18 @@
       "has_water": true
     },
     "props": {
-      "count": 218,
+      "count": 1297,
       "by_class": {
-        "tree": 51,
+        "tree": 54,
         "building": 3,
-        "structure": 74,
-        "plant": 86,
-        "prop": 4
+        "structure": 609,
+        "plant": 601,
+        "prop": 30
       },
-      "ground_aligned": true
+      "ground_aligned": true,
+      "components_seen": 1298,
+      "dropped_too_small": 0,
+      "dropped_too_large": 1
     },
     "debug": {
       "height_color": "overworld_height_color.png",

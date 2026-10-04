@@ -14,6 +14,8 @@
 |---|---|---|---|
 | **层1 解析** | region `.mca` 文件 | MC2WV2 体素流 `.bin` + `stats.json` + 方块状态表 | 完成，回归测试全绿 |
 | **层2 语义重建** | MC2WV2（只读） | Landscape 高度图 PNG + 水体 + 物体实例 + 元数据 | 完成，回归测试全绿 |
+| **画质分级** | 引擎性能指数 / 适配器名 | 五档 Scalability + DeviceProfile + 运行时覆盖 | 配置与契约测试全绿，**帧率须实机验证** |
+| **性能优化** | — | HISM 按类剔除、地形 LOD、component 分块 | 脚本就绪，**收益须实机验证** |
 | **UE5 装配** | 上述两者 | World Partition 关卡（HISM 方块层 + Landscape 地形层） | 脚本就绪，**须在装有 UE 5.5.4 的 Windows 机器上执行** |
 
 坐标约定贯穿全流程：**`world block (x, y, z) → UE cm (x·100, y·100, z·100)`**
@@ -95,19 +97,37 @@ python3 phase2/run_phase2.py --dim overworld --region campus --min-prop-blocks 6
 ```bash
 python3 tests/run_tests.py                      # 主套件
 python3 tests/test_import_phase2_offline.py     # 导入脚本离线验证（无需引擎）
+python3 tests/test_quality_tiers.py             # 画质分级的引擎契约（无需引擎）
+python3 tests/test_hism_culling.py              # HISM 剔除与地形 LOD（无需引擎）
 ```
 
-两套测试，锁住开发中真实出现过的每一个 bug（详见各文件头注释）：
+四套测试，锁住开发中真实出现过的每一个 bug（详见各文件头注释）：
 
 - **层1**：位打包 round-trip、假错误归零、范围统计与 `.bin` 一致
 - **层2**：Landscape 高度编码往返、**重采样不缩放世界**、分辨率合法性、XY Scale = 100
 - **层2**：连通域（U 形 / 环形 / 3D 壳体）、**地面对齐用世界坐标**、水体网格按需生成顶点
+- **分块**：`_axis_split` 平衡无缝、tile 完整覆盖区域、**tile 网格不引发 component 爆炸**
 - **导入层**：PNG 解码器与 PIL 逐字节一致、高度解码与编码端互逆、
   篡改编码被拒绝、`DRY_RUN` 结构上不可能碰到关卡、Z Scale 传参链正确
+- **画质分级**：阈值只在引擎真正读取的那一段、顶层档用 `@Cine` 而非 `@4`、
+  分辨率不越过引擎的 100% 钳制、打包默认档不是 Epic、三处定义不漂移、
+  **地形 LOD 两个 cvar 五档写全**（漏写不报错，只是那一档静默不降级）
+- **剔除配置**：淡出带顺序正确、低配缩放后仍可用、物件按类分档、
+  **属性名不支持时降级告警而不是中断导入**、
+  **地形 LOD 分档单调且乘积避开引擎钳制**
 
 > 最后一条尤其重要：曾经 `_apply_landscape_scale` 被重复定义，
 > 后者把 `quads`（31）当 Z Scale 传了出去，地形会高出 512 倍且**不报任何错**。
 > 现在有专门的测试守住这条参数链。
+>
+> 另一类更隐蔽的 bug 是「配置写得完全合理、引擎却根本不读」——
+> `PerfIndexThresholds_*` 放错文件、顶层档段名写成 `@4`、分辨率越过 100%
+> 钳制，三者都**不报错**，只是让整套分级静默失效。
+> `test_quality_tiers.py` 的前四条断言专门守这一类。
+>
+> 同一类的还有**方向性错误**：`r.LandscapeLOD0DistributionScale` 在 LOD 衰减
+> 公式的分母上，值**越大降级越早**。把它按「数字大 = 画质高」来配，整条
+> 档位梯度会倒过来，而关卡照样能跑。详见 [`QUALITY_TIERS.md`](QUALITY_TIERS.md) §4.2。
 
 ### 5. UE5 装配（**须在 Windows + UE 5.5.4 上执行**）
 
@@ -135,7 +155,9 @@ MC2UE5/
 │   └── run_phase2.py            端到端流水线
 ├── tests/
 │   ├── run_tests.py                    回归测试（层1 + 层2）
-│   └── test_import_phase2_offline.py   导入脚本离线验证（stub 掉 unreal）
+│   ├── test_import_phase2_offline.py   导入脚本离线验证（stub 掉 unreal）
+│   ├── test_quality_tiers.py           画质分级的引擎契约（阈值位置 / 段名 / 钳制）
+│   └── test_hism_culling.py            HISM 剔除与地形 LOD 配置
 ├── scripts/
 │   ├── doctor.py                环境体检
 │   ├── build_material_manifest.py
@@ -146,12 +168,16 @@ MC2UE5/
 │   ├── survey/<dim>/            勘测产物（中间态，不入库）
 │   └── phase2/<dim>/            层2 产物（4.9 MB，入库）
 ├── PHASE2_PLAN.md               层2 规划与契约（坐标 / 尺寸 / 高度编码）
+├── QUALITY_TIERS.md             五档画质方案（含引擎源码依据）
 └── project/                     UE5 工程
     ├── MCReplica.uproject
     ├── Config/
+    │   ├── DefaultScalability.ini      五档定义 + 自动选档阈值
+    │   └── DefaultDeviceProfiles.ini   启动默认档 + 可按名选取的档位
     └── Content/Python/
         ├── import_world.py      层1 → HISM 方块层
-        └── import_phase2.py     层2 → Landscape / 水体 / 物体层
+        ├── import_phase2.py     层2 → Landscape / 水体 / 物体层
+        └── apply_quality.py     运行时选档与手动覆盖
 ```
 
 **Git LFS 分层**：源码、JSON 清单、debug 图与 landscape heightmap 走普通 Git
@@ -210,21 +236,41 @@ Landscape 尺寸求解时把多余格数用**边缘填充**吸收，而不是缩
 `resample_to_grid()` 保持原始区域严格 1:1 索引映射。全域缩放会在 700+ block 的
 远端造成数米漂移，而 XY Scale 一旦偏离 100，地形就与层1 的 HISM 方块层错位。
 
+**画质分级是三层，不是三层设备检测。**
+一份资产 + 五档运行，分档只改「运行期怎么渲染」。三层各管一件事：
+`DefaultScalability.ini` 定义档位内容并给出自动选档阈值，`DefaultDeviceProfiles.ini`
+提供未跑基准时的地板档和可按名选取的命名档，`apply_quality.py` 负责运行时决策与
+玩家手动覆盖。
+
+这里有两条经源码核实的结论值得记住，因为**违反它们都不报错**：
+
+- **Windows 上不存在「按硬件匹配的 DeviceProfile」。** `WindowsDeviceProfileSelectorModule`
+  只会返回 `Windows` 或 `Windows_<RHI>`，`MatchProfile` / `SRC_GpuFamily` 是 Android 专属。
+  所以硬件自动检测只能由 Python 做。
+- **`PerfIndexThresholds_*` 只在 `DefaultScalability.ini` 的 `[ScalabilitySettings]` 段
+  被读取**（`Scalability.cpp`），写在 DeviceProfile 里是纯死文本。
+
+完整设计、每档数值与源码引用见 [`QUALITY_TIERS.md`](QUALITY_TIERS.md)。
+
 ---
 
 ## 已知限制
 
-1. **未在本沙箱运行过 UE 编辑器。** 沙箱无 GPU、无 UE。`import_world.py` 和
-   `import_phase2.py` 都经过语法检查与纯逻辑单元测试（PNG 解码、高度编码往返、
-   tile 校验的拒绝行为），但**从未对真实引擎 API 执行过**。
-2. **物体模型是「配方」而非文件。** `BuiltinModelProvider` 输出
+1. **未在本沙箱运行过 UE 编辑器。** 沙箱无 GPU、无 UE。`import_world.py`、
+   `import_phase2.py`、`apply_quality.py` 都经过语法检查与纯逻辑单元测试
+   （PNG 解码、高度编码往返、tile 校验的拒绝行为、画质分级的引擎契约、
+   剔除带配置），但**从未对真实引擎 API 执行过**。
+2. **帧率与观感未实测。** 五档画质与 HISM 剔除的配置正确性有测试保证，
+   但实际收益必须在 Windows + UE 5.5.4 上测。验收清单见
+   `project/README.md` §13.4。**未实测的部分不会被声称为「已验证」。**
+3. **物体模型是「配方」而非文件。** `BuiltinModelProvider` 输出
    `builtin:tree:cone_on_cylinder` 这类图元配方，没有实际网格。接真实 CC0 模型：
    `--models library --model-root <Poly Haven/Kenney/Quaternius 目录>`。
-3. **语义分类弱于 U-Net。** 能区分「树 vs 建筑」，不能区分「橡树 vs 白桦」——
+4. **语义分类弱于 U-Net。** 能区分「树 vs 建筑」，不能区分「橡树 vs 白桦」——
    `composition` 里保留了方块名直方图，供下游细化。
-4. **建成区只有 6 个孤立水柱**，形不成 2×2 面片，故无水体 OBJ。这是数据实情
+5. **建成区只有 6 个孤立水柱**，形不成 2×2 面片，故无水体 OBJ。这是数据实情
    （喷泉/井），不是缺陷；`water.json` 的 `note` 字段记录了这一点。
-5. **non_cube 方块按立方体近似**（层1 遗留，见 `project/README.md` §7）。
+6. **non_cube 方块按立方体近似**（层1 遗留，见 `project/README.md` §7）。
 
 ---
 

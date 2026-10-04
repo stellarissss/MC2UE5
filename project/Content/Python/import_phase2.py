@@ -109,6 +109,53 @@ WATER_MAT_DIR = "/Game/P2/Materials"
 PROP_DIR = "/Game/P2/Props"
 WATER_MATERIAL_NAME = "MC_Water"
 
+# =============================================================================
+# LANDSCAPE LOD -- the second-biggest frame-time lever after HISM culling
+# =============================================================================
+# The campus terrain is 4 Landscape actors of 373x528 vertices each, one vertex
+# per block. At LOD0 that is ~197 k vertices per tile, ~790 k for the map, and
+# most of it is far away and sub-pixel. Landscape LOD exists to drop those
+# components to a coarser mesh, but its default distribution is tuned for a
+# landscape you fly over, not one you walk through at eye level.
+#
+# Three knobs, and the distinction matters:
+#
+#   lod0_screen_size (per actor) is the screen size at which a component keeps
+#       full resolution. This is the baseline and it is written per actor, so
+#       it is saved with the level and travels with the asset. Everything else
+#       here multiplies this, so a tier that changes nothing else still gets a
+#       sane landscape.
+#
+#   r.LandscapeLOD0DistributionScale / r.LandscapeLODDistributionScale (global
+#       cvars) multiply the *distribution* -- how fast each successive LOD's
+#       screen-size threshold falls off. From ULandscapeLODStreamingProxy::
+#       GetLODScreenSizeArray (Landscape.cpp):
+#
+#           const float ScreenSizeMult =
+#               1.f / FMath::Max(LOD0DistributionSetting
+#                               * CVarLSLOD0DistributionScale->GetFloat(), 1.01f);
+#           for (...) { Result.Add(CurrentScreenSize);
+#                        CurrentScreenSize *= ScreenSizeMult; }
+#
+#       Read that carefully: the cvar sits in the *denominator*, so a larger
+#       value shrinks the multiplier and drops to coarser LODs sooner. Both
+#       default to 1.0 and both are declared ECVF_Scalability
+#       (LandscapeRender.cpp), which is the engine telling us it expects to be
+#       driven by a scalability group. So they are set per tier in
+#       DefaultScalability.ini, not here -- a cvar typed into the console is
+#       not persisted, but one read from a [Group@N] section is, and the tier
+#       system is ini-driven. See QUALITY_TIERS.md 4.1.
+#
+# 1.0 is the engine default for lod0_screen_size. Raising it is the one lever
+# that needs no cvar and no tier, so the baseline takes it: on a 1 m grid the
+# terrain has detail worth keeping close, and dropping LOD0 too eagerly is
+# what makes a Minecraft rebuild look smooth and blobby.
+LANDSCAPE_LOD0_SCREEN_SIZE = 1.0
+
+# Blend range 1.0 blends LOD across an entire section, which on a 31-quad
+# section is a 31 m transition -- long enough to hide the pop. Lower values
+# tighten the blend toward the boundary and reveal it. Left at the default.
+
 # Landscape resolution. Phase 2 solved components/sections to match the world
 # extent; we read those back from landscape.json and only assert them here.
 FORCE_SECTION_SIZE = 0          # 0 = use whatever landscape.json says
@@ -148,6 +195,25 @@ def warn(msg):
 
 def err(msg):
     unreal.log_error("[MC2UE5-P2] %s" % msg)
+
+
+#: Keys already reported by :func:`_warn_once`, so a systematic property-name
+#: mismatch is stated once instead of once per actor across thousands of them.
+_warned_once = set()
+
+
+def _warn_once(key, msg):
+    """Log ``msg`` the first time ``key`` is seen, then stay quiet.
+
+    Used for conditions that repeat per component but mean one thing. A
+    property that does not exist on this engine version fails on every
+    component in the level, and a few thousand identical warnings bury the
+    real ones.
+    """
+    if key in _warned_once:
+        return
+    _warned_once.add(key)
+    warn(msg)
 
 
 # =============================================================================
@@ -519,6 +585,7 @@ def _spawn_landscape(world, tile, cx, cy, quads, xy_scale_cm, z_scale_cm,
 
     _apply_landscape_scale(actor, xy_scale_cm, z_scale_cm)
     _apply_landscape_info(actor, tile, cx, cy, quads)
+    _apply_landscape_lod(actor, tile)
 
     # Read the scale back: this is the value the engine will actually use, and
     # it is what the alignment check downstream must be compared against.
@@ -528,6 +595,31 @@ def _spawn_landscape(world, tile, cx, cy, quads, xy_scale_cm, z_scale_cm,
              "(%.1f, %.1f, %.6f) -- terrain will not line up with the block "
              "layer" % (s.x, s.y, s.z, xy_scale_cm, xy_scale_cm, z_scale_cm))
     return actor
+
+
+def _apply_landscape_lod(actor, tile):
+    """
+    Set the per-actor Landscape LOD threshold.
+
+    ``lod0_screen_size`` is the screen size at which a component keeps full
+    resolution; above it, components drop to coarser LODs. Raising it is the
+    single effective lever on a landscape this dense, and unlike the global
+    ``r.LandscapeLOD0DistributionScale`` it is an actor property, so it is
+    saved into the level and cannot be lost between sessions.
+
+    Best-effort, like every other optional property here: a missing property
+    costs frames, not correctness, so it must not abort the import. Reported
+    once per property rather than once per tile.
+    """
+    for prop, value in (("lod0_screen_size", float(LANDSCAPE_LOD0_SCREEN_SIZE)),
+                        ("lod_blend_range", 1.0)):
+        try:
+            actor.set_editor_property(prop, value)
+        except Exception as exc:
+            _warn_once("landscape_%s" % prop,
+                       "could not set %s on %s (%s); Landscape LOD will use the "
+                       "engine default, which costs frame time"
+                       % (prop, tile.get("file", "?"), exc))
 
 
 def _apply_landscape_scale(actor, xy_scale_cm, z_scale_cm):
@@ -890,12 +982,61 @@ def _spawn_hism(world, mesh, items, z_off, tag):
             xforms = xforms[:MAX_PROPS_PER_ASSET]
         if not xforms:
             continue
+        _tune_prop_culling(comp, tag)
         comp.add_instances(xforms, False, True)   # bWorldSpace=False
         total += len(xforms)
         actors += 1
 
     log("  %s: %d HISM actors, %d instances" % (tag, actors, total))
     return total
+
+
+#: Cull distance per semantic class, in centimetres: (start, end).
+#:
+#: Props cannot share one number the way the layer-1 block layer can, because
+#: they differ in size by two orders of magnitude. A 1 m bush and a 30 m
+#: building both fit inside a 40 m fade band, but the bush is gone long before
+#: the band ends while the building is still fully visible. Using the block
+#: layer's numbers for both would either draw small props at distances where
+#: they are sub-pixel, or cull large ones while they still read clearly.
+#:
+#: The rule each entry encodes: a prop is culled once it is too small to
+#: resolve, which is a distance proportional to its size. Trees keep the
+#: longest range because their canopies are the campus's mid-distance
+#: silhouette and losing them early flattens the whole scene.
+PROP_CULL_CM = {
+    "tree":      (30000.0, 42000.0),
+    "building":  (40000.0, 55000.0),
+    "structure": (20000.0, 30000.0),
+    "plant":     (6000.0, 9000.0),
+    "prop":      (10000.0, 14000.0),
+}
+
+#: Fallback for a class not in the table above. Mid-range on purpose: an
+#: unknown prop is more likely to be a small piece of furniture than a tower.
+PROP_CULL_DEFAULT_CM = (12000.0, 16000.0)
+
+
+def _tune_prop_culling(comp, tag):
+    """
+    Apply the class-appropriate fade band to a prop HISM.
+
+    Best-effort per property, for the same reason as the block layer: the
+    Python property names have moved between engine versions, and a missing
+    cull distance costs frames rather than correctness, so it must never abort
+    the import. Failures are reported once per distinct key so a systematic
+    mismatch does not produce one warning per actor.
+    """
+    start, end = PROP_CULL_CM.get(tag, PROP_CULL_DEFAULT_CM)
+    for prop, value in (("instance_start_cull_distance", int(start)),
+                        ("instance_end_cull_distance", int(end))):
+        try:
+            comp.set_editor_property(prop, value)
+        except Exception as exc:
+            _warn_once("prop_cull_%s" % prop,
+                       "could not set %s on %s props (%s); culling will use the "
+                       "engine default, which costs frame time"
+                       % (prop, tag, exc))
 
 
 # =============================================================================

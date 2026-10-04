@@ -109,6 +109,39 @@ PROGRESS_EVERY_CELLS = 4
 ADD_BATCH = 20000
 
 # =============================================================================
+# HISM CULLING -- the main frame-time lever on this map
+# =============================================================================
+# The block layer is ~1.6 M instances of a 12-face cube spread over the whole
+# campus. Left at the engine default they are drawn to the far plane, so every
+# frame walks and draws geometry the player cannot resolve. These two numbers
+# are the single biggest win available, and they cost nothing in image quality
+# because a 1 m cube at 300 m is well under a pixel.
+#
+# Both are centimetres, not blocks. The campus is ~720 x 1040 blocks, i.e.
+# 72000 x 104000 cm, so these are fractions of the play space rather than
+# absolute limits: 40000 cm is 400 m, which comfortably covers the far side of
+# the campus from anywhere reasonable.
+#
+# r.ViewDistanceScale from the quality tier multiplies these, so the Low tier
+# ends up culling blocks at 40000 * 0.4 = 160 m. That is the intent: the
+# silhouette of the map is the *near* field, and the near field is what reads.
+HISM_CULL_START_CM = 30000.0     # begin fading out here
+HISM_CULL_END_CM = 40000.0       # fully culled past here
+
+# Instances per leaf node of the HISM cluster tree. The engine default is 32,
+# which is a reasonable general-purpose compromise. This map is not general: the
+# cube mesh is tiny and instances are dense and uniform, so a coarser tree
+# means fewer nodes to walk per cull with no loss of selectivity. Lowering it
+# would make the cull *more* precise at the cost of a deeper tree -- the wrong
+# trade when the bottleneck is CPU tree traversal.
+HISM_INSTANCES_PER_LEAF = 64
+
+# Nanite fallback: a 12-face cube is far below any sane error threshold, so
+# keep the aggressive (lower-error) setting rather than letting the mesh get
+# simplified. Blocks are the map's silhouette; visible faceting on a cube face
+# is more objectionable than the triangles cost.
+
+# =============================================================================
 # LOGGING
 # =============================================================================
 _t0 = time.time()
@@ -124,6 +157,20 @@ def warn(msg):
 
 def err(msg):
     unreal.log_error("[MC2UE5] %s" % msg)
+
+
+#: Keys already reported by :func:`_warn_once`. A property name that does not
+#: exist on this engine version fails on every one of ~2.6 k components, and a
+#: few thousand identical warnings bury the real ones.
+_warned_once = set()
+
+
+def _warn_once(key, msg):
+    """Log ``msg`` the first time ``key`` is seen, then stay quiet."""
+    if key in _warned_once:
+        return
+    _warned_once.add(key)
+    warn(msg)
 
 
 # =============================================================================
@@ -767,6 +814,7 @@ def _add_hism(actor, mesh, material, name):
         comp.set_editor_property("mobility", unreal.ComponentMobility.STATIC)
         if material is not None:
             comp.set_material(0, material)
+        _tune_hism_culling(comp, name)
         actor.add_instance_component(comp)
         comp.register_component()
         try:
@@ -777,6 +825,37 @@ def _add_hism(actor, mesh, material, name):
         err("failed to configure HISM %s: %s" % (name, exc))
         return None
     return comp
+
+
+def _tune_hism_culling(comp, name):
+    """Apply the cull distances and cluster-tree density to one HISM.
+
+    Every property here is set through ``set_editor_property`` on a
+    best-effort basis, because the exact Python names have moved between engine
+    versions (``ld_max_draw_distance`` was ``max_draw_distance`` before 4.25,
+    and the cull pair is ``instance_*_cull_distance`` on HISM specifically).
+    Rather than pin a version and break on the next, each is attempted through
+    a small candidate list and a failure is logged once per component type
+    rather than aborting the import -- a missing cull distance costs frames, it
+    does not cost correctness, so it must not be allowed to fail the build.
+
+    ``instance_start_cull_distance`` / ``instance_end_cull_distance`` are the
+    real lever. Between them the instance fades, which is what keeps a pop from
+    appearing at the cull boundary; setting only the end distance gives a hard
+    pop that is very visible against a flat-lit campus.
+    """
+    for prop, value in (
+        ("instance_start_cull_distance", int(HISM_CULL_START_CM)),
+        ("instance_end_cull_distance", int(HISM_CULL_END_CM)),
+        ("instance_count_per_leaf", int(HISM_INSTANCES_PER_LEAF)),
+    ):
+        try:
+            comp.set_editor_property(prop, value)
+        except Exception as exc:
+            _warn_once("hism_cull_%s" % prop,
+                       "could not set %s on %s (%s); culling will use the "
+                       "engine default, which costs frame time"
+                       % (prop, name, exc))
 
 
 def import_dimension(vf, world, mesh, materials, known_names):

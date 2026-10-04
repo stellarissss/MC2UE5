@@ -37,8 +37,16 @@ BLOCK_CM = 100.0
 # Components smaller than this are noise / scatter, not objects.
 MIN_COMPONENT_VOXELS = int(os.environ.get("MC2UE5_MIN_COMPONENT", "12"))
 
-# Components larger than this are almost always terrain walls or the map's
-# ground fabric; the paper's U-Net would not call those a single "object".
+# Components larger than this are usually terrain walls or the map's ground
+# fabric rather than a single "object" the paper's U-Net would name.
+#
+# This is a *heuristic with a real false-positive cost*: a large teaching block
+# that happens to be one connected component can legitimately exceed it and
+# would then be dropped without a trace. Two things keep that honest:
+#   * the threshold is overridable per call (`max_blocks`) and via the env var,
+#     so a run that reports suspiciously few buildings can raise it;
+#   * `extract_instances` counts and reports what it dropped, so the loss is
+#     visible in the stage output instead of silent.
 MAX_COMPONENT_VOXELS = int(os.environ.get("MC2UE5_MAX_COMPONENT", "20000"))
 
 
@@ -303,7 +311,8 @@ def extract_instances(cursor, chunk_range, labels_per_voxel, palette,
                      labels_wanted=(LABEL_VEGETATION, LABEL_STRUCTURE,
                                     LABEL_PROP, LABEL_GLASS),
                      heightmap=None, origin_x=0, origin_z=0,
-                     max_instances=None, min_blocks=None):
+                     max_instances=None, min_blocks=None, max_blocks=None,
+                     stats=None):
     """
     Full extraction for a chunk rectangle.
 
@@ -313,8 +322,21 @@ def extract_instances(cursor, chunk_range, labels_per_voxel, palette,
     `min_blocks` overrides the module-level `MIN_COMPONENT_VOXELS` floor; it is
     the knob that made a 32x32-chunk preview report 4 instances versus the
     hundreds a whole campus actually contains.
+
+    Truncation order matters and used to be wrong. `max_instances` is applied
+    *after* the sort, not by breaking out of the collection loop: components
+    come out of the connected-component pass in an arbitrary order, so
+    breaking early would keep whichever N happened to be labelled first. The
+    docstring promised "largest-first"; only sorting-then-slicing delivers it.
     """
     floor = MIN_COMPONENT_VOXELS if min_blocks is None else int(min_blocks)
+    ceiling = MAX_COMPONENT_VOXELS if max_blocks is None else int(max_blocks)
+    if stats is None:
+        stats = {}
+    stats.setdefault("dropped_too_small", 0)
+    stats.setdefault("dropped_too_large", 0)
+    stats.setdefault("dropped_too_large_voxels", 0)
+    stats.setdefault("components_seen", 0)
     cx0, cz0, cx1, cz1 = chunk_range
     xs_all, ys_all, zs_all, labs_all, st_all = [], [], [], [], []
     for cz in range(cz0, cz1 + 1):
@@ -344,7 +366,16 @@ def extract_instances(cursor, chunk_range, labels_per_voxel, palette,
 
     out = []
     for sub, labs in comps:
-        if sub.shape[0] < floor or sub.shape[0] > MAX_COMPONENT_VOXELS:
+        stats["components_seen"] += 1
+        n = sub.shape[0]
+        if n < floor:
+            stats["dropped_too_small"] += 1
+            continue
+        if n > ceiling:
+            # Record it: a run that drops a lot here is the signal that a real
+            # building is being mistaken for terrain fabric.
+            stats["dropped_too_large"] += 1
+            stats["dropped_too_large_voxels"] += int(n)
             continue
         cls, comp = classify_component(sub, labs, palette)
         inst = {
@@ -366,10 +397,13 @@ def extract_instances(cursor, chunk_range, labels_per_voxel, palette,
             inst["rotation_deg"] = [0.0, inst["yaw_deg"], 0.0]
         inst["source_blocks"] = int(sub.shape[0])
         out.append(inst)
-        if max_instances and len(out) >= max_instances:
-            break
 
+    # Sort first, then truncate -- see the docstring. `sorted()` on the
+    # already-materialised list keeps the largest `max_instances` components,
+    # which is what a caller capping a brute-force pass actually wants.
     out.sort(key=lambda d: -d["source_blocks"])
+    if max_instances:
+        out = out[:int(max_instances)]
     for i, d in enumerate(out):
         d["id"] = i
     return out

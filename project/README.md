@@ -358,14 +358,33 @@ python3 tests/run_tests.py
 # 5) import_phase2 离线验证（用真实产物，stub 掉 unreal）
 python3 tests/test_import_phase2_offline.py
 
-# 6) 语法检查
+# 6) 画质分级的引擎契约（阈值位置、@Cine 段名、100% 钳制、启动默认档）
+python3 tests/test_quality_tiers.py
+
+# 7) HISM 剔除与地形 LOD 配置（淡出带、按类分档、降级不中断导入）
+python3 tests/test_hism_culling.py
+
+# 8) 语法检查
+python3 -m py_compile project/Content/Python/import_world.py
 python3 -m py_compile project/Content/Python/import_phase2.py
+python3 -m py_compile project/Content/Python/apply_quality.py
 ```
 
 `test_import_phase2_offline.py` 是**不需要引擎**的那一半：它用真实的
 `landscape.json` 与 heightmap PNG 验证纯标准库 PNG 解码器（与 PIL 逐字节比对）、
 高度解码与编码端互为逆运算、篡改的编码会被拒绝、`DRY_RUN` 不可能碰到关卡。
-本机装 UE 之前先跑它，能省掉一轮往返。
+
+`test_quality_tiers.py` 与 `test_hism_culling.py` 同样是离线的，但它们守的是
+另一类 bug——**配置看起来完全合理、引擎却根本不读**的那一类。举三个真实
+踩过的例子：
+
+- `PerfIndexThresholds_*` 写在 `DefaultDeviceProfiles.ini` 里，引擎完全忽略
+  （只在 `DefaultScalability.ini` 的 `[ScalabilitySettings]` 段被读）；
+- 顶层档写成 `[ViewDistanceQuality@4]`，引擎只打开 `@Cine` 段；
+- `sg.ResolutionQuality=150`，被引擎在 100 处静默钳制。
+
+这三处都不会报错，只是让分级系统**不起作用**。本机装 UE 之前先跑这四套
+测试，能省掉一轮往返。
 
 ## 13. UE 5.5.4 首次本机验证步骤
 
@@ -383,42 +402,89 @@ python3 -m py_compile project/Content/Python/import_phase2.py
    UnrealEditor.exe MCReplica.uproject ^
        -ExecutePythonScript="Content/Python/import_phase2.py"
    ```
-3. **通过判据**：输出里出现
+3. **通过判据**：输出里每个 tile 都出现一行
    ```text
-   overworld_00_00.png 745x1055  sampled y=[4.00 .. 61.96] blocks  OK
-   DRY_RUN complete -- nothing was created, opened or saved.
+   overworld_00_00.png 373x528  sampled y=[...] blocks  OK
+   ...
+   DRY_RUN: 4 tile(s) validated, nothing spawned
    ```
-   且 `sampled y` 落在 `[4, 63]` 区间内、`resolution` 是 `745x1055`。
+   四行 tile 全是 `OK`，且 `DRY_RUN` 计数等于 4。
+   `sampled y` 落在 `[4, 63]` 方块区间内——**只有 4 个 tile 合起来
+   至少有一块存在真实起伏**才算通过：分块后单块可能恰好是平地，
+   这是正常的（见 `tests/test_import_phase2_offline.py`）。
 4. 关掉编辑器，确认**磁盘上没有任何新资产**——dry run 不该产生任何 `.uasset`。
 
 ### 13.2 正式导入
 
 1. 确认第 1 步无误后，把 `DRY_RUN` 改为 `False`
 2. 再次执行 `import_phase2.run()`
-3. **通过判据**：输出里 `heightmaps_imported` 等于 tile 数（1）。
+3. **通过判据**：输出里 `heightmaps_imported` 等于 `tiles`，即 **4**。
    如果是 0，会明确打印 `needs_manual_import` 以及手工参数，按 §10 的表填写。
 
 ### 13.3 对齐验证（最关键的一步）
 
-地形和方块层必须严格对齐。抽查三个已知地物：
+地形和方块层必须严格对齐。校园被切成 **2×2 共 4 个 Landscape actor**
+（每块 360×520 方块、373×528 顶点、12×17 component @ 31 quads），
+这样每个 actor 能独立流送与剔除；单个巨型 Landscape 做不到这点。
+
+抽查三个已知地物：
 
 | 检查 | 期望 |
 |---|---|
-| Landscape actor 位置 | `(-27200, -67200, 3350)` cm |
-| Landscape actor Scale3D | `(100, 100, 11.5234375)` |
+| Landscape actor 数量 | **4**（`overworld_00_00` / `00_01` / `01_00` / `01_01`） |
+| 各 actor 位置 (X, Y) | `(-27200, -67200)`、`(8800, -67200)`、`(-27200, -15200)`、`(8800, -15200)` cm |
+| 各 actor Scale3D | `(100, 100, 11.5234375)`，四块**完全一致** |
 | 校园围墙（地图坐标约 x∈[-144,303], z∈[-544,223]） | 墙体方块应贴在地面上，不悬空、不陷入 |
 | 操场与中轴道路 | 道路低于周边草地，与 debug 图 `overworld_height_color.png` 一致 |
+| 4 块之间的接缝 | 无错位、无重叠、无可见台阶 |
 
 最容易出错的是 **XY Scale 被改动**。若你看到地形整体缩放或偏移，
 检查 Scale3D 的 X/Y 是否仍是 100；**不要用移动 actor 的方式去对齐**，
 那会让地形与 HISM 方块层产生累积漂移。
 
-### 13.4 保存与打包
+四块必须用**同一套** Scale3D。任何一块的 Z Scale 不同，接缝处就会出现
+台阶——`import_phase2.py` 逐块读取各自的高度跨度来算 Z Scale，所以
+`landscape.json` 里每个 tile 都有 `height_cm_meta`；若某块的地形高度
+跨度与其它块差异极大，值得回头查 `phase2` 的分块是否切在了异常地形上。
+
+### 13.4 画质分级验证（本次新增，沙箱无法覆盖）
+
+五档系统的配置正确性已由 `tests/test_quality_tiers.py` 与
+`tests/test_hism_culling.py` 保证（引擎契约、剔除带、启动默认档），
+但**帧率与观感必须在本机实测**。完整设计见 `../QUALITY_TIERS.md`。
+
+先在编辑器 Python 控制台确认配置被正确读到：
+
+```python
+import apply_quality
+apply_quality.report()      # 应打印出 adapter / benchmark index / 启发式档位
+apply_quality.benchmark()   # 跑一次引擎基准（约几秒，会卡顿），然后自动应用
+apply_quality.report()      # 这次 benchmark index 应不再是 None
+```
+
+逐档检查（`apply_quality.set_tier("Low")` … `"Cinematic"`）：
+
+| 检查项 | 判据 |
+|---|---|
+| Low 档帧率 | 在目标弱机（集显）上 ≥ 30 fps |
+| Medium 档帧率 | GTX 1650 级别 ≥ 45 fps @ 1080p |
+| `r.Nanite` | **每一档都应为 1**（用户明确决定：低配保留 Nanite） |
+| HISM 剔除 | 走出约 400 m 时方块应**淡出消失**，不是突然硬 pops |
+| 低配档视距 | 0.4 缩放后仍能看到约 160 m，**不应出现空洞或缺面** |
+| 打包后启动 | 全新安装、未跑基准时，**默认落在 Medium 而非 Epic** |
+| 手动锁定 | `set_tier("High")` 后重启仍为 High（持久化生效） |
+| 超采样 | `set_supersampling(150)` 生效；切档**不会**改动它 |
+
+打包后请额外确认：全新安装（删掉 `%LOCALAPPDATA%` 下的
+`Saved/Config` 与 `~/.mcreplica/quality.json`）首次启动落在 Medium 档。
+这是「未知硬件的安全兜底」是否真的生效的唯一检验。
+
+### 13.5 保存与打包
 
 1. `File > Save All`（或让脚本的 `save_level()` 执行）
 2. 按 §6 打包 Win64
 
-### 13.5 出问题时
+### 13.6 出问题时
 
 把以下信息发我，我能直接定位：
 

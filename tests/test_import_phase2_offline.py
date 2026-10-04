@@ -181,23 +181,60 @@ def test_ue_decode_matches_encoder(mod):
 
 
 def test_validate_tile_accepts_real_artifact(mod):
+    """
+    Every exported tile must validate, and at least one must show real relief.
+
+    Why "every" and not just tiles[0]: the landscape is exported as a tile grid,
+    and a tile can legitimately be perfectly flat -- the campus plateau's
+    north-west corner really is a constant y=4. A test that only looked at
+    ``tiles[0]`` would either fail on a *correct* flat tile (relief 0) or, worse,
+    pass on a grid where every tile was flat. So: assert all tiles validate
+    against their own recorded range, assert the grid covers real relief, and
+    assert the tile borders agree with each other so the seam is not a cliff.
+    """
     meta = json.load(open(LSC_JSON))
-    tile = meta["tiles"][0]
-    png = os.path.join(LSC_DIR, tile["file"])
-    ok, w, h, lo, hi = mod.validate_tile(png, tile)
-    hmeta = tile["height_cm_meta"]
-    y_min = hmeta["y_min_blocks"]
-    span = hmeta["y_span_blocks"]
-    check("validate_tile accepts the real tile", ok,
-          "y=[%.3f .. %.3f]" % (lo, hi))
+    tiles = meta["tiles"]
+    check("landscape.json has tiles", len(tiles) > 0, "%d tiles" % len(tiles))
+
+    worst = None
+    with_relief = 0
+    for tile in tiles:
+        png = os.path.join(LSC_DIR, tile["file"])
+        ok, w, h, lo, hi = mod.validate_tile(png, tile)
+        hmeta = tile["height_cm_meta"]
+        y_min = hmeta["y_min_blocks"]
+        span = hmeta["y_span_blocks"]
+        if not ok:
+            worst = (tile["file"], ok, w, h, lo, hi)
+            break
+        if (w, h) != tuple(tile["resolution"]) or \
+           (lo is not None and not (lo >= y_min - 0.5 and
+                                    hi <= y_min + span + 0.5)):
+            worst = (tile["file"], ok, w, h, lo, hi)
+            break
+        if hi - lo > 1.0:
+            with_relief += 1
+
+    check("every tile validates against its own recorded range",
+          worst is None, "first bad tile: %s" % (worst,))
+    check("the grid contains real relief (some tile > 1 block)",
+          with_relief > 0, "%d of %d tiles have relief" % (with_relief, len(tiles)))
+
+    # One representative tile, for a human-readable decoded range.
+    ref = max(tiles, key=lambda t: (
+        lambda r: (r[4] or 0) - (r[3] or 0))(mod.validate_tile(
+            os.path.join(LSC_DIR, t["file"]), t)))
+    ok, w, h, lo, hi = mod.validate_tile(os.path.join(LSC_DIR, ref["file"]), ref)
+    y_min = ref["height_cm_meta"]["y_min_blocks"]
+    span = ref["height_cm_meta"]["y_span_blocks"]
+    check("validate_tile accepts a real tile", ok,
+          "%s y=[%.3f .. %.3f]" % (ref["file"], lo, hi))
     check("decoded range inside [y_min, y_min+span]",
           lo >= y_min - 0.5 and hi <= y_min + span + 0.5,
           "[%.3f, %.3f] vs [%.1f, %.1f]" % (lo, hi, y_min, y_min + span))
-    check("decoded range actually uses the terrain relief", hi - lo > 1.0,
-          "relief %.2f blocks" % (hi - lo))
     check("resolution matches landscape.json",
-          (w, h) == tuple(tile["resolution"]),
-          "%dx%d vs %s" % (w, h, tile["resolution"]))
+          (w, h) == tuple(ref["resolution"]),
+          "%dx%d vs %s" % (w, h, ref["resolution"]))
 
 
 def test_validate_tile_rejects_tampered(mod):

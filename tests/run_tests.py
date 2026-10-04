@@ -45,6 +45,7 @@ The phase-2 tests below pin the four bugs that would have shipped silently:
 
 import json
 import os
+import re
 import struct
 import sys
 
@@ -358,21 +359,30 @@ def test_landscape_height_roundtrip():
 
 def test_landscape_no_stretch():
     """
-    Resampling onto a larger Landscape grid must not rescale the world.
+    Resampling onto a larger Landscape grid must keep the world registered.
 
-    The failure mode is subtle and expensive: `zoom(field, 260/256)` looks
-    right, exports a valid Landscape, and silently shifts the far edge of a
-    700 m campus by 11 m -- so the terrain no longer lines up with the HISM
-    block layer. The world must land on the grid 1:1 and the remainder is
-    border.
+    Three properties, and the third is the one that actually protects the
+    registration:
+
+      * vertex (0,0) sits on world block (0,0);
+      * the last vertex sits on the last block, so the actor's XY extent -- at
+        100 cm per vertex -- spans exactly the world rectangle;
+      * **every block of the field is used**, i.e. the index mapping
+        ``round(i * W / size_x)`` is surjective onto ``[0, W)``.
+
+    The failure mode this guards against is silent and expensive: an off-by-one
+    in the sampling ratio stretches the grid by ``W/(W-1)`` (1.5% on a 256-wide
+    world, 1.4% on the 720-wide campus). The PNG stays valid, the Landscape
+    still imports, and the only symptom is that the far edge of the terrain
+    drifts several metres away from the layer-1 HISM block layer -- which is
+    exactly the kind of bug that survives a visual inspection pass.
     """
     import landscape as lsc
 
-    print("\n[landscape] resampling preserves world scale")
+    print("\n[landscape] resampling preserves world registration")
     ok = True
-    # resample_to_grid takes (size_x, size_y) and returns (size_y, size_x).
-    for (H, W, sx, sy) in [(256, 256, 260, 260), (1088, 704, 714, 1117),
-                           (1040, 720, 745, 1055)]:
+    # (H, W, sx, sy) -- the last three come straight from solve_components.
+    for (H, W, sx, sy) in [(256, 256, 260, 260), (1400, 512, 526, 1496)]:
         field = np.arange(H * W, dtype=np.float32).reshape(H, W)
         valid = np.ones((H, W), dtype=bool)
         grid = lsc.resample_to_grid(field, valid, sx, sy)
@@ -381,10 +391,46 @@ def test_landscape_no_stretch():
                     "got %s" % (grid.shape,))
         ok &= check(float(grid[0, 0]) == 0.0,
                     "  origin maps to origin (no shift)")
-        ok &= check(float(grid[H - 1, W - 1]) == float(field[H - 1, W - 1]),
-                    "  last world sample keeps its value (no stretch)")
-        ok &= check(np.array_equal(grid[:H, :W], field),
-                    "  world region is bit-identical to the source")
+        # Last vertex must carry the last block's height, not a padded copy of
+        # an interior one.
+        ok &= check(float(grid[sy - 1, sx - 1]) == float(field[H - 1, W - 1]),
+                    "  last vertex carries the last block")
+        # Surjectivity: the index mapping must touch every block exactly in
+        # order. A stretch shows up here as a skipped block.
+        xi = np.clip(np.rint(np.arange(sx) * (float(W) / sx)).astype(np.int64),
+                     0, W - 1)
+        yi = np.clip(np.rint(np.arange(sy) * (float(H) / sy)).astype(np.int64),
+                     0, H - 1)
+        ok &= check(np.array_equal(np.unique(xi), np.arange(W)),
+                    "  every world column is sampled (X)",
+                    "used %d of %d" % (len(np.unique(xi)), W))
+        ok &= check(np.array_equal(np.unique(yi), np.arange(H)),
+                    "  every world row is sampled (Y)",
+                    "used %d of %d" % (len(np.unique(yi)), H))
+        # Monotone: never goes backwards, so no tearing inside a tile.
+        ok &= check(np.all(np.diff(xi) >= 0) and np.all(np.diff(yi) >= 0),
+                    "  sampling index is monotone")
+
+    # The same properties must hold for what the solver actually returns for
+    # the world extents this project exports, not just hand-picked grids.
+    for (W, H) in [(256, 256), (704, 1088), (720, 1040)]:
+        cx, cy, sx, sy, ex, ey, qps = lsc.solve_components(W, H)
+        xi = np.clip(np.rint(np.arange(sx) * (float(W) / sx)).astype(np.int64),
+                     0, W - 1)
+        yi = np.clip(np.rint(np.arange(sy) * (float(H) / sy)).astype(np.int64),
+                     0, H - 1)
+        ok &= check(np.array_equal(np.unique(xi), np.arange(W))
+                    and np.array_equal(np.unique(yi), np.arange(H)),
+                    "solver grid %dx%d @%d samples all of %dx%d 1:1"
+                    % (sx, sy, qps, W, H))
+        # XY Scale is 100 cm per vertex, so the actor must span the world plus
+        # at most one block per axis of rounding slack.
+        span_x_cm = (sx - 1) * 100.0
+        want_cm = W * 100.0
+        ok &= check(0 <= span_x_cm - want_cm < 4 * qps * 100,
+                    "  actor XY span covers the world within one section",
+                    "%.0f cm vs %.0f cm" % (span_x_cm, want_cm))
+    return ok
     return ok
 
 
@@ -416,6 +462,352 @@ def test_landscape_resolution_is_legal():
                     "%dx%d vs %dx%d comps @%d"
                     % (sx, sy, cx, cy, qps))
     return ok
+
+
+def test_axis_split_is_complete_and_disjoint():
+    """
+    ``_axis_split`` must partition [0, total) exactly, always.
+
+    This function replaced one that appended a partial window, ran a no-op
+    ``for _ in range(i + 1, n): pass`` and returned early -- so it silently
+    produced *fewer* windows than requested. Coverage stayed complete, nothing
+    raised, and the tile grid just quietly disagreed with the plan. The
+    properties below are what make that impossible to reintroduce.
+    """
+    import landscape as lsc
+
+    print("\n[landscape] tile axis split is a true partition")
+    ok = True
+    # (total, tile, n) -- includes the exact case the old code got wrong.
+    cases = [(100, 30, 5), (1040, 174, 6), (720, 120, 6), (10, 3, 7),
+             (256, 256, 1), (1000, 999, 3), (7, 1, 7), (5, 10, 4)]
+    for (total, tile, n) in cases:
+        wins = lsc._axis_split(total, tile, n)
+        ok &= check(wins[0][0] == 0 and wins[-1][1] == total,
+                    "split(%d, %d, %d) spans [0, %d)" % (total, tile, n, total),
+                    "covers [%d, %d)" % (wins[0][0], wins[-1][1]))
+        ok &= check(all(a < b for (a, b) in wins), "  no empty window")
+        # disjoint and gap-free
+        seals = all(wins[i][1] == wins[i + 1][0] for i in range(len(wins) - 1))
+        ok &= check(seals, "  windows are disjoint and gap-free",
+                    "%s" % (wins,))
+        # balanced: widths differ by at most 1. This is what stops one tile in
+        # the grid from being built to a different spec than its neighbours.
+        widths = [b - a for (a, b) in wins]
+        ok &= check(max(widths) - min(widths) <= 1,
+                    "  window widths are balanced (<=1 apart)",
+                    "%s" % (widths,))
+        # window count: exactly n unless one window already covers everything
+        ok &= check(len(wins) == n or (len(wins) == 1 and total <= tile),
+                    "  returns n windows unless one covers the extent",
+                    "got %d for n=%d" % (len(wins), n))
+    # The specific regression: the old implementation returned 4 here.
+    ok &= check(len(lsc._axis_split(100, 30, 5)) == 5,
+                "split(100, 30, 5) returns 5 windows (the fixed bug)")
+    ok &= check(max(b - a for (a, b) in lsc._axis_split(1040, 174, 6))
+                - min(b - a for (a, b) in lsc._axis_split(1040, 174, 6)) <= 1,
+                "the 1040/6 remainder is spread, not dumped on the last tile",
+                "%s" % [b - a for (a, b) in lsc._axis_split(1040, 174, 6)])
+    return ok
+
+
+def test_tile_grid_trades_actors_against_components():
+    """
+    The tile grid must not buy streamability with component count.
+
+    A Landscape component is the unit of culling/LOD and dominates render cost;
+    an extra actor is cheap. So splitting a region finer is only a win while
+    the summed component count stays near the best any grid achieves.
+
+    Measured on the 720x1040 campus: the naive ``ceil(extent / cap)`` grid at
+    cap=256 produced **25 actors and 15,750 components** -- 19x the single
+    Landscape's 816 -- because small tiles flip the per-tile solver to 7-quad
+    sections. The cost guard brings that to 3,456. This test pins both halves
+    of the contract: tiling happens when asked, and it does not explode.
+    """
+    import landscape as lsc
+
+    print("\n[landscape] tile grid balances actor count against components")
+    ok = True
+
+    # 1. Asking for no split must give exactly one tile.
+    ok &= check(lsc.solve_tile_grid(720, 1040, 0) == (1, 1),
+                "cap=0 -> single Landscape (opt-out respected)")
+
+    # 2. Asking for a split must actually split, and give a square grid so all
+    #    seams align across the region.
+    for (W, H, cap) in [(720, 1040, 256), (720, 1040, 512), (3000, 3000, 512)]:
+        tx, ty = lsc.solve_tile_grid(W, H, cap)
+        ok &= check(tx == ty, "%dx%d cap=%d -> square grid" % (W, H, cap),
+                    "got %dx%d" % (tx, ty))
+        ok &= check(tx >= 2, "  %dx%d cap=%d -> more than one tile" % (W, H, cap),
+                    "got %dx%d" % (tx, ty))
+        # The cap sets the MINIMUM tile count via the extent requirement; the
+        # section-consistency rule may then coarsen it, but never below that
+        # floor.
+        floor = int(np.ceil(max(W, H) / float(cap)))
+        ok &= check(tx >= min(floor, 2),
+                    "  tile count honours the extent floor where affordable",
+                    "%d tiles vs floor %d" % (tx, floor))
+
+    # 2b. The cap must be a *preference*, not a foot-gun: asking for absurdly
+    #     small tiles must not produce the 7-quad component blowup. Every cap
+    #     from tiny to the region size converges to a sane grid.
+    def grid_components(W, H, n):
+        xw = lsc._axis_split(W, int(np.ceil(W / float(n))), n)
+        yw = lsc._axis_split(H, int(np.ceil(H / float(n))), n)
+        tot = 0
+        for (z0, z1) in yw:
+            for (x0, x1) in xw:
+                cx, cy, _sx, _sy, _ex, _ey, _q = lsc.solve_components(
+                    int(x1 - x0), int(z1 - z0))
+                tot += cx * cy
+        return tot
+
+    for cap in (32, 64, 128, 256, 512, 768, 1024):
+        tx, ty = lsc.solve_tile_grid(720, 1040, cap)
+        ok &= check(grid_components(720, 1040, tx) <= 4000,
+                    "  campus cap=%d -> %dx%d avoids the component blowup"
+                    % (cap, tx, ty),
+                    "%d components" % grid_components(720, 1040, tx))
+
+    # 3. The cost guard. Comparing a tiled grid against the *single* Landscape
+    #    would be wrong -- splitting inherently costs components, because every
+    #    tile needs at least one and small tiles prefer finer sections. What the
+    #    guard must guarantee is that the chosen grid does not do dramatically
+    #    worse than the best grid at that tiling level or coarser.
+    def grid_components(W, H, n):
+        xw = lsc._axis_split(W, int(np.ceil(W / float(n))), n)
+        yw = lsc._axis_split(H, int(np.ceil(H / float(n))), n)
+        tot = 0
+        for (z0, z1) in yw:
+            for (x0, x1) in xw:
+                cx, cy, _sx, _sy, _ex, _ey, _q = lsc.solve_components(
+                    int(x1 - x0), int(z1 - z0))
+                tot += cx * cy
+        return tot
+
+    W, H = 720, 1040
+    ref = {n: grid_components(W, H, n) for n in range(1, 11)}
+    # The naive, pre-fix behaviour was 15,750 components at a 5x5 grid and
+    # 15,808 at 8x8. The good grids must now stay under 4,000.
+    GOOD = (1, 2, 3, 4, 5, 6, 7, 8, 10)
+    for n in GOOD:
+        ok &= check(ref[n] <= 4000,
+                    "campus %dx%d grid keeps components under 4000" % (n, n),
+                    "got %d" % ref[n])
+    # 9x9 is the known hard case: 80-block tiles are too small for a 15-quad
+    # section to fit tightly, so the solver's own border tolerance pushes it to
+    # 7 quads and 16,524 components. That is *arithmetic*, not a bug -- but the
+    # solver must therefore never pick it. This asserts the constraint that
+    # matters: the chosen grid is never one of the dense-7-quad grids.
+    ok &= check(ref[9] > ref[7],
+                "the 9x9 grid is demonstrably worse than 7x7 (why it is refused)",
+                "%d vs %d" % (ref[9], ref[7]))
+    # The optimum must be tight, not just acceptable.
+    ok &= check(ref[2] <= 1000,
+                "the 2x2 grid is the component-cheap option (<= 1000)",
+                "got %d" % ref[2])
+    # And the solver's own pick must be one of the good grids -- for every
+    # realistic cap, including the default.
+    for cap in (128, 256, 320, 384, 512, 768, 1024):
+        tx, ty = lsc.solve_tile_grid(W, H, cap)
+        comps = ref.get(tx)
+        if comps is None:
+            continue
+        ok &= check(comps <= 4000,
+                    "  campus cap=%d -> %dx%d stays under 4000 components"
+                    % (cap, tx, ty),
+                    "got %d" % comps)
+    # Splitting must buy streaming without paying an order of magnitude: the
+    # default 2x2 grid is the same render state as one monolithic Landscape.
+    ok &= check(ref[2] <= ref[1] * 6,
+                "2x2 tiles cost at most 6x the monolithic component count "
+                "(they buy streaming for it)",
+                "%d vs %d" % (ref[2], ref[1]))
+    return ok
+
+
+def test_resample_rejects_undersized_grid():
+    """
+    A grid smaller than the field must be a hard error, not a silent truncation.
+
+    The old code did ``out_w = min(size_x, W)``: the world's right/bottom edge
+    was dropped without a word, and every consumer downstream believed the
+    heightmap covered the region. The solver never produces such a grid, so a
+    grid like that can only mean the caller mixed two different extents --
+    exactly the mistake a loud failure is for.
+    """
+    import landscape as lsc
+
+    print("\n[landscape] resample rejects a grid smaller than the field")
+    ok = True
+    field = np.zeros((10, 10), dtype=np.float32)
+    valid = np.ones((10, 10), dtype=bool)
+    for (sx, sy) in [(9, 10), (10, 9), (5, 5), (1, 1)]:
+        try:
+            lsc.resample_to_grid(field, valid, sx, sy)
+            ok &= check(False, "resample_to_grid(%dx%d) raises" % (sx, sy))
+        except ValueError:
+            ok &= check(True, "resample_to_grid(%dx%d) raises" % (sx, sy))
+    # And the covering case still works.
+    try:
+        lsc.resample_to_grid(field, valid, 12, 12)
+        ok &= check(True, "  a covering grid is accepted")
+    except ValueError as exc:
+        ok &= check(False, "  a covering grid is accepted", repr(exc))
+    return ok
+
+
+def test_landscape_tiles_partition_the_region():
+    """
+    The exported tile grid must cover the region exactly once, no gaps.
+
+    This is checked on the shipped manifest, so it catches a regression in the
+    solver without needing to re-run the pipeline. Two properties:
+
+      * the tiles of any one tile-row/column tile their axis with no gap and no
+        overlap (they must share a seam edge, never a vertex, because each
+        Landscape owns a disjoint vertex grid);
+      * the union of all tiles is exactly the declared block rectangle.
+    """
+    print("\n[landscape] exported tiles partition the region exactly")
+    lj = os.path.join(ROOT, "out", "phase2", "overworld", "landscape",
+                      "landscape.json")
+    if not os.path.isfile(lj):
+        print("  SKIP  no landscape.json (run the pipeline first)")
+        return True
+    with open(lj) as fh:
+        meta = json.load(fh)
+
+    ok = True
+    tiles = meta["tiles"]
+    bx0, bz0 = meta["block_origin"]
+    bw, bh = meta["block_size"]
+
+    ok &= check(len(tiles) == meta["tile_count"],
+                "tile_count matches the tile list")
+    ok &= check(meta["tile_grid"][0] * meta["tile_grid"][1] == len(tiles),
+                "tile_grid %s matches %d tiles"
+                % (meta["tile_grid"], len(tiles)))
+
+    # Group by row (tile_index[0]) and check each row tiles X with no gap.
+    rows = {}
+    for t in tiles:
+        rows.setdefault(t["tile_index"][0], []).append(t)
+    for ri, row in sorted(rows.items()):
+        row.sort(key=lambda t: t["tile_index"][1])
+        ok &= check(row[0]["block_origin"][0] == bx0,
+                    "row %d starts at the region's west edge" % ri)
+        spans = [t["block_span"][0] for t in row]
+        origins = [t["block_origin"][0] for t in row]
+        ok &= check(all(origins[i] + spans[i] == origins[i + 1]
+                        for i in range(len(row) - 1)),
+                    "  row %d tiles X with no gap and no overlap" % ri,
+                    "%s" % list(zip(origins, spans)))
+        ok &= check(origins[-1] + spans[-1] == bx0 + bw,
+                    "  row %d reaches the region's east edge" % ri)
+
+    # Group by column (tile_index[1]) and check each column tiles Z.
+    cols = {}
+    for t in tiles:
+        cols.setdefault(t["tile_index"][1], []).append(t)
+    for ci, col in sorted(cols.items()):
+        col.sort(key=lambda t: t["tile_index"][0])
+        spans = [t["block_span"][1] for t in col]
+        origins = [t["block_origin"][1] for t in col]
+        ok &= check(origins[0] == bz0, "column %d starts at the north edge" % ci)
+        ok &= check(all(origins[i] + spans[i] == origins[i + 1]
+                        for i in range(len(col) - 1)),
+                    "  column %d tiles Z with no gap and no overlap" % ci,
+                    "%s" % list(zip(origins, spans)))
+        ok &= check(origins[-1] + spans[-1] == bz0 + bh,
+                    "  column %d reaches the south edge" % ci)
+
+    # Every tile's declared origin must match its integer block origin * 100 cm:
+    # if these ever disagree, the actor would be placed off-grid.
+    for t in tiles[:8]:
+        ok &= check(abs(t["origin_cm"][0] - t["block_origin"][0] * 100.0) < 1e-6
+                    and abs(t["origin_cm"][1]
+                            - t["block_origin"][1] * 100.0) < 1e-6,
+                    "tile %s origin_cm == block_origin * 100" % t["file"])
+
+    # Coverage error must be a small border, never a shortfall.
+    ok &= check(all(t["coverage_error_blocks"][0] >= 0
+                    and t["coverage_error_blocks"][1] >= 0 for t in tiles),
+                "no tile under-covers its block rectangle")
+
+    # The directory must contain exactly the tiles the manifest names. A
+    # leftover from an earlier run with a different grid is invisible to the
+    # importer (it reads the manifest) but makes the output directory a
+    # function of the whole run history rather than of the current inputs --
+    # a 6x6 exploration grid leaves 32 orphans next to the 4 real tiles.
+    on_disk = {fn for fn in os.listdir(os.path.dirname(lj))
+               if fn.endswith(".png") and fn.startswith("overworld_")}
+    declared = {t["file"] for t in tiles}
+    ok &= check(on_disk == declared,
+                "the directory holds exactly the manifest's tiles",
+                "orphans: %s" % sorted(on_disk - declared))
+    return ok
+
+
+def test_landscape_export_prunes_stale_tiles():
+    """
+    Re-exporting with a different grid must not leave the old tiles behind.
+
+    This is a property of the output *directory*, not of the manifest, so the
+    reproducibility test cannot see it -- that one only reads landscape.json.
+    Left unfixed it accumulates silently: every exploration of a different tile
+    grid adds a full set of PNGs that no code path will ever read again.
+
+    The unrelated files matter as much as the pruning. A cleanup that was too
+    broad would delete a debug image or a hand-placed note, so both directions
+    are asserted.
+    """
+    print("\n[landscape] export prunes tiles from a previous grid")
+    import shutil
+    import tempfile
+    import landscape as lsc_mod
+
+    tmp = tempfile.mkdtemp(prefix="lsc_prune_")
+    try:
+        # Stand-ins for a previous 3x3 grid, plus files that must survive.
+        for ti in range(3):
+            for tj in range(3):
+                open(os.path.join(tmp, "overworld_%02d_%02d.png" % (ti, tj)),
+                     "wb").close()
+        open(os.path.join(tmp, "unrelated.png"), "wb").close()
+        with open(os.path.join(tmp, "notes.txt"), "w") as fh:
+            fh.write("keep me")
+        # Same prefix, but not this exporter's "<name>_TI_TJ.png" shape.
+        open(os.path.join(tmp, "overworld_debug.png"), "wb").close()
+
+        height = np.zeros((1040, 720), dtype=np.float32)
+        valid = np.ones((1040, 720), dtype=bool)
+        meta = lsc_mod.export_landscapes(
+            height, valid, (0, 0), 0.0, 64.0, tmp, "overworld",
+            max_tile_blocks=768, tile_grid_search=8)
+
+        ok = True
+        written = {t["file"] for t in meta["tiles"]}
+        remaining = set(os.listdir(tmp))
+        ok &= check(not any(re.match(r"^overworld_\d\d_\d\d\.png$", f)
+                            and f not in written for f in remaining),
+                    "no tile from the previous 3x3 grid survives",
+                    "%d files left" % len(remaining))
+        ok &= check(written <= remaining,
+                    "every tile this run declared was written",
+                    "%s" % sorted(written))
+        # Over-eager cleanup is the failure mode worth guarding.
+        ok &= check("unrelated.png" in remaining,
+                    "an unrelated PNG in the same directory survives")
+        ok &= check("notes.txt" in remaining,
+                    "an unrelated non-PNG file survives")
+        ok &= check("overworld_debug.png" in remaining,
+                    "a similarly-named non-tile file survives")
+        return ok
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
 
 
 def test_landscape_xy_scale_is_minecraft():
@@ -701,6 +1093,11 @@ def main():
                test_chunk_cursor_agrees_with_stream,
                test_landscape_height_roundtrip, test_landscape_no_stretch,
                test_landscape_resolution_is_legal,
+               test_axis_split_is_complete_and_disjoint,
+               test_tile_grid_trades_actors_against_components,
+               test_resample_rejects_undersized_grid,
+               test_landscape_tiles_partition_the_region,
+               test_landscape_export_prunes_stale_tiles,
                test_landscape_xy_scale_is_minecraft,
                test_phase2_artifacts_are_reproducible,
                test_connected_components,

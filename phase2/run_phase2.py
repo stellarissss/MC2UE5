@@ -168,7 +168,9 @@ def stage_terrain(dim, chunk_range, args, out_dir):
             section_size=args.section_size,
             sections_per_component=args.sections_per_component,
             max_tiles_per_axis=args.max_tiles,
-            xy_scale_cm=args.xy_scale)
+            xy_scale_cm=args.xy_scale,
+            max_tile_blocks=args.landscape_tile_blocks,
+            tile_grid_search=args.tile_grid_search)
         result["landscape"] = {
             "dir": os.path.relpath(lsc_dir, out_dir),
             "resolution": lmeta["landscape_resolution"],
@@ -178,13 +180,16 @@ def stage_terrain(dim, chunk_range, args, out_dir):
             "xy_scale_cm": lmeta["xy_scale_cm"],
             "tile_count": lmeta["tile_count"],
             "tile_grid": lmeta["tile_grid"],
+            "max_tile_blocks": lmeta.get("max_tile_blocks", 0),
         }
-        log("    %dx%d verts, %dx%d components @%d quads, xy_scale=%.1f cm"
+        log("    %dx%d verts/tile, %dx%d components total @%d quads, "
+            "xy_scale=%.1f cm"
             % (lmeta["landscape_resolution"][0], lmeta["landscape_resolution"][1],
                lmeta["n_components"][0], lmeta["n_components"][1],
                lmeta["quads_per_component"], lmeta["xy_scale_cm"]))
-        log("    %d tile(s) in %s" % (lmeta["tile_count"],
-                                       result["landscape"]["dir"]))
+        log("    %d tile(s) in %dx%d grid -> %s"
+            % (lmeta["tile_count"], lmeta["tile_grid"][0], lmeta["tile_grid"][1],
+               result["landscape"]["dir"]))
 
     # ---- optional: dense mesh for hero shots ---------------------------- #
     if args.mesh:
@@ -338,13 +343,25 @@ def stage_props(dim, chunk_range, args, out_dir):
         provider = args.provider or sem.make_provider(args.semantic, vpath)
         labelfn = make_label_fn(vf, provider)
         t0 = time.time()
+        pstats = {}
         insts = props_mod.extract_instances(
             cur, chunk_range, labelfn, vf.palette,
             heightmap=heightmap,
             origin_x=bx0, origin_z=bz0,
             max_instances=args.max_instances,
-            min_blocks=args.min_prop_blocks)
+            min_blocks=args.min_prop_blocks,
+            max_blocks=args.max_prop_blocks or None,
+            stats=pstats)
         log("  %d instances in %.1fs" % (len(insts), time.time() - t0))
+        log("  components seen=%d  dropped small=%d  dropped large=%d "
+            "(largest drop %d voxels)"
+            % (pstats["components_seen"], pstats["dropped_too_small"],
+               pstats["dropped_too_large"], pstats["dropped_too_large_voxels"]))
+        if pstats["dropped_too_large"] > 0:
+            log("  NOTE: %d component(s) exceeded --max-prop-blocks=%d. If a "
+                "building is missing, raise that limit."
+                % (pstats["dropped_too_large"],
+                   args.max_prop_blocks or props_mod.MAX_COMPONENT_VOXELS))
 
     model = props_mod.make_model_provider(args.models, args.model_root)
     by_class = {}
@@ -367,7 +384,10 @@ def stage_props(dim, chunk_range, args, out_dir):
     })
     log("  by class: %s" % by_class)
     return {"count": len(insts), "by_class": by_class,
-            "ground_aligned": heightmap is not None}
+            "ground_aligned": heightmap is not None,
+            "components_seen": int(pstats["components_seen"]),
+            "dropped_too_small": int(pstats["dropped_too_small"]),
+            "dropped_too_large": int(pstats["dropped_too_large"])}
 
 
 def stage_debug(dim, chunk_range, args, out_dir):
@@ -496,8 +516,21 @@ def main(argv=None):
                    help="1 or 2 (UE5 convention)")
     g.add_argument("--xy-scale", dest="xy_scale", type=float, default=None,
                    help="cm per Landscape vertex (default 100 = 1 block)")
-    g.add_argument("--max-tiles", type=int, default=4,
-                   help="max Landscape tiles per axis")
+    g.add_argument("--max-tiles", type=int, default=16,
+                   help="hard cap on Landscape actors per axis")
+    g.add_argument("--landscape-tile-blocks", type=int, default=768,
+                   help="preferred maximum size of a Landscape tile in blocks, "
+                        "setting the MINIMUM number of tiles per axis. The "
+                        "solver may merge tiles further when a finer grid would "
+                        "multiply the Landscape component count (the unit of "
+                        "culling/LOD). For the 720x1040 campus the measured "
+                        "optimum is 2x2 tiles at 768: 4 actors, 816 components, "
+                        "12 m of border -- the same render state as one "
+                        "monolithic Landscape, in 4 streamable pieces. 0 = one "
+                        "monolithic Landscape (never cullable).")
+    g.add_argument("--tile-grid-search", type=int, default=8,
+                   help="largest per-axis tile grid the solver may consider "
+                        "when trading tile count against component count")
     g.add_argument("--skip-landscape", action="store_true",
                    help="heightmaps only, no Landscape export")
 
@@ -516,6 +549,10 @@ def main(argv=None):
     g2.add_argument("--max-instances", type=int, default=4000)
     g2.add_argument("--min-prop-blocks", type=int, default=1,
                     help="drop connected components smaller than this")
+    g2.add_argument("--max-prop-blocks", type=int, default=0,
+                    help="drop connected components larger than this "
+                         "(0 = module default, 20000). Raise it if a large "
+                         "building goes missing from the props list.")
     g2.add_argument("--chunk-cache", type=int, default=512)
     g2.add_argument("--only", default=None,
                     help="comma list of stages: terrain,water,props,debug")

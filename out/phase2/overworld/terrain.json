@@ -15,20 +15,21 @@
   "landscape": {
     "dir": "landscape",
     "resolution": [
-      745,
-      1055
+      373,
+      528
     ],
     "n_components": [
-      24,
-      34
+      48,
+      68
     ],
     "section_size": 31,
     "quads_per_component": 31,
     "xy_scale_cm": 100.0,
-    "tile_count": 1,
+    "tile_count": 4,
     "tile_grid": [
-      1,
-      1
-    ]
+      2,
+      2
+    ],
+    "max_tile_blocks": 768
   }
 }
