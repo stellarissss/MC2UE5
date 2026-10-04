@@ -69,3 +69,9 @@ __pycache__/
 venv/
 .mypy_cache/
 .pytest_cache/
+# ---- 生成的构建中间产物 --------------------------------------------------
+terrain/          # build_terrain_mesh.py 的 OBJ 输出
+character/        # make_character.py 生成的网格与皮肤
+shots/            # 评测渲染图
+dist/ dist2/ dist3/
+*.tar.gz

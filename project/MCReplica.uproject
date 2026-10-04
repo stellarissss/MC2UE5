@@ -3,7 +3,13 @@
 	"EngineAssociation": "",
 	"Category": "",
 	"Description": "Minecraft 1.16.5 (SYFZ_1.16.5) campus terrain rebuilt in UE5: Landscape heightfield from the phase-2 semantic rebuild.",
-	"Modules": [],
+	"Modules": [
+		{
+			"Name": "MCReplica",
+			"Type": "Runtime",
+			"LoadingPhase": "Default"
+		}
+	],
 	"Plugins": [
 		{
 			"Name": "PythonScriptPlugin",

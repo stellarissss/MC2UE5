@@ -70,6 +70,7 @@ LEVEL_PATH = "/Game/Maps/MCReplica"
 
 TERRAIN_MESH_DIR = "/Game/MC/Terrain"
 TEXTURE_DIR = "/Game/MC/Textures"
+CHARACTER_DIR = "/Game/MC/Character"
 MATERIAL_DIR = "/Game/MC/Materials"
 PROP_DIR = "/Game/MC/Props"
 LIGHT_DIR = "/Game/MC/Lighting"
@@ -121,6 +122,32 @@ def project_dir():
     except Exception:
         here = os.path.dirname(os.path.abspath(__file__))
         return os.path.abspath(os.path.join(here, os.pardir, os.pardir))
+
+
+def _root_dir():
+    """
+    The MC2UE5 working directory holding assets/, character/ and terrain/.
+
+    Two levels up from the project: the layout is
+
+        <root>/repo/project      <- the UE project (this file's project)
+        <root>/assets            <- textures, committed data
+        <root>/character         <- generated figure meshes and skin
+
+    so the project directory's grandparent is the root. It is also derived from
+    the data root when one was found, which keeps the two in step.
+    """
+    base = project_dir()
+    return os.path.abspath(os.path.join(base, os.pardir, os.pardir))
+
+
+def _class_name(cls):
+    """Name of a UClass, which may be handed over as a class or an instance."""
+    try:
+        return cls.get_name()
+    except TypeError:
+        # A class object, not an instance: get_name() is unbound on it.
+        return getattr(cls, "__name__", str(cls))
 
 
 def resolve_root():
@@ -942,8 +969,21 @@ def build_props(root):
     cell_cm = 256 * BLOCK_CM
     total = 0
     cell_count = 0
+    cluster_cls = getattr(unreal, "MCReplicaPropCluster", None)
+
+    if cluster_cls is None:
+        # Without the C++ cluster actor the fallback is one actor per prop,
+        # which is correct but costs a draw call each -- the thing the cluster
+        # exists to avoid. Say so rather than quietly shipping the slow path.
+        warn("MCReplicaPropCluster is unavailable; falling back to one actor "
+             "per prop, which costs roughly %d extra draw calls"
+             % len(insts))
+        cluster_cls = None
+
     for (prim, cls), items in sorted(groups.items()):
         mesh = assets[(prim, cls)]
+        if mesh is None:
+            continue
         buckets = {}
         for inst in items:
             pos = inst.get("position_cm") or [0.0, 0.0, 0.0]
@@ -952,19 +992,65 @@ def build_props(root):
                  int(math.floor(pos[2] / cell_cm))), []).append(inst)
 
         for (cx, cz), group in sorted(buckets.items()):
-            # UE 5.8 marks AHierarchicalInstancedStaticMeshActor NotPlaceable,
-            # so it is not exposed to Python and a HISM component created with
-            # new_object has no register_component() to attach it with. One
-            # StaticMeshActor per instance is what the engine will actually
-            # accept here; the cost is draw calls, which Nanite absorbs, and
-            # 1297 actors is well inside what World Partition streams.
-            placed_n = _spawn_props(group, mesh, cls, prim, cx, cz)
-            total += placed_n
+            if cluster_cls is None:
+                total += _spawn_props(group, mesh, cls, prim, cx, cz)
+            else:
+                placed = _spawn_prop_cluster(cluster_cls, group, mesh, cls,
+                                             prim, cx, cz, cell_cm)
+                if placed is None:
+                    total += _spawn_props(group, mesh, cls, prim, cx, cz)
+                else:
+                    total += placed
             cell_count += 1
 
-    log("  props: %d placed across %d mesh variants, %d spatial cells"
-        % (total, len([a for a in assets.values() if a]), cell_count))
+    log("  props: %d placed across %d mesh variants, %d spatial cells%s"
+        % (total, len([a for a in assets.values() if a]), cell_count,
+           " (instanced)" if cluster_cls is not None else " (one actor each)"))
     return total
+
+
+def _spawn_prop_cluster(cluster_cls, group, mesh, cls, prim, cx, cz, cell_cm):
+    """
+    Place a batch of props into one HISM cluster. Returns the count, or None
+    if the cluster could not be built so the caller can fall back.
+    """
+    start, end = PROP_CULL_CM.get(cls, PROP_CULL_DEFAULT_CM)
+
+    # Plain parallel arrays rather than an array of Transform: FTransform has
+    # no unambiguous Python constructor in 5.8 (every positional overload also
+    # reads as a Vector or Rotator), and its rotation is a Quat that Python
+    # cannot build from a Rotator. The engine does that conversion exactly, so
+    # the data is handed over raw.
+    positions, rotations, scales = [], [], []
+    for inst in group:
+        pos = inst.get("position_cm") or [0.0, 0.0, 0.0]
+        rot = inst.get("rotation_deg") or [0.0, 0.0, 0.0]
+        positions.append(unreal.Vector(float(pos[0]), float(pos[1]),
+                                       float(pos[2])))
+        rotations.append(unreal.Rotator(float(rot[0]), float(rot[1]),
+                                        float(rot[2])))
+        scales.append(_prop_scale(inst.get("model") or {}))
+
+    try:
+        spawned = unreal.EditorLevelLibrary.spawn_actor_from_class(
+            cluster_cls, unreal.Vector(cx * cell_cm, 0.0, cz * cell_cm),
+            unreal.Rotator(0.0, 0.0, 0.0))
+        if spawned is None:
+            return None
+        spawned.set_actor_label("Props_%s_%s_%d_%d" % (cls, prim, cx, cz))
+        spawned.set_editor_property("start_cull_distance", float(start))
+        spawned.set_editor_property("end_cull_distance", float(end))
+        # Called as bound methods rather than through call_method: the latter
+        # wants the C++ spelling ("SetMesh") and the Python bindings want the
+        # reflected one ("set_mesh"), and mixing them up reports
+        # "Failed to find function" against a class that plainly has it.
+        spawned.set_mesh(mesh)
+        spawned.set_instances_from_data(positions, rotations, scales)
+        return len(positions)
+    except Exception as exc:
+        warn("prop cluster %s/%s at (%d,%d) failed (%s)"
+             % (cls, prim, cx, cz, exc))
+        return None
 
 
 def _spawn_props(group, mesh, cls, prim, cx, cz):
@@ -1140,10 +1226,11 @@ def make_playable(root):
     """
     Give the level a pawn, a GameMode and a PlayerStart.
 
-    Without these a packaged build opens on a black screen: the default engine
-    GameMode has no pawn configured for this project, and even if it did there
-    is nowhere to spawn it. The upstream scripts assume a developer opens the
-    editor and places these by hand; a release build has to carry them.
+    The pawn is ``AMCReplicaCharacter``: a Minecraft-proportioned student with
+    a procedural walk cycle, which walks the terrain and steps over ledges via
+    CharacterMovement. The upstream project had none of this -- its own notes
+    record that the level could be looked at but not walked on -- and a
+    spectator pawn with no body is not a character anyone can tour a school in.
     """
     if _editor_world() is None:
         err("no world; cannot make the level playable")
@@ -1152,6 +1239,7 @@ def make_playable(root):
     ground = _terrain_height_cm(root)
     spawn = unreal.Vector(0.0, 0.0, ground + 300.0)
 
+    # ---- PlayerStart ------------------------------------------------------
     start = None
     for actor in unreal.EditorLevelLibrary.get_all_level_actors():
         if actor.get_class().get_name() == "PlayerStart":
@@ -1167,12 +1255,221 @@ def make_playable(root):
     else:
         log("  PlayerStart already present")
 
-    # The engine's default pawn flies a camera and ignores collision, which is
-    # right for inspecting a terrain rebuild and wrong for a game.
-    # SpectatorPawn walks and looks around without a mesh, so the terrain stays
-    # unobstructed and the pawn still obeys gravity and collision.
+    # ---- the character ---------------------------------------------------
+    figure = _import_character()
+    pawn = _spawn_player_character(figure, start)
+
     _set_game_mode()
-    return True
+    return pawn is not None
+
+
+# =============================================================================
+# PLAYER CHARACTER
+# =============================================================================
+
+#: C++ component name -> mesh asset suffix. The character builds its figure from
+#: one static mesh per limb so each can pivot at its own joint; the walk cycle
+#: in AMCReplicaCharacter rotates them, which a single merged mesh could not do.
+CHARACTER_PARTS = (
+    ("Head", "head"),
+    ("Torso", "torso"),
+    ("ArmLeft", "arm"),
+    ("ArmRight", "arm"),
+    ("LegLeft", "leg"),
+    ("LegRight", "leg"),
+)
+
+
+def _import_character():
+    """
+    Import the character's meshes and skin, and build its material.
+
+    Returns {suffix: StaticMesh} plus the skin, or None when the assets are
+    absent -- ``tools/make_character.py`` generates them, and a level built
+    without them still runs, just without a visible figure.
+    """
+    src_dir = os.path.join(_root_dir(), "character")
+    if not os.path.isdir(src_dir):
+        warn("no character assets at %s -- run tools/make_character.py. "
+             "The pawn will spawn invisible." % src_dir)
+        return None
+
+    _ensure_dir(CHARACTER_DIR)
+
+    skin = _import_texture(os.path.join(src_dir, "char_skin.png"), "char_skin",
+                           CHARACTER_DIR)
+    if skin is None:
+        warn("character skin missing; the figure would be untextured")
+        return None
+
+    meshes = {}
+    for _comp, suffix in CHARACTER_PARTS:
+        if suffix in meshes:
+            continue
+        src = os.path.join(src_dir, "char_%s.obj" % suffix)
+        if not os.path.isfile(src):
+            warn("missing character mesh %s" % src)
+            continue
+        dest_name = "CH_%s" % suffix
+        task = unreal.AssetImportTask()
+        task.set_editor_property("filename", src)
+        task.set_editor_property("destination_path", CHARACTER_DIR)
+        task.set_editor_property("destination_name", dest_name)
+        task.set_editor_property("automated", True)
+        task.set_editor_property("replace_existing", True)
+        task.set_editor_property("save", True)
+        unreal.AssetToolsHelpers.get_asset_tools().import_asset_tasks([task])
+        mesh = unreal.load_asset("%s/%s" % (CHARACTER_DIR, dest_name))
+        if mesh is None:
+            warn("could not import the character mesh %s" % src)
+            continue
+        meshes[suffix] = mesh
+
+    material = _build_character_material(skin)
+    for mesh in meshes.values():
+        try:
+            mesh.set_material(0, material)
+        except Exception as exc:
+            warn("could not assign the skin to %s (%s)" % (mesh.get_name(), exc))
+
+    log("  character: %d meshes, skin %s, material %s"
+        % (len(meshes), skin.get_name(),
+           material.get_name() if material else "(none)"))
+    return {"meshes": meshes, "material": material, "skin": skin}
+
+
+def _import_texture(src, dest_name, dest_dir):
+    """Import a texture as Nearest, no mips -- it is pixel art."""
+    dest = "%s/%s" % (dest_dir, dest_name)
+    if not unreal.EditorAssetLibrary.does_asset_exist(dest):
+        task = unreal.AssetImportTask()
+        task.set_editor_property("filename", src)
+        task.set_editor_property("destination_path", dest_dir)
+        task.set_editor_property("destination_name", dest_name)
+        task.set_editor_property("automated", True)
+        task.set_editor_property("replace_existing", True)
+        task.set_editor_property("save", True)
+        unreal.AssetToolsHelpers.get_asset_tools().import_asset_tasks([task])
+
+    tex = unreal.load_asset(dest)
+    if tex is None:
+        return None
+    for prop, value in (("filter", unreal.TextureFilter.TF_NEAREST),
+                        ("mip_gen_settings",
+                         unreal.TextureMipGenSettings.TMGS_NO_MIPMAPS),
+                        ("compression_settings",
+                         unreal.TextureCompressionSettings.TC_EDITOR_ICON),
+                        ("lod_group",
+                         unreal.TextureGroup.TEXTUREGROUP_CHARACTER),
+                        ("never_stream", True),
+                        ("srgb", True)):
+        try:
+            tex.set_editor_property(prop, value)
+        except Exception:
+            pass
+    unreal.EditorAssetLibrary.save_loaded_asset(tex)
+    return tex
+
+
+def _build_character_material(skin):
+    """
+    One textured material for the whole figure.
+
+    The skin atlas already carries the uniform, so a single opaque material is
+    all the figure needs -- and one material means one draw call for the
+    character, which is what keeps a third-person view cheap.
+    """
+    path = "%s/MC_Character" % MATERIAL_DIR
+    if unreal.EditorAssetLibrary.does_asset_exist(path):
+        return unreal.load_asset(path)
+
+    mat = unreal.AssetToolsHelpers.get_asset_tools().create_asset(
+        "MC_Character", MATERIAL_DIR, unreal.Material,
+        unreal.MaterialFactoryNew())
+    if mat is None:
+        err("could not create the character material")
+        return None
+
+    mel = unreal.MaterialEditingLibrary
+    try:
+        tex = mel.create_material_expression(
+            mat, unreal.MaterialExpressionTextureSampleParameter2D, -400, 0)
+        tex.set_editor_property("parameter_name", "Skin")
+        tex.set_editor_property("texture", skin)
+
+        mel.connect_material_property(tex, "RGB",
+                                      unreal.MaterialProperty.MP_BASE_COLOR)
+
+        rough = mel.create_material_expression(
+            mat, unreal.MaterialExpressionConstant, -400, 200)
+        try:
+            rough.set_editor_property("r", 0.9)
+        except Exception:
+            pass
+        mel.connect_material_property(rough, "",
+                                      unreal.MaterialProperty.MP_ROUGHNESS)
+
+        unreal.EditorAssetLibrary.save_loaded_asset(mat)
+        return mat
+    except Exception as exc:
+        warn("character material graph failed (%s); the figure will use the "
+             "engine default" % exc)
+        try:
+            unreal.EditorAssetLibrary.delete_asset(path)
+        except Exception:
+            pass
+        return None
+
+
+def _spawn_player_character(figure, start):
+    """
+    Spawn AMCReplicaCharacter at the PlayerStart and dress it.
+
+    The pawn is placed on the PlayerStart when one exists so the two cannot
+    drift apart, and nudged up off the ground: the capsule is 200 cm tall and
+    its origin sits at the centre, so a spawn exactly on the surface would put
+    the character's feet 100 cm below the terrain.
+    """
+    cls = getattr(unreal, "MCReplicaCharacter", None)
+    if cls is None:
+        err("MCReplicaCharacter is not available -- is the MCReplica module "
+            "compiled? The game would fall back to the engine default pawn.")
+        return None
+
+    loc = start.get_actor_location() if start is not None else \
+        unreal.Vector(0.0, 0.0, 5000.0)
+    # Capsule origin is at mid-height; +100 puts the feet on the ground.
+    loc.z += 100.0
+
+    pawn = unreal.EditorLevelLibrary.spawn_actor_from_class(
+        cls, loc, unreal.Rotator(0.0, 0.0, 0.0))
+    if pawn is None:
+        err("could not spawn the player character")
+        return None
+    pawn.set_actor_label("MC_Player")
+
+    if figure:
+        by_name = {}
+        for comp in pawn.get_components_by_class(unreal.StaticMeshComponent):
+            by_name[comp.get_name()] = comp
+
+        assigned = 0
+        for comp_name, suffix in CHARACTER_PARTS:
+            mesh = figure["meshes"].get(suffix)
+            comp = by_name.get(comp_name)
+            if mesh is None or comp is None:
+                if comp is not None:
+                    log("    no mesh for component %s" % comp_name)
+                continue
+            comp.set_static_mesh(mesh)
+            assigned += 1
+        log("  character: %d/%d limbs dressed"
+            % (assigned, len(CHARACTER_PARTS)))
+
+    loc = pawn.get_actor_location()
+    log("  player pawn at (%.0f, %.0f, %.0f), capsule 30x200 cm, "
+        "MaxStepHeight 60 cm" % (loc.x, loc.y, loc.z))
+    return pawn
 
 
 def _terrain_height_cm(root):
@@ -1257,22 +1554,30 @@ def _set_game_mode():
                  "packaged build will use the engine default")
             ok = False
 
-        # DefaultPawnClass lives on the GameMode CDO. The candidates are the
-        # C++ class paths -- /Script/Engine.SpectatorPawn -- because
-        # /Engine/EngineMeshes/SpectatorPawn is a Blueprint asset path and
-        # resolves to None for a native class.
+        # DefaultPawnClass lives on the GameMode CDO, not on WorldSettings --
+        # writing it to WorldSettings is accepted and then ignored, so a
+        # packaged build spawns nothing.
+        #
+        # The project's own character is preferred and is taken as the exposed
+        # Python class object: load_class("/Script/MCReplica.MCReplicaCharacter")
+        # does not resolve for a project module, and guessing at the path is
+        # how a pawn silently fails to bind.
         pawn_ok = False
         try:
             cdo = unreal.get_default_object(gm_cls)
-            for candidate in ("/Script/Engine.SpectatorPawn",
-                              "/Script/Engine.DefaultPawn"):
-                pawn_cls = unreal.load_class(None, candidate)
-                if pawn_cls is None:
-                    continue
-                cdo.set_editor_property("default_pawn_class", pawn_cls)
-                log("  pawn: %s" % pawn_cls.get_name())
-                pawn_ok = True
-                break
+            if cdo is None:
+                warn("no CDO for %s; the GameMode could not be configured" % gm_path)
+            else:
+                candidates = [getattr(unreal, "MCReplicaCharacter", None),
+                              unreal.load_class(None, "/Script/Engine.SpectatorPawn"),
+                              unreal.load_class(None, "/Script/Engine.DefaultPawn")]
+                for pawn_cls in candidates:
+                    if pawn_cls is None:
+                        continue
+                    cdo.set_editor_property("default_pawn_class", pawn_cls)
+                    log("  pawn: %s" % _class_name(pawn_cls))
+                    pawn_ok = True
+                    break
         except Exception as exc:
             warn("could not set DefaultPawnClass (%s)" % exc)
 
@@ -1423,26 +1728,27 @@ def verify(meshes_placed, props_placed):
             starts += 1
 
     # Read the pawn and GameMode back off the GameMode CDO: that is where a
-    # packaged build looks, so it is what has to be verified.
+    # packaged build looks, so it is what has to be verified. AGameModeBase
+    # already defaults to ADefaultPawn, so "not None" proves nothing -- the
+    # check is that it names a pawn class *other* than the base default, i.e.
+    # that something was actually assigned.
     try:
         gm_cls = unreal.load_class(None, "/Script/Engine.GameModeBase")
         cdo = unreal.get_default_object(gm_cls) if gm_cls else None
         if cdo is not None:
             pawn_cls = cdo.get_editor_property("default_pawn_class")
-            # AGameModeBase already defaults to ADefaultPawn, so "not None" is
-            # not evidence that anything was set -- require that it names a
-            # pawn class rather than the base UObject.
-            pawn_ok = (pawn_cls is not None
-                       and "Pawn" in pawn_cls.get_name())
             mode_ok = True
+            pawn_ok = pawn_cls is not None and \
+                _class_name(pawn_cls) not in ("DefaultPawn", "SpectatorPawn")
+            pawn_name = _class_name(pawn_cls) if pawn_cls else "(none)"
     except Exception:
-        pass
+        pawn_name = "(unreadable)"
 
     log("verify: %d visual meshes, %d collision proxies (%d with a collision "
         "surface), %d PlayerStart, %d props, gamemode=%s pawn=%s"
         % (visual, proxies, collision, starts, props_placed,
            "ok" if mode_ok else "MISSING",
-           "ok" if pawn_ok else "MISSING"))
+           pawn_name if pawn_ok else "MISSING (%s)" % pawn_name))
 
     if meshes_placed != 4:
         err("expected 4 terrain meshes, placed %d" % meshes_placed)

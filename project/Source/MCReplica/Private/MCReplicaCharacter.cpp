@@ -1,0 +1,272 @@
+// Character for the rebuilt campus: walks the terrain, climbs steps, and is
+// dressed as a Minecraft-style blocky school student.
+
+#include "MCReplicaCharacter.h"
+
+#include "Camera/CameraComponent.h"
+#include "Components/CapsuleComponent.h"
+#include "Components/InputComponent.h"
+#include "Components/SkeletalMeshComponent.h"
+#include "Components/StaticMeshComponent.h"
+#include "GameFramework/CharacterMovementComponent.h"
+#include "GameFramework/SpringArmComponent.h"
+
+AMCReplicaCharacter::AMCReplicaCharacter()
+{
+	PrimaryActorTick.bCanEverTick = true;
+
+	// ---- capsule ---------------------------------------------------------
+	// Minecraft proportions: 60 cm across, 200 cm tall. UE's capsule total
+	// height is 2*HalfHeight + 2*Radius, so HalfHeight is (200-60)/2 = 70.
+	GetCapsuleComponent()->InitCapsuleSize(30.0f, 70.0f);
+	GetCapsuleComponent()->SetCollisionProfileName(TEXT("Pawn"));
+
+	// A character turns to face its movement rather than snapping, which keeps
+	// the camera from whipping around when the view direction changes.
+	bUseControllerRotationPitch = false;
+	bUseControllerRotationYaw = false;
+	bUseControllerRotationRoll = false;
+
+	// ---- movement --------------------------------------------------------
+	if (UCharacterMovementComponent* Move =
+			Cast<UCharacterMovementComponent>(GetCharacterMovement()))
+	{
+		Move->MaxWalkSpeed = WalkSpeed;
+		Move->MaxWalkSpeedCrouched = WalkSpeed * 0.4f;
+		Move->GroundFriction = 8.0f;
+		Move->BrakingDecelerationWalking = 1400.0f;
+		Move->AirControl = 0.22f;
+
+		// v = sqrt(2 * g * h) for the requested jump height.
+		Move->JumpZVelocity = FMath::Sqrt(2.0f * 980.0f * JumpHeight);
+
+		// Step over anything up to StepHeight, and keep the character walking
+		// rather than launching when it meets the lip of a one-block ledge.
+		//
+		// 5.8 names this MaxStepHeight; WalkableFloorZ is private and only
+		// reachable through its setter, so assigning the fields directly does
+		// not compile.
+		Move->MaxStepHeight = StepHeight;
+		Move->SetWalkableFloorAngle(44.8f);   // the default; spelled out for clarity
+
+		// The collision proxy is a stride-4 copy of the terrain, so its surface
+		// is already smoothed at 4 m. A small perch radius stops the character
+		// jittering when it crosses a proxy triangle, and the extra perch height
+		// lets it hang slightly over a ledge instead of sliding off it.
+		Move->PerchRadiusThreshold = 20.0f;
+		Move->PerchAdditionalHeight = 12.0f;
+	}
+
+	// ---- figure ----------------------------------------------------------
+	// A skeletal mesh component already exists on ACharacter and is left empty;
+	// hiding it keeps it from contributing an empty bounds entry.
+	if (USkeletalMeshComponent* SkelMesh = GetMesh())
+	{
+		SkelMesh->SetVisibility(false);
+		SkelMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	}
+
+	BodyRoot = CreateDefaultSubobject<USceneComponent>(TEXT("BodyRoot"));
+	BodyRoot->SetupAttachment(GetCapsuleComponent());
+
+	const float T = 25.0f;   // limb thickness, 25 cm
+	const float W = 50.0f;   // head / torso width, 50 cm
+	const float D = 25.0f;   // torso depth, 25 cm
+
+	auto MakeLimb = [this](const TCHAR* Name, const FVector& Pivot)
+	{
+		UStaticMeshComponent* C =
+			CreateDefaultSubobject<UStaticMeshComponent>(Name);
+		C->SetupAttachment(BodyRoot);
+		C->SetRelativeLocation(Pivot);
+		C->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		C->SetGenerateOverlapEvents(false);
+		C->SetCastShadow(true);
+		return C;
+	};
+
+	// Pivots, not centres: an arm rotates about the shoulder, a leg about the
+	// hip, so the component origin sits at the joint and the mesh geometry is
+	// modelled hanging below it.
+	Head = MakeLimb(TEXT("Head"), FVector(0.0f, 0.0f, 175.0f));
+	Torso = MakeLimb(TEXT("Torso"), FVector(0.0f, 0.0f, 112.5f));
+	ArmLeft = MakeLimb(TEXT("ArmLeft"), FVector(-37.5f, 0.0f, 150.0f));
+	ArmRight = MakeLimb(TEXT("ArmRight"), FVector(37.5f, 0.0f, 150.0f));
+	LegLeft = MakeLimb(TEXT("LegLeft"), FVector(-12.5f, 0.0f, 75.0f));
+	LegRight = MakeLimb(TEXT("LegRight"), FVector(12.5f, 0.0f, 75.0f));
+
+	// The skin and uniform meshes are assigned from Python once the textures
+	// exist; record the intended dimensions so the mesh can be authored to fit.
+	(void)T; (void)W; (void)D;
+
+	// ---- camera ----------------------------------------------------------
+	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
+	CameraBoom->SetupAttachment(RootComponent);
+	CameraBoom->TargetArmLength = CameraBoomLength;
+	CameraBoom->bUsePawnControlRotation = true;
+	// Pull the camera in when a wall is behind the character, so the view does
+	// not disappear into the campus buildings.
+	CameraBoom->bDoCollisionTest = true;
+	CameraBoom->CameraLagSpeed = 12.0f;
+	CameraBoom->bEnableCameraLag = true;
+
+	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
+	Camera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
+	// Looking slightly down the length of the boom shows the figure and the
+	// ground in front of it, which is what makes a blocky character read.
+	Camera->bUsePawnControlRotation = false;
+	Camera->SetRelativeRotation(FRotator(-12.0f, 0.0f, 0.0f));
+}
+
+void AMCReplicaCharacter::BeginPlay()
+{
+	Super::BeginPlay();
+
+	if (UCharacterMovementComponent* Move =
+			Cast<UCharacterMovementComponent>(GetCharacterMovement()))
+	{
+		// Re-apply the tunables here as well as in the constructor: the
+		// defaults above are written before the properties are deserialised,
+		// and an edited Blueprint would otherwise silently lose them.
+		Move->MaxWalkSpeed = WalkSpeed;
+		Move->MaxStepHeight = StepHeight;
+		Move->JumpZVelocity = FMath::Sqrt(2.0f * 980.0f * JumpHeight);
+	}
+}
+
+void AMCReplicaCharacter::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+
+	UpdateWalkCycle(DeltaSeconds);
+
+	if (UCharacterMovementComponent* Move =
+			Cast<UCharacterMovementComponent>(GetCharacterMovement()))
+	{
+		Move->MaxWalkSpeed = bSprinting ? SprintSpeed : WalkSpeed;
+	}
+}
+
+void AMCReplicaCharacter::UpdateWalkCycle(float DeltaSeconds)
+{
+	if (DeltaSeconds <= 0.0f)
+	{
+		return;
+	}
+
+	// Only the horizontal component drives the cycle: a pawn falling straight
+	// down has full speed and would otherwise flail its limbs on every jump.
+	const FVector V = GetVelocity();
+	const float PlanarSpeed = FVector(V.X, V.Y, 0.0f).Size();
+
+	const float TargetAlpha = FMath::Clamp(PlanarSpeed / FMath::Max(1.0f, WalkSpeed),
+		0.0f, 1.0f);
+	SwingAlpha = FMath::FInterpTo(SwingAlpha, TargetAlpha, DeltaSeconds,
+		SwingInterpSpeed);
+
+	if (SwingAlpha <= KINDA_SMALL_NUMBER)
+	{
+		// Settle back to the neutral pose rather than freezing mid-stride.
+		SwingLimb(ArmLeft, 0.0f);
+		SwingLimb(ArmRight, 0.0f);
+		SwingLimb(LegLeft, 0.0f);
+		SwingLimb(LegRight, 0.0f);
+		WalkPhase = 0.0f;
+		return;
+	}
+
+	// Stride frequency scales with speed so the feet do not skate: one full
+	// cycle per stride length rather than per second.
+	const float Frequency = 0.55f + 1.15f * (PlanarSpeed / FMath::Max(1.0f, SprintSpeed));
+	WalkPhase += DeltaSeconds * Frequency * SwingAlpha;
+
+	const float Angle = LimbSwingDegrees * SwingAlpha * FMath::Sin(WalkPhase * 2.0f * PI);
+	const float LegAngle = Angle * 1.15f;
+
+	// Arms swing opposite the legs, as they do when walking.
+	SwingLimb(ArmLeft, -Angle);
+	SwingLimb(ArmRight, Angle);
+	SwingLimb(LegLeft, LegAngle);
+	SwingLimb(LegRight, -LegAngle);
+}
+
+void AMCReplicaCharacter::SwingLimb(UStaticMeshComponent* Limb,
+	float PitchDegrees) const
+{
+	if (!Limb)
+	{
+		return;
+	}
+	// Pitch about Y: rotates the limb forward and back about its pivot.
+	Limb->SetRelativeRotation(FRotator(PitchDegrees, 0.0f, 0.0f));
+}
+
+void AMCReplicaCharacter::SetupPlayerInputComponent(
+	UInputComponent* PlayerInputComponent)
+{
+	Super::SetupPlayerInputComponent(PlayerInputComponent);
+
+	check(PlayerInputComponent);
+
+	// Classic axis mappings rather than Enhanced Input: the project has no
+	// InputAction assets and authoring them headlessly is not possible, while
+	// the legacy path is still fully supported and does the same job.
+	PlayerInputComponent->BindAxis(TEXT("MoveForward"), this,
+		&AMCReplicaCharacter::MoveForward);
+	PlayerInputComponent->BindAxis(TEXT("MoveRight"), this,
+		&AMCReplicaCharacter::MoveRight);
+	PlayerInputComponent->BindAxis(TEXT("Turn"), this,
+		&AMCReplicaCharacter::Turn);
+	PlayerInputComponent->BindAxis(TEXT("LookUp"), this,
+		&AMCReplicaCharacter::LookUp);
+
+	PlayerInputComponent->BindAction(TEXT("Jump"), IE_Pressed, this,
+		&ACharacter::Jump);
+	PlayerInputComponent->BindAction(TEXT("Jump"), IE_Released, this,
+		&ACharacter::StopJumping);
+	PlayerInputComponent->BindAction(TEXT("Sprint"), IE_Pressed, this,
+		&AMCReplicaCharacter::BeginSprint);
+	PlayerInputComponent->BindAction(TEXT("Sprint"), IE_Released, this,
+		&AMCReplicaCharacter::EndSprint);
+}
+
+void AMCReplicaCharacter::MoveForward(float Value)
+{
+	if (!FMath::IsNearlyZero(Value))
+	{
+		// Movement is relative to where the camera is looking, so walking
+		// always goes the way the view faces regardless of character yaw.
+		AddMovementInput(GetActorForwardVector(), Value);
+	}
+}
+
+void AMCReplicaCharacter::MoveRight(float Value)
+{
+	if (!FMath::IsNearlyZero(Value))
+	{
+		AddMovementInput(GetActorRightVector(), Value);
+	}
+}
+
+void AMCReplicaCharacter::Turn(float Value)
+{
+	// Rotate the controller, and with it the body, so the figure always faces
+	// the direction the camera orbits to.
+	AddControllerYawInput(Value);
+}
+
+void AMCReplicaCharacter::LookUp(float Value)
+{
+	// Pitch is clamped by the engine so the camera cannot roll over the top.
+	AddControllerPitchInput(Value);
+}
+
+void AMCReplicaCharacter::BeginSprint()
+{
+	bSprinting = true;
+}
+
+void AMCReplicaCharacter::EndSprint()
+{
+	bSprinting = false;
+}
