@@ -35,9 +35,16 @@
 *.bin    filter= diff= merge= -text
 
 # ---- 精确覆盖：phase2 产物留在普通 Git ----------------------------------
-# 顺序要紧：以下每一行都必须在上面之后。out/phase2 目前只有一层子目录，
-# 直接列出确切文件名比用通配更可靠 —— 宁可漏一个，也不要让通配误伤别的文件。
-out/phase2/overworld/landscape/overworld_00_00.png     filter= diff= merge= -text
-out/phase2/overworld/debug/overworld_height_color.png  filter= diff= merge= -text
-out/phase2/overworld/debug/overworld_height_gray.png   filter= diff= merge= -text
-out/phase2/overworld/debug/overworld_surface_labels.png filter= diff= merge= -text
+# 顺序要紧：以下每一行都必须在上面之后。
+#
+# 这里刻意用目录通配而不是逐个列文件名。逐个列举的版本已经漏过一次：
+# 分块从 1x1 变成 2x2 后新增的 overworld_00_01 / 01_00 / 01_01 没有出现在
+# 列表里，于是默默落进了上面的 *.png 通配、存成 LFS pointer。三个 tile 加起来
+# 只有 77 KB，却因此不能在 GitHub 上预览、不能用文本工具核对——正是本文件
+# 开头声明要避免的事。
+#
+# 按目录覆盖比按文件列举更稳：新增 tile 时不需要记得改这里。
+# gitattributes 对 ** 在否定场景的处理会连带清掉 filter（见上），所以这里
+# 用单层目录名匹配，不用 ** 递归。
+out/phase2/overworld/landscape/*.png    filter= diff= merge= -text
+out/phase2/overworld/debug/*.png        filter= diff= merge= -text
