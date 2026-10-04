@@ -601,7 +601,30 @@ def _build_terrain_material(textures):
 # =============================================================================
 
 def open_level():
-    """Create the World Partition level if needed and return the editor world."""
+    """
+    Create (or open) the level and return the editor world.
+
+    **Deliberately a classic level, not a World Partition one.** The upstream
+    pipeline targets a partitioned level, which is the right choice for a map
+    with a 144 MB block layer spread over hundreds of streaming cells. This
+    build has neither that layer nor the data to rebuild it, and World
+    Partition costs the release in a way that is invisible until the cook:
+
+      * actors live in external actor packages rather than the .umap, and
+      * a cook only gathers the cells a viewer would stream in.
+
+    With no local player -- a headless cook, or an editor session with no
+    viewport -- no cells are streamed, so the cook gathers ~7 generator
+    packages and **none of the 1300-odd placed actors reach the package**.
+    The build then reports success, the .umap ships, and the packaged game
+    opens on an empty map.
+
+    That is exactly what happened before this was changed: the level verified
+    clean in the editor, cooked without an error, and shipped with zero
+    terrain and zero props. A classic level keeps every actor inside the .umap,
+    where the cook cannot miss it. For a single 72 x 104 m campus, streaming was
+    buying nothing anyway.
+    """
     les = unreal.get_editor_subsystem(unreal.LevelEditorSubsystem)
     if unreal.EditorAssetLibrary.does_asset_exist(LEVEL_PATH):
         log("opening existing level %s" % LEVEL_PATH)
@@ -610,14 +633,28 @@ def open_level():
             return None
     else:
         _ensure_dir("/Game/Maps")
-        log("creating World Partition level %s" % LEVEL_PATH)
-        if not les.new_level(LEVEL_PATH, True):
-            err("could not create the partitioned level")
+        log("creating level %s (classic, not partitioned)" % LEVEL_PATH)
+        if not les.new_level(LEVEL_PATH, False):
+            err("could not create the level")
             return None
 
     world = _editor_world()
     if world is None:
         err("no editor world after opening the level")
+        return None
+
+    # A partitioned level left over from an earlier run would keep writing its
+    # actors to external packages, so say plainly which kind this is.
+    try:
+        partitioned = bool(world.get_editor_property("partitioned"))
+    except Exception:
+        partitioned = False
+    if partitioned:
+        warn("this level is World Partition partitioned; actors would be "
+             "written as external packages and lost in a headless cook")
+        log("  converting to a classic level is required for a clean cook")
+    else:
+        log("  level type: classic (actors stored in the .umap)")
     return world
 
 
