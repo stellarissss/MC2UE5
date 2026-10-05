@@ -47,6 +47,22 @@ public:
 	 *
 	 *     MCReplica.exe -ExecCmds="mc.Diag 1"
 	 */
+	/**
+	 * Build the campus terrain as procedural meshes.
+	 *
+	 * The terrain cannot come from the imported OBJ tiles: the OBJ importer
+	 * reads only the first ~640 vertices of a file (measured: a 12,502-vertex
+	 * collision OBJ arrives as 1,122 verts, a 196,944-vertex visual tile as
+	 * 2,179), so the meshes have correct bounds and almost no triangles. The
+	 * campus was therefore invisible and had no collision.
+	 *
+	 * Instead the raw 16-bit heightfields are shipped as ``<Tile>.u16`` beside
+	 * the executable and triangulated here, at load. That also produces correct
+	 * collision, built at runtime, which avoids the trimesh cooking problems a
+	 * complex-as-simple StaticMesh has in an uncooked game.
+	 */
+	void BuildProceduralTerrain();
+
 	void RunRuntimeDiag();
 
 protected:

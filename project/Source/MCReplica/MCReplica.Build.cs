@@ -30,6 +30,11 @@ public class MCReplica : ModuleRules
 			"ImageWrapper",
 			"RHI",
 			"RenderCore",
+			// The terrain is built as a ProceduralMeshComponent at runtime. The
+			// OBJ importer reads only the first ~640 vertices of a file, so a
+			// 196,944-vertex terrain tile arrives almost empty; the heightfield
+			// is shipped as raw data and triangulated here instead.
+			"ProceduralMeshComponent",
 		});
 	}
 }

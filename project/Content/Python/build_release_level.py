@@ -561,20 +561,30 @@ def _build_terrain_material(textures):
     mel.connect_material_expressions(nrm, "", sep, "Vector")
     steep = node("MaterialExpressionSmoothStep", -820, 420, const_min=0.10,
                  const_max=0.38)
-    mel.connect_material_expressions(sep, "", steep, "Min")
+    # The *varying* term goes on Value. SmoothStep(Min, Max, Value) is 0 below
+    # Min and 1 above Max; connecting the slope to Min instead makes the result
+    # depend on the constants and the surface came out uniformly flat-shaded.
+    mel.connect_material_expressions(sep, "", steep, "Value")
 
     # ---- height: high flat ground fades to sand ---------------------------
     wpos = node("MaterialExpressionWorldPosition", -1200, 160)
     hsep = node("MaterialExpressionComponentMask", -1000, 160, r=False,
                 g=False, b=True, a=False)
     mel.connect_material_expressions(wpos, "", hsep, "Vector")
-    hdiv = node("MaterialExpressionDivide", -820, 160, const_b=1.0 / 5900.0)
+    # Divide by the height range, not by its reciprocal. The node computes
+    # A / B, so the divisor is B: passing 1/5900 here gives height * 5900,
+    # which saturates to 1 for every vertex above 1 cm, pins the height gate
+    # open and paints the whole campus sand.
+    hdiv = node("MaterialExpressionDivide", -820, 160, const_b=5900.0)
     mel.connect_material_expressions(hsep, "", hdiv, "A")
     hsat = node("MaterialExpressionSaturate", -660, 160)
     mel.connect_material_expressions(hdiv, "", hsat, "Input")
     hgate = node("MaterialExpressionSmoothStep", -500, 160, const_min=0.84,
                  const_max=0.99)
-    mel.connect_material_expressions(hsat, "", hgate, "Min")
+    # Same fix as `steep`: the height belongs on Value. With it on Min, every
+    # surface below the sand line evaluated to 1 and the whole campus was
+    # painted sand.
+    mel.connect_material_expressions(hsat, "", hgate, "Value")
 
     # ---- grass -> sand by height -----------------------------------------
     lerp_h = node("MaterialExpressionLinearInterpolate", -300, 60)
@@ -598,7 +608,13 @@ def _build_terrain_material(textures):
     mel.connect_material_expressions(s_dirt, "RGB", final, "B")
     mel.connect_material_expressions(damp, "Result", final, "Alpha")
 
-    mel.connect_material_property(final, "Result",
+    # The output pin name matters, and it is not the same for every expression:
+    # the default output of LinearInterpolate (and of most expressions) is
+    # named "" -- connecting with "Result" is accepted and then ignored, which
+    # leaves BaseColor empty and the surface black. Verified against the
+    # engine: connecting with "" is the one that reads back from
+    # get_material_property_input_node.
+    mel.connect_material_property(final, "",
                                   unreal.MaterialProperty.MP_BASE_COLOR)
 
     rough = node("MaterialExpressionConstant", 300, 420, r=0.85)
@@ -636,28 +652,22 @@ def _material_has_base_color(mat):
     -> True when the material's BaseColor actually resolves to an expression.
 
     A material whose BaseColor is left at its default compiles to opaque black,
-    which is not an error anywhere -- it just renders as a void. Reading the
-    compiled input back is the only way to tell a finished graph from a
-    partial one.
+    which is not an error anywhere -- it just renders as a void.
+
+    This is a hard check: it asks the engine what is wired to the property. An
+    earlier version fell back to counting expressions when that read failed,
+    and 18 nodes is more than any threshold, so a material whose BaseColor had
+    never been connected passed the check and shipped a black terrain. Counting
+    nodes proves nothing -- a graph can be complete and still not reach the
+    property it was built for.
     """
     mel = unreal.MaterialEditingLibrary
-    for getter in ("get_material_property_input_as_vector",
-                   "get_material_property_input_as_texture"):
-        if not hasattr(mel, getter):
-            continue
-        try:
-            value = getattr(mel, getter)(mat)
-            if value is not None:
-                return True
-        except Exception:
-            continue
-    # No readable input API: fall back to counting expressions, which is a weak
-    # signal but still separates a 5-node stub from a complete graph.
     try:
-        exprs = mel.get_material_expressions(mat)
-        return exprs is not None and len(exprs) >= 12
+        node = mel.get_material_property_input_node(
+            mat, unreal.MaterialProperty.MP_BASE_COLOR)
     except Exception:
-        return False
+        node = None
+    return node is not None
 
 
 def open_level():

@@ -28,6 +28,7 @@
 #include "Misc/FileHelper.h"
 #include "Misc/Paths.h"
 #include "PhysicsEngine/BodySetup.h"
+#include "ProceduralMeshComponent.h"
 #include "TimerManager.h"
 
 DEFINE_LOG_CATEGORY(LogMCFrame);
@@ -99,6 +100,36 @@ namespace
 				L.X, L.Y, L.Z, V.Z, V.Size(), bOnGround ? 1 : 0, Mode);
 		}
 
+		// Where the camera is and where it looks. "The campus is invisible"
+		// is ambiguous between "nothing is there" and "the camera is pointed
+		// somewhere else"; the camera's own forward trace separates them.
+		if (PC && PC->PlayerCameraManager)
+		{
+			const FVector Cam = PC->PlayerCameraManager->GetCameraLocation();
+			const FRotator CamR = PC->PlayerCameraManager->GetCameraRotation();
+			Line += FString::Printf(
+				TEXT(" | cam=(%.0f,%.0f,%.0f) rot=(p%.0f y%.0f)"),
+				Cam.X, Cam.Y, Cam.Z, CamR.Pitch, CamR.Yaw);
+
+			FCollisionQueryParams CP(SCENE_QUERY_STAT(MCDiagCam), true);
+			if (Pawn)
+			{
+				CP.AddIgnoredActor(Pawn);
+			}
+			const FVector Fwd = CamR.Vector();
+			FHitResult CH;
+			if (W->LineTraceSingleByChannel(CH, Cam, Cam + Fwd * 200000.0,
+				ECC_Visibility, CP))
+			{
+				Line += FString::Printf(TEXT(" fwd=%s d=%.0f"),
+					*CH.GetActor()->GetName(), CH.Distance);
+			}
+			else
+			{
+				Line += TEXT(" fwd=NONE");
+			}
+		}
+
 		// One-time dump of what each terrain mesh believes about its collision.
 		// A cooked level can hold the actors and still trace nothing, which is
 		// exactly the falling-pawn symptom; this separates "no collision
@@ -116,15 +147,24 @@ namespace
 					continue;
 				}
 				const UBodySetup* BS = M->GetBodySetup();
+				const FBoxSphereBounds B = C->Bounds;
+				int32 RenderVerts = -1, RenderTris = -1;
+				if (const FStaticMeshRenderData* RD = M->GetRenderData())
+				{
+					if (RD->LODResources.Num() > 0)
+					{
+						RenderVerts = (int32)RD->LODResources[0].GetNumVertices();
+						RenderTris = (int32)RD->LODResources[0].GetNumTriangles();
+					}
+				}
 				Line += FString::Printf(
-					TEXT("\n  [detail] %s enabled=%d respVis=%d cpu=%d flag=%d "
-					     "trimesh=%d convex=%d"),
-					*M->GetName(), (int32)C->GetCollisionEnabled(),
-					(int32)C->GetCollisionResponseToChannel(ECC_Visibility),
+					TEXT("\n  [detail] %s rverts=%d rtris=%d cpu=%d flag=%d "
+					     "trimesh=%d bounds=(%.0f,%.0f)+(%.0f,%.0f)"),
+					*M->GetName(), RenderVerts, RenderTris,
 					M->bAllowCPUAccess ? 1 : 0,
 					BS ? (int32)BS->CollisionTraceFlag : -1,
 					BS ? BS->TriMeshGeometries.Num() : -1,
-					BS ? BS->AggGeom.ConvexElems.Num() : -1);
+					B.Origin.X, B.Origin.Y, B.BoxExtent.X, B.BoxExtent.Y);
 			}
 		}
 
@@ -223,6 +263,8 @@ namespace
 void AMCFrameCaptureGameMode::BeginPlay()
 {
 	Super::BeginPlay();
+
+	BuildProceduralTerrain();
 
 #if WITH_EDITOR
 	// Everything below is editor-side diagnostic scaffolding: it rebuilds the
@@ -436,6 +478,177 @@ void AMCFrameCaptureGameMode::BeginPlay()
 void AMCFrameCaptureGameMode::RunRuntimeDiag()
 {
 	WriteMCDiagLine(GetWorld());
+}
+
+void AMCFrameCaptureGameMode::BuildProceduralTerrain()
+{
+	UWorld* W = GetWorld();
+	if (!W)
+	{
+		return;
+	}
+
+	// One entry per phase-2 tile. Origin and the height decode come from
+	// out/phase2/overworld/landscape/landscape.json:
+	//     z_cm = actor_offset_z_cm + (v - 32768) / 128 * z_scale_cm
+	// and 1 vertex == 1 block == 100 cm, so a vertex's world XY is the tile
+	// origin plus its grid index in blocks.
+	struct FTileSpec
+	{
+		const TCHAR* Name;
+		double OriginX;
+		double OriginY;
+	};
+	static const FTileSpec Tiles[] = {
+		{ TEXT("overworld_00_00"), -27200.0, -67200.0 },
+		{ TEXT("overworld_00_01"),   8800.0, -67200.0 },
+		{ TEXT("overworld_01_00"), -27200.0, -15200.0 },
+		{ TEXT("overworld_01_01"),   8800.0, -15200.0 },
+	};
+
+	const int32 GridW = 373;
+	const int32 GridH = 528;
+	const double BlockCm = 100.0;
+	const double ZOffsetCm = 3350.0;
+	const double ZScaleCm = 11.523438;
+
+	// Replace any imported terrain. Those actors have correct bounds but almost
+	// no triangles (see this function's declaration), and their collision
+	// proxies would fight the procedural mesh's own collision.
+	int32 Removed = 0;
+	for (TActorIterator<AStaticMeshActor> It(W); It; ++It)
+	{
+		const UStaticMeshComponent* C = It->GetStaticMeshComponent();
+		const UStaticMesh* M = C ? C->GetStaticMesh() : nullptr;
+		if (M && M->GetName().Contains(TEXT("overworld")))
+		{
+			It->Destroy();
+			++Removed;
+		}
+	}
+
+	UMaterialInterface* Mat = LoadObject<UMaterialInterface>(
+		nullptr, TEXT("/Game/MC/Materials/MC_Terrain.MC_Terrain"));
+
+	int32 Built = 0;
+	for (const FTileSpec& T : Tiles)
+	{
+		const FString Path = FPaths::ProjectDir() / TEXT("Terrain") /
+			(FString(T.Name) + TEXT(".u16"));
+		TArray<uint8> Raw;
+		if (!FFileHelper::LoadFileToArray(Raw, *Path))
+		{
+			UE_LOG(LogMCFrame, Warning,
+				TEXT("frame: terrain data missing: %s"), *Path);
+			continue;
+		}
+		if (Raw.Num() < GridW * GridH * 2)
+		{
+			UE_LOG(LogMCFrame, Warning,
+				TEXT("frame: terrain data short: %s (%d bytes)"),
+				*Path, Raw.Num());
+			continue;
+		}
+		const uint16* Hm = reinterpret_cast<const uint16*>(Raw.GetData());
+
+		TArray<FVector> Verts;
+		TArray<FVector2D> UVs;
+		TArray<FVector> Normals;
+		TArray<int32> Indices;
+		Verts.Reserve(GridW * GridH);
+		UVs.Reserve(GridW * GridH);
+		Normals.Reserve(GridW * GridH);
+		Indices.Reserve((GridW - 1) * (GridH - 1) * 6);
+
+		auto SampleZ = [&](int32 c, int32 r) -> double
+		{
+			c = FMath::Clamp(c, 0, GridW - 1);
+			r = FMath::Clamp(r, 0, GridH - 1);
+			return ZOffsetCm + ((double)Hm[r * GridW + c] - 32768.0) / 128.0
+				* ZScaleCm;
+		};
+
+		for (int32 r = 0; r < GridH; ++r)
+		{
+			for (int32 c = 0; c < GridW; ++c)
+			{
+				Verts.Add(FVector(T.OriginX + c * BlockCm,
+					T.OriginY + r * BlockCm, SampleZ(c, r)));
+				// UVs in block units, matching what the material expects
+				// (WorldPosition-based) and the OBJ the pipeline produced.
+				UVs.Add(FVector2D((float)c, (float)r));
+
+				// Central-difference normal, oriented upward.
+				const FVector Dx(
+					c + 1 < GridW ? 2.0 * BlockCm : BlockCm, 0.0,
+					SampleZ(c + 1, r) - SampleZ(c - 1, r));
+				const FVector Dy(0.0,
+					r + 1 < GridH ? 2.0 * BlockCm : BlockCm,
+					SampleZ(c, r + 1) - SampleZ(c, r - 1));
+				FVector N = FVector::CrossProduct(Dx, Dy).GetSafeNormal();
+				if (N.Z < 0.0)
+				{
+					N = -N;
+				}
+				Normals.Add(N);
+			}
+		}
+
+		for (int32 r = 0; r < GridH - 1; ++r)
+		{
+			for (int32 c = 0; c < GridW - 1; ++c)
+			{
+				const int32 A = r * GridW + c;
+				const int32 B = A + 1;
+				const int32 D = A + GridW;
+				const int32 E = D + 1;
+				// Same winding as tools/build_terrain_mesh.py, which was
+				// verified to face upward.
+				Indices.Add(A); Indices.Add(E); Indices.Add(B);
+				Indices.Add(A); Indices.Add(D); Indices.Add(E);
+			}
+		}
+
+		AActor* Holder = W->SpawnActor<AActor>();
+		if (!Holder)
+		{
+			continue;
+		}
+		UProceduralMeshComponent* PMC = NewObject<UProceduralMeshComponent>(
+			Holder, *FString::Printf(TEXT("Terrain_%s"), T.Name));
+		if (!PMC)
+		{
+			Holder->Destroy();
+			continue;
+		}
+		Holder->SetRootComponent(PMC);
+		PMC->RegisterComponent();
+		PMC->SetMobility(EComponentMobility::Movable);
+
+		// bCreateCollision makes the component build a triangle-mesh body at
+		// creation time -- no cooker involved, so it works in a packaged build.
+		PMC->CreateMeshSection_LinearColor(0, Verts, Indices, Normals, UVs,
+			TArray<FLinearColor>(), TArray<FProcMeshTangent>(),
+			/*bCreateCollision*/ true);
+
+		if (Mat)
+		{
+			PMC->SetMaterial(0, Mat);
+		}
+		PMC->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+		PMC->SetCollisionProfileName(TEXT("BlockAll"));
+		PMC->bUseComplexAsSimpleCollision = false;
+		PMC->SetCastShadow(true);
+
+		++Built;
+		UE_LOG(LogMCFrame, Warning,
+			TEXT("frame: built terrain %s (%d verts, %d tris)"),
+			T.Name, Verts.Num(), Indices.Num() / 3);
+	}
+
+	UE_LOG(LogMCFrame, Warning,
+		TEXT("frame: procedural terrain built %d tiles, removed %d imported"),
+		Built, Removed);
 }
 
 void AMCFrameCaptureGameMode::RunCapture()
