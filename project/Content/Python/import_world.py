@@ -44,6 +44,7 @@ import json
 import math
 import os
 import struct
+import sys
 import time
 from collections import defaultdict
 
@@ -60,21 +61,41 @@ DRY_RUN = True
 # Spatial cell edge, in MC blocks. Instances are grouped by (cell, blockName);
 # each group becomes one or more HISM components on a per-cell actor.
 #
-# 512 vs 256:
+# 512 vs 256 (whole world):
 #   512 -> fewer components (~930 total), fewer state changes, but each World
 #          Partition cell is chunkier and peak per-cell memory is higher.
 #   256 -> ~4x more cells (~2.5-3k components): smoother streaming, lower peak
 #          memory per cell, but more components/draw calls and a slower build.
-# Use 512 on a workstation, 256 if the editor runs out of memory.
-CELL_SIZE = 512
+# The campus (448 x 768 blocks) uses 128: ~4x6 = 24 cells, fine culling
+# granularity, and each cell stays small enough to build comfortably.
+CELL_SIZE = 128
 
 # A single (cell x block) group bigger than this is split over several HISM
 # components. One nether cell holds ~5.5M netherrack blocks, which is far too
 # much for one component to build or save comfortably.
 MAX_INSTANCES_PER_HISM = 500000
 
-# Dimensions to import, in order.
-IMPORT_DIMENSIONS = ["overworld", "nether", "end"]
+# Dimensions to import, in order. The campus lives in the overworld; the other
+# two dimensions are out of scope for "把 SYFZ MC 地图的校园做成 UE 游戏".
+IMPORT_DIMENSIONS = ["overworld"]
+
+# -----------------------------------------------------------------------------
+# CAMPUS SCOPE -- the render rework assembles the campus, not the whole map
+# -----------------------------------------------------------------------------
+# regions.campus from the layer-2 survey, in block coordinates. Blocks outside
+# this box are skipped while iterating, so build time and level size stay
+# proportional to the campus.
+CAMPUS_BOUNDS = (-144, 303, -544, 223)     # x0, x1, z0, z1 (blocks)
+LIMIT_TO_CAMPUS = True
+
+# -----------------------------------------------------------------------------
+# MATERIAL SOURCE
+# -----------------------------------------------------------------------------
+# True  -> shade every block with a CC0 PBR MaterialInstance (MI_<family>), the
+#          realistic look. Requires import_cc0_materials.py to have run.
+# False -> the original Minecraft 16x16 block textures.
+USE_CC0 = True
+CC0_INSTANCE_DIR = "/Game/MC/CC0"
 
 # The three dimensions share an XZ origin, so stacking them at the same place
 # would make them intersect. Offset each one vertically instead: with UE5 large
@@ -268,10 +289,23 @@ class VoxelFile(object):
         except Exception:
             pass
 
-    def iter_blocks(self):
-        """Yield (worldX, worldY, worldZ, blockName) per non-air block."""
+    def iter_blocks(self, bounds=None):
+        """
+        Yield (worldX, worldY, worldZ, blockName) per non-air block.
+
+        ``bounds`` is (x0, x1, z0, z1) in block coordinates. A chunk that lies
+        wholly outside it is skipped without decoding, which is the difference
+        between reading the whole 14.5M-voxel overworld and reading only the
+        campus (~1.9M blocks) -- the chunk table already knows each chunk's
+        origin, so this costs nothing.
+        """
         unpack_word = struct.Struct("<I").unpack_from
         for (cx, cz, count, off, gmap) in self.rows:
+            if bounds is not None:
+                bx0, bx1, bz0, bz1 = bounds
+                if (cx * 16 > bx1 or cx * 16 + 15 < bx0
+                        or cz * 16 > bz1 or cz * 16 + 15 < bz0):
+                    continue
             self.f.seek(off)
             data = self.f.read(count * 4)
             if len(data) != count * 4:
@@ -280,6 +314,18 @@ class VoxelFile(object):
             base_x = cx * 16
             base_z = cz * 16
             palette = self.palette
+            if bounds is not None:
+                bx0, bx1, bz0, bz1 = bounds
+                for i in range(0, len(data), 4):
+                    word = unpack_word(data, i)[0]
+                    wx = base_x + (word & 0xF)
+                    wz = base_z + ((word >> 4) & 0xF)
+                    if wx > bx1 or wx < bx0 or wz > bz1 or wz < bz0:
+                        continue
+                    li = (word >> 17) & 0x7FFF
+                    yield (wx, (word >> 8) & 0x1FF, wz,
+                           palette[gmap[li]][0])
+                continue
             for i in range(0, len(data), 4):
                 word = unpack_word(data, i)[0]
                 li = (word >> 17) & 0x7FFF
@@ -858,6 +904,50 @@ def _tune_hism_culling(comp, name):
                        % (prop, name, exc))
 
 
+def build_cc0_materials(manifest):
+    """
+    -> {blockName: MaterialInstanceConstant} from the CC0 family instances.
+
+    The realistic-material path shades each block with the family's CC0 PBR
+    instance (MI_<family>) instead of a Minecraft block texture. The block ->
+    family mapping lives in ``tools/block_families.py`` -- the single source of
+    truth, shared with the census so the two cannot disagree.
+
+    A block name whose family has no imported instance is reported and left out
+    (it then falls back to the engine default material, which is loud enough to
+    notice rather than silently wrong).
+    """
+    root = resolve_asset_root()
+    tools_dir = os.path.join(root, "tools")
+    if tools_dir not in sys.path:
+        sys.path.insert(0, tools_dir)
+    import block_families as bf
+
+    out = {}
+    missing = set()
+    unmapped = set()
+    for entry in manifest:
+        nm = entry["blockName"]
+        fam = bf.family(nm)
+        if fam == "other":
+            unmapped.add(nm)
+            continue
+        mi = unreal.load_asset("%s/MI_%s" % (CC0_INSTANCE_DIR, fam))
+        if mi is None:
+            missing.add(fam)
+            continue
+        out[nm] = mi
+
+    if missing:
+        warn("CC0: families with no material instance: %s" % sorted(missing))
+    if unmapped:
+        warn("CC0: %d block names have no family mapping (-> 'other')"
+             % len(unmapped))
+    log("CC0 materials: %d block names -> %d families"
+        % (len(out), len({bf.family(e["blockName"]) for e in manifest})))
+    return out
+
+
 def import_dimension(vf, world, mesh, materials, known_names):
     """Group one dimension's blocks and (unless DRY_RUN) build the HISMs.
 
@@ -881,7 +971,9 @@ def import_dimension(vf, world, mesh, materials, known_names):
     seen = 0
     placed = 0
 
-    for wx, wy, wz, name in vf.iter_blocks():
+    # Chunk-level skip: only the campus chunks get decoded at all.
+    bounds = CAMPUS_BOUNDS if LIMIT_TO_CAMPUS else None
+    for wx, wy, wz, name in vf.iter_blocks(bounds=bounds):
         seen += 1
         # In DRY_RUN no material instances exist yet, so the manifest is the only
         # available authority on which block names are buildable.
@@ -973,7 +1065,7 @@ def _fill_hism(comp, buf, start, stop, cell_x, cell_z, z_offset):
     """
     unpack = struct.Struct("<HHH").unpack_from
     base_x = cell_x * CELL_SIZE * BLOCK_CM
-    base_z = cell_z * BLOCK_CM
+    base_z = cell_z * CELL_SIZE * BLOCK_CM
     half = BLOCK_CM * 0.5
     one = unreal.Vector(1.0, 1.0, 1.0)
     zero = unreal.Rotator(0.0, 0.0, 0.0)
@@ -1066,6 +1158,10 @@ def _write_report(dim, report):
 # =============================================================================
 def run():
     """Assemble the MC world into a UE5 World Partition level."""
+    global DRY_RUN
+    _dry = os.environ.get("MC2UE5_DRY_RUN")
+    if _dry is not None:
+        DRY_RUN = (_dry.lower() in ("1", "true", "yes"))
     log("=" * 74)
     log("MC2UE5 import_world.run()   DRY_RUN=%s" % DRY_RUN)
     if not unreal.is_editor():
@@ -1105,14 +1201,17 @@ def run():
         log("DRY_RUN: skipping texture, material and mesh creation")
         materials, mesh = {}, None
     else:
-        textures = import_textures(os.path.join(root, "assets", "textures", "block"))
-        master = build_master_material()
-        materials = create_block_materials(master, textures, manifest)
         mesh = create_cube_mesh()
         if mesh is None:
             err("no cube mesh; cannot build geometry. Re-run with DRY_RUN=True "
                 "to inspect the data, and check that /Engine/BasicShapes/Cube exists.")
             return None
+        if USE_CC0:
+            materials = build_cc0_materials(manifest)
+        else:
+            textures = import_textures(os.path.join(root, "assets", "textures", "block"))
+            master = build_master_material()
+            materials = create_block_materials(master, textures, manifest)
 
     # ---- B. level -------------------------------------------------------
     world = open_level()
