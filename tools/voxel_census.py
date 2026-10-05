@@ -27,95 +27,12 @@ import numpy as np
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                 "..", "phase2"))
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from voxelio import VoxelFile                     # noqa: E402
+from block_families import family, FAMILIES       # noqa: E402
 
 #: regions.campus from the layer-2 survey (block coordinates).
 CAMPUS = (-144, 303, -544, 223)
-
-#: Block name -> material family. Families are what get a real PBR material, so
-#: they are deliberately coarse: everything that is stone-ish shades as stone,
-#: every wood as wood. Names are matched by longest-prefix / substring rule in
-#: _family(), so this table only needs the distinguishing words.
-FAMILY_RULES = (
-    ("glass", "glass"),
-    ("water", "water"),
-    ("leaves", "foliage"),
-    ("grass_block", "grass"),
-    ("grass_path", "path"),
-    ("dirt_path", "path"),
-    ("dirt", "soil"),
-    ("podzol", "soil"),
-    ("farmland", "soil"),
-    ("coarse_dirt", "soil"),
-    ("gravel", "gravel"),
-    ("sand", "sand"),
-    ("sandstone", "sand"),
-    ("red_sand", "sand"),
-    ("clay", "clay"),
-    ("_log", "wood"),
-    ("_wood", "wood"),
-    ("_planks", "wood"),
-    ("plank", "wood"),
-    ("_slab", "stone"),
-    ("_stairs", "stone"),
-    ("brick", "brick"),
-    ("_terracotta", "terracotta"),
-    ("concrete", "concrete"),
-    ("wool", "fabric"),
-    ("carpet", "fabric"),
-    ("_door", "wood"),
-    ("_trapdoor", "wood"),
-    ("_fence", "wood"),
-    ("_sign", "wood"),
-    ("iron", "metal"),
-    ("_rail", "metal"),
-    ("chain", "metal"),
-    ("hopper", "metal"),
-    ("cauldron", "metal"),
-    ("_bed", "fabric"),
-    ("flower", "plant"),
-    ("sapling", "plant"),
-    ("_coral", "plant"),
-    ("grass", "plant"),
-    ("fern", "plant"),
-    ("bush", "plant"),
-    ("vine", "plant"),
-    ("lily", "plant"),
-    ("_stem", "plant"),
-    ("wheat", "plant"),
-    ("carrot", "plant"),
-    ("potato", "plant"),
-    ("beetroot", "plant"),
-    ("melon", "plant"),
-    ("pumpkin", "plant"),
-    ("cactus", "plant"),
-    ("sugar_cane", "plant"),
-    ("bamboo", "plant"),
-    ("stone", "stone"),
-    ("cobble", "stone"),
-    ("andesite", "stone"),
-    ("diorite", "stone"),
-    ("granite", "stone"),
-    ("basalt", "stone"),
-    ("blackstone", "stone"),
-    ("deepslate", "stone"),
-    ("obsidian", "stone"),
-    ("bedrock", "stone"),
-    ("quartz", "stone"),
-    ("prismarine", "stone"),
-    ("netherrack", "stone"),
-    ("_ore", "stone"),
-    ("concrete_powder", "sand"),
-)
-
-
-def family(block_name):
-    """Map a namespaced block name to a coarse material family."""
-    n = block_name.split(":", 1)[-1]
-    for token, fam in FAMILY_RULES:
-        if token in n:
-            return fam
-    return "other"
 
 
 def main():
