@@ -20,13 +20,169 @@
 #include "Engine/StaticMesh.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
+#include "GameFramework/Character.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/PlayerController.h"
+#include "HAL/FileManager.h"
 #include "HAL/IConsoleManager.h"
+#include "Misc/FileHelper.h"
 #include "Misc/Paths.h"
 #include "PhysicsEngine/BodySetup.h"
 #include "TimerManager.h"
 
 DEFINE_LOG_CATEGORY(LogMCFrame);
+
+namespace
+{
+	/**
+	 * Append one line of pawn/collision state to Saved/mc_runtime.txt.
+	 *
+	 * A Shipping build compiles UE_LOG out and writes no log file, so state has
+	 * to be written directly. Kept as a free function because both the game
+	 * mode's timer and the MCRuntimeDiag console command need it, and the
+	 * console command works even when the level's game mode is not ours.
+	 */
+	void WriteMCDiagLine(UWorld* W)
+	{
+		if (!W)
+		{
+			return;
+		}
+
+		int32 MeshTotal = 0, TerrainVisual = 0, TerrainCollision = 0;
+		for (TActorIterator<AStaticMeshActor> It(W); It; ++It)
+		{
+			++MeshTotal;
+			const UStaticMeshComponent* C = It->GetStaticMeshComponent();
+			const UStaticMesh* M = C ? C->GetStaticMesh() : nullptr;
+			if (!M)
+			{
+				continue;
+			}
+			// Match on the mesh asset name, not the actor name: an actor's name
+			// is not what the level builder labelled it, and the label does not
+			// survive a cook.
+			const FString MN = M->GetName();
+			if (MN.Contains(TEXT("overworld")))
+			{
+				if (MN.StartsWith(TEXT("C_")))
+				{
+					++TerrainCollision;
+				}
+				else
+				{
+					++TerrainVisual;
+				}
+			}
+		}
+
+		APlayerController* PC = W->GetFirstPlayerController();
+		APawn* Pawn = PC ? PC->GetPawn() : nullptr;
+
+		FString Line = FString::Printf(TEXT("[%6.1fs] pawn=%s"),
+			W->GetTimeSeconds(), Pawn ? TEXT("yes") : TEXT("NO"));
+
+		if (Pawn)
+		{
+			const FVector L = Pawn->GetActorLocation();
+			const FVector V = Pawn->GetVelocity();
+			bool bOnGround = false;
+			int32 Mode = -1;
+			if (const ACharacter* C = Cast<ACharacter>(Pawn))
+			{
+				const UCharacterMovementComponent* Move = C->GetCharacterMovement();
+				bOnGround = Move->IsMovingOnGround();
+				Mode = static_cast<int32>(Move->MovementMode);
+			}
+			Line += FString::Printf(
+				TEXT(" loc=(%.0f,%.0f,%.0f) vz=%.0f speed=%.0f onGround=%d mode=%d"),
+				L.X, L.Y, L.Z, V.Z, V.Size(), bOnGround ? 1 : 0, Mode);
+		}
+
+		// One-time dump of what each terrain mesh believes about its collision.
+		// A cooked level can hold the actors and still trace nothing, which is
+		// exactly the falling-pawn symptom; this separates "no collision
+		// surface", "wrong channel" and "collision disabled".
+		static bool bDumpedDetail = false;
+		if (!bDumpedDetail)
+		{
+			bDumpedDetail = true;
+			for (TActorIterator<AStaticMeshActor> It(W); It; ++It)
+			{
+				const UStaticMeshComponent* C = It->GetStaticMeshComponent();
+				const UStaticMesh* M = C ? C->GetStaticMesh() : nullptr;
+				if (!M || !M->GetName().Contains(TEXT("overworld")))
+				{
+					continue;
+				}
+				const UBodySetup* BS = M->GetBodySetup();
+				Line += FString::Printf(
+					TEXT("\n  [detail] %s enabled=%d respVis=%d cpu=%d flag=%d "
+					     "trimesh=%d convex=%d"),
+					*M->GetName(), (int32)C->GetCollisionEnabled(),
+					(int32)C->GetCollisionResponseToChannel(ECC_Visibility),
+					M->bAllowCPUAccess ? 1 : 0,
+					BS ? (int32)BS->CollisionTraceFlag : -1,
+					BS ? BS->TriMeshGeometries.Num() : -1,
+					BS ? BS->AggGeom.ConvexElems.Num() : -1);
+			}
+		}
+
+		// Trace the whole spawn column rather than from the pawn: once the pawn
+		// is below the world a downward trace from it looks away from the
+		// terrain and reports a misleading miss. Both flavours, because a
+		// complex-as-simple mesh can block a simple trace while its cooked
+		// trimesh is empty.
+		{
+			FCollisionQueryParams P(SCENE_QUERY_STAT(MCDiag), /*bTraceComplex*/ true);
+			if (Pawn)
+			{
+				P.AddIgnoredActor(Pawn);
+			}
+			const FVector Start(0, 0, 40000.0);
+			const FVector End(0, 0, -40000.0);
+			FHitResult Hit;
+			if (W->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, P))
+			{
+				Line += FString::Printf(TEXT(" | colCplx=%s z=%.0f nz=%.2f"),
+					*Hit.GetActor()->GetName(), Hit.ImpactPoint.Z,
+					Hit.ImpactNormal.Z);
+			}
+			else
+			{
+				Line += TEXT(" | colCplx=NONE");
+			}
+			FHitResult HitS;
+			if (W->LineTraceSingleByChannel(HitS, Start, End, ECC_Visibility,
+				FCollisionQueryParams(SCENE_QUERY_STAT(MCDiag), false)))
+			{
+				Line += FString::Printf(TEXT(" colSmpl=%s z=%.0f"),
+					*HitS.GetActor()->GetName(), HitS.ImpactPoint.Z);
+			}
+			else
+			{
+				Line += TEXT(" colSmpl=NONE");
+			}
+		}
+
+		Line += FString::Printf(
+			TEXT(" | meshes=%d terrain(vis=%d col=%d)"),
+			MeshTotal, TerrainVisual, TerrainCollision);
+
+		const FString Text = Line + TEXT("\n");
+		for (const FString& Path : {
+			FPaths::ProjectSavedDir() / TEXT("mc_runtime.txt"),
+			FString(TEXT("Q:/MC2UE5/logs/mc_runtime.txt")) })
+		{
+			IFileManager::Get().MakeDirectory(*FPaths::GetPath(Path), /*Tree*/ true);
+			FFileHelper::SaveStringToFile(Text, *Path,
+				FFileHelper::EEncodingOptions::ForceUTF8,
+				&IFileManager::Get(), FILEWRITE_Append);
+		}
+	}
+
+	FTimerHandle GDiagTimer;
+}
 
 AMCFrameCaptureGameMode::AMCFrameCaptureGameMode()
 {
@@ -266,6 +422,20 @@ void AMCFrameCaptureGameMode::BeginPlay()
 			&AMCFrameCaptureGameMode::RunCapture),
 		40.0f, /*bLoop*/ false);
 #endif // WITH_EDITOR
+
+	// Runtime collision diagnostic. Always on: it is the only way to see inside a
+	// Shipping build, and it costs one line a second. Remove or gate it once the
+	// gameplay state is known good.
+	GetWorldTimerManager().SetTimer(
+		GDiagHandle,
+		FTimerDelegate::CreateUObject(this,
+			&AMCFrameCaptureGameMode::RunRuntimeDiag),
+		1.0f, /*bLoop*/ true);
+}
+
+void AMCFrameCaptureGameMode::RunRuntimeDiag()
+{
+	WriteMCDiagLine(GetWorld());
 }
 
 void AMCFrameCaptureGameMode::RunCapture()
@@ -347,4 +517,31 @@ static FAutoConsoleCommandWithWorld GMCCaptureNowCmd(
 		UE_LOG(LogMCFrame, Warning,
 			TEXT("MCCaptureNow: %dx%d black=%.1f%% sky=%.1f%% lit=%.1f%%"),
 			S.Width, S.Height, S.DarkPercent, S.SkyPercent, S.LitPercent);
+	}));
+
+// Writes a per-second pawn/collision report to Saved/mc_runtime.txt. Exists
+// because a Shipping build has no log file at all, and because the level's game
+// mode cannot be assumed to be ours. Run it from the command line:
+//
+//     MCReplica.exe -ExecCmds="MCRuntimeDiag"
+static FAutoConsoleCommandWithWorld GMCRuntimeDiagCmd(
+	TEXT("MCRuntimeDiag"),
+	TEXT("Start writing a per-second pawn/collision report to "
+	     "Saved/mc_runtime.txt."),
+	FConsoleCommandWithWorldDelegate::CreateLambda([](UWorld* World)
+	{
+		if (!World)
+		{
+			return;
+		}
+		// One line now, then one a second, so a single startup command leaves
+		// behind a time series rather than a single sample.
+		WriteMCDiagLine(World);
+		World->GetTimerManager().SetTimer(
+			GDiagTimer,
+			FTimerDelegate::CreateLambda([World]()
+			{
+				WriteMCDiagLine(World);
+			}),
+			1.0f, /*bLoop*/ true);
 	}));

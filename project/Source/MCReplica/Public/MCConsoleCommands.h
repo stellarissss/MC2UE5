@@ -37,7 +37,22 @@ public:
 	/** The deferred screenshot, fired by a world timer 8 s into play. */
 	void RunCapture();
 
+	/**
+	 * Write one line of pawn/collision state to Saved/mc_runtime.txt.
+	 *
+	 * A Shipping build compiles UE_LOG out and writes no log file at all, so the
+	 * only way to see what the shipped game is doing is to write the state to
+	 * disk directly. Gated on the ``mc.Diag`` cvar so it costs nothing unless
+	 * asked for:
+	 *
+	 *     MCReplica.exe -ExecCmds="mc.Diag 1"
+	 */
+	void RunRuntimeDiag();
+
 protected:
 	/** Handle for the delayed capture timer. */
 	FTimerHandle GCaptureHandle;
+
+	/** Handle for the repeating runtime diagnostic timer. */
+	FTimerHandle GDiagHandle;
 };

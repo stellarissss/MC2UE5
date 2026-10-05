@@ -139,6 +139,30 @@ void AMCReplicaCharacter::BeginPlay()
 		Move->MaxStepHeight = StepHeight;
 		Move->JumpZVelocity = FMath::Sqrt(2.0f * 980.0f * JumpHeight);
 	}
+
+	// Drop onto whatever the level actually collides with.
+	//
+	// The PlayerStart height is derived from the source heightmap, but the
+	// terrain collision mesh in the level is what the character can stand on,
+	// and the two need not agree: the OBJ -> StaticMesh import does not
+	// reproduce the heightfield faithfully, so the collidable surface can sit
+	// well above or below the recorded spawn height. Spawning without this
+	// check means spawning under the ground and falling forever.
+	if (UWorld* W = GetWorld())
+	{
+		FHitResult Hit;
+		FCollisionQueryParams P(SCENE_QUERY_STAT(MCGroundSnap), false);
+		P.AddIgnoredActor(this);
+		const FVector L = GetActorLocation();
+		const FVector Start(L.X, L.Y, L.Z + 100000.0);
+		const FVector End(L.X, L.Y, L.Z - 100000.0);
+		if (W->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, P))
+		{
+			const float Half = GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
+			SetActorLocation(FVector(L.X, L.Y, Hit.ImpactPoint.Z + Half + 2.0f),
+				false, nullptr, ETeleportType::TeleportPhysics);
+		}
+	}
 }
 
 void AMCReplicaCharacter::Tick(float DeltaSeconds)
