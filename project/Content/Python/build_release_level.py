@@ -1096,15 +1096,29 @@ def _spawn_prop_cluster(cluster_cls, group, mesh, cls, prim, cx, cz, cell_cm):
     for inst in group:
         pos = inst.get("position_cm") or [0.0, 0.0, 0.0]
         rot = inst.get("rotation_deg") or [0.0, 0.0, 0.0]
-        positions.append(unreal.Vector(float(pos[0]), float(pos[1]),
-                                       float(pos[2])))
-        rotations.append(unreal.Rotator(float(rot[0]), float(rot[1]),
-                                        float(rot[2])))
+        # ``position_cm`` is (x, height, depth) -- Minecraft's own component
+        # order, where index 1 is the vertical. Unreal wants (x, depth, height):
+        # Y is north and Z is up. Passing the tuple straight through put the
+        # height on Unreal's Y and the depth on Z, so every prop was displaced
+        # along the wrong axes -- the 1297 instances ended up 65 m underground,
+        # which is why the campus looked like empty green field. The terrain
+        # already maps the same data correctly (Y = depth, Z = height), so this
+        # is the props agreeing with the ground.
+        positions.append(unreal.Vector(float(pos[0]), float(pos[2]),
+                                       float(pos[1])))
+        # Yaw only. The recorded pitch/roll come from ground_normal, whose
+        # vertical component is inverted (mean -0.84, i.e. pointing down), so
+        # the tilts it produced average 18 degrees and reach 74 -- trees lying
+        # on their sides. Minecraft content is axis-aligned and upright, so the
+        # yaw is the part of the rotation that is real.
+        rotations.append(unreal.Rotator(0.0, float(rot[1]), 0.0))
         scales.append(_prop_scale(inst.get("model") or {}))
 
     try:
+        # The cell key is (x, depth) after the same axis correction, so the
+        # cluster origin goes on Unreal's Y, not Z.
         spawned = unreal.EditorLevelLibrary.spawn_actor_from_class(
-            cluster_cls, unreal.Vector(cx * cell_cm, 0.0, cz * cell_cm),
+            cluster_cls, unreal.Vector(cx * cell_cm, cz * cell_cm, 0.0),
             unreal.Rotator(0.0, 0.0, 0.0))
         if spawned is None:
             return None
@@ -1182,10 +1196,14 @@ def _prop_materials():
     default = unreal.LinearColor(0.45, 0.45, 0.45, 1.0)
     _ensure_dir(MATERIAL_DIR)
     out = {}
-    vec_cls = getattr(unreal, "MaterialExpressionVectorParameter", None)
+    # A Constant3Vector, not a VectorParameter. The parameter's DefaultValue
+    # did not reach the compiled shader -- the structures kept rendering with an
+    # unset (black) BaseColor, which the sky light then tinted navy -- while a
+    # Constant3Vector is the same node the verified debug material used.
+    vec_cls = getattr(unreal, "MaterialExpressionConstant3Vector", None)
     const_cls = getattr(unreal, "MaterialExpressionConstant", None)
     if vec_cls is None:
-        err("this engine build exposes no vector parameter expression; the "
+        err("this engine build exposes no constant-vector expression; the "
             "props would render black")
         return {"_default": None}
 
@@ -1208,8 +1226,10 @@ def _prop_materials():
         if const is None:
             err("could not create the tint for the %s prop material" % cls)
             continue
-        const.set_editor_property("ParameterName", "Tint")
-        const.set_editor_property("DefaultValue", colour)
+        # Constant3Vector exposes its value as ``Constant`` (a LinearColor),
+        # not ``DefaultValue`` -- that name belongs to the *parameter* variant
+        # and writing it here would be accepted and ignored.
+        const.set_editor_property("Constant", colour)
         mel.connect_material_property(const, "",
                                       unreal.MaterialProperty.MP_BASE_COLOR)
 

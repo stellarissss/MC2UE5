@@ -15,6 +15,7 @@
 #include "MCReplicaCharacter.h"
 
 #include "Components/StaticMeshComponent.h"
+#include "Components/InstancedStaticMeshComponent.h"
 #include "Engine/Engine.h"
 #include "Engine/StaticMeshActor.h"
 #include "Engine/StaticMesh.h"
@@ -208,6 +209,57 @@ namespace
 		Line += FString::Printf(
 			TEXT(" | meshes=%d terrain(vis=%d col=%d)"),
 			MeshTotal, TerrainVisual, TerrainCollision);
+
+		// Prop census. The props are instanced clusters, so counting actors says
+		// nothing -- an empty instanced component looks exactly like a populated
+		// one. The nearest instance's height against the terrain is what tells
+		// whether they are buried, floating, or placed correctly.
+		{
+			int32 IsmComps = 0;
+			int64 InstTotal = 0;
+			float NearestDist = -1.0f;
+			FVector NearestLoc = FVector::ZeroVector;
+			const FVector Ref = Pawn ? Pawn->GetActorLocation() : FVector::ZeroVector;
+			for (TActorIterator<AActor> It(W); It; ++It)
+			{
+				TArray<UInstancedStaticMeshComponent*> Comps;
+				It->GetComponents(Comps);
+				for (UInstancedStaticMeshComponent* C : Comps)
+				{
+					if (!C)
+					{
+						continue;
+					}
+					++IsmComps;
+					const int32 N = C->GetInstanceCount();
+					InstTotal += N;
+					for (int32 i = 0; i < N; ++i)
+					{
+						FTransform T;
+						if (!C->GetInstanceTransform(i, T, /*bWorldSpace*/ true))
+						{
+							continue;
+						}
+						const float D = (float)FVector::Dist(T.GetLocation(), Ref);
+						if (NearestDist < 0.0f || D < NearestDist)
+						{
+							NearestDist = D;
+							NearestLoc = T.GetLocation();
+						}
+					}
+				}
+			}
+			Line += FString::Printf(
+				TEXT(" | propISM=%d propInst=%lld"),
+				IsmComps, (long long)InstTotal);
+			if (NearestDist >= 0.0f)
+			{
+				Line += FString::Printf(
+					TEXT(" nearest=(%.0f,%.0f,%.0f) d=%.0f dz=%.0f"),
+					NearestLoc.X, NearestLoc.Y, NearestLoc.Z, NearestDist,
+					NearestLoc.Z - (Pawn ? Pawn->GetActorLocation().Z : 0.0f));
+			}
+		}
 
 		const FString Text = Line + TEXT("\n");
 		for (const FString& Path : {
