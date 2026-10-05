@@ -91,6 +91,12 @@ MAX_INSTANCES_PER_HISM = 500000
 # interior and the remaining set still forms a closed surface -- no holes.
 SURFACE_ONLY = True
 
+#: Whether the block clusters collide. The block layer is the ground and the
+#: buildings, so it must; the flag is here because collision on a dense block
+#: field is the single most expensive thing in the scene and has to be
+#: measurable against a collision-free run.
+BLOCK_COLLISION = True
+
 # Dimensions to import, in order. The campus lives in the overworld; the other
 # two dimensions are out of scope for "把 SYFZ MC 地图的校园做成 UE 游戏".
 IMPORT_DIMENSIONS = ["overworld"]
@@ -1114,45 +1120,59 @@ def import_dimension(vf, world, mesh, materials, known_names):
                 "projected_components": min(comps, len(buckets))}
 
     # ---- build ---------------------------------------------------------
-    cell_actors = {}   # per-dimension: (cellX, cellZ) -> Actor
+    # One cluster actor per (cell, block) group rather than one per cell with
+    # several components on it: the Python bindings expose no way to attach a
+    # component to an actor (see AMCReplicaPropCluster::AddBlockInstances), so
+    # every component has to come from an actor whose constructor makes it. The
+    # component count is unchanged -- only the grouping differs.
+    cluster_cls = getattr(unreal, "MCReplicaPropCluster", None)
+    if cluster_cls is None:
+        err("MCReplicaPropCluster is missing from this build; the block layer "
+            "cannot be assembled without it")
+        return {"groups": 0, "components": 0, "instances": 0}
+
+    eas = unreal.get_editor_subsystem(unreal.EditorActorSubsystem)
+    start_cull, end_cull = HISM_CULL_START_CM, HISM_CULL_END_CM
+    block_cm = float(BLOCK_CM)
+
+    actors = 0
     components = 0
     instances = 0
-    pack = struct.Struct("<HHH").unpack_from
 
     for (cell_x, cell_z, name) in sorted(buckets.keys()):
-        buf = buckets[(cell_x, cell_z, name)]
+        buf = bytes(buckets[(cell_x, cell_z, name)])
         total = len(buf) // 6
-
-        cell_key = (cell_x, cell_z)
-        actor = cell_actors.get(cell_key)
-        if actor is None:
-            origin = unreal.Vector(cell_x * CELL_SIZE * BLOCK_CM, 0.0,
-                                   cell_z * CELL_SIZE * BLOCK_CM)
-            actor = _new_actor(world, "MC_%s_cell_%d_%d" % (dim, cell_x, cell_z),
-                               origin)
-            cell_actors[cell_key] = actor
-        if actor is None:
+        if total == 0:
             continue
 
-        # Split oversized groups across several components.
-        for part, start in enumerate(range(0, total, MAX_INSTANCES_PER_HISM)):
-            stop = min(start + MAX_INSTANCES_PER_HISM, total)
-            comp = _add_hism(actor, mesh, materials[name],
-                             "HISM_%s_%d" % (sanitize(name), part))
-            if comp is None:
-                continue
-            _fill_hism(comp, buf, start, stop, cell_x, cell_z, z_offset)
-            components += 1
-            instances += (stop - start)
+        # Actor origin on the cell corner. Z stays 0 and the vertical term
+        # rides on the instances, so a dimension offset never moves the actor.
+        origin = unreal.Vector(cell_x * CELL_SIZE * block_cm,
+                               cell_z * CELL_SIZE * block_cm, 0.0)
+        actor = eas.spawn_actor_from_class(cluster_cls, origin,
+                                           unreal.Rotator(0.0, 0.0, 0.0))
+        if actor is None:
+            err("failed to spawn block cluster %s at cell(%d,%d)"
+                % (name, cell_x, cell_z))
+            continue
+        try:
+            actor.set_actor_label("MCblk_%s_%d_%d"
+                                  % (sanitize(name), cell_x, cell_z))
+        except Exception:
+            pass
+        actor.configure_block_layer(mesh, materials[name],
+                                    BLOCK_COLLISION, start_cull, end_cull)
+        added = actor.add_block_instances(buf, z_offset)
+        actors += 1
+        components += 1
+        instances += added
 
-        if len(cell_actors) % PROGRESS_EVERY_CELLS == 0:
-            log("  %s: %d/%d cells, %d components, %d instances"
-                % (dim, len(cell_actors),
-                   len(set((k[0], k[1]) for k in buckets.keys())),
-                   components, instances))
+        if actors % PROGRESS_EVERY_CELLS == 0:
+            log("  %s: %d/%d groups, %d instances"
+                % (dim, actors, len(buckets), instances))
 
-    log("  %s: BUILT %d components holding %d instances across %d actors"
-        % (dim, components, instances, len(cell_actors)))
+    log("  %s: BUILT %d clusters holding %d instances"
+        % (dim, components, instances))
     return {"groups": len(buckets), "components": components,
             "instances": instances}
 

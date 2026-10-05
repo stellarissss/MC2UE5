@@ -55,6 +55,58 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "MCReplica")
 	void SetMesh(UStaticMesh* InMesh);
 
+	/**
+	 * Bulk-fills the cluster with unit-block instances from packed positions.
+	 *
+	 * ``Packed`` is a flat run of little-endian uint16 triples ``(lx, lz, y)``
+	 * giving each block's offset in blocks from the actor origin, with ``y`` the
+	 * vertical axis -- Minecraft's own component order. The count is
+	 * ``Packed.Num() / 6``.
+	 *
+	 * Two reasons this lives in C++ rather than in the assembler script:
+	 *
+	 *  * **The Python API cannot build one of these at all.** In 5.8's bindings
+	 *    ``AActor`` exposes neither ``AddInstanceComponent`` nor
+	 *    ``SetRootComponent``, and ``UActorComponent`` exposes no
+	 *    ``RegisterComponent`` -- a component made with ``new_object`` cannot be
+	 *    attached to an actor or registered, so it draws nothing and is not
+	 *    saved. A Python-side HISM is therefore impossible, not merely awkward.
+	 *  * **1.17 M transforms.** Building them here instead of as Python objects
+	 *    avoids the marshalling and the per-object overhead entirely.
+	 *
+	 * Positions are added in **actor-relative** space, so the component's
+	 * culling bounds follow the actor and the instances never need rebasing.
+	 *
+	 * ``ZOffsetCm`` shifts every instance vertically, which is how a dimension
+	 * is placed without moving the actor.
+	 *
+	 * Returns the number of instances added.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "MCReplica")
+	int32 AddBlockInstances(const TArray<uint8>& Packed, float ZOffsetCm);
+
+	/** Re-applies the cull band; call after the instances exist. */
+	UFUNCTION(BlueprintCallable, Category = "MCReplica")
+	void ApplyCullDistances();
+
+	/**
+	 * One-shot configuration for a terrain block layer.
+	 *
+	 * Exists as a single call rather than a handful of Python property writes
+	 * because collision, material and cull distances all have to be applied to
+	 * the *component*, and the component is created by this actor's constructor
+	 * -- Python can read ``Instances`` but going through it for each of the
+	 * ~1000 block clusters is both slower and more fragile than one typed call.
+	 *
+	 * ``bEnableCollision`` matters for blocks specifically: the constructor
+	 * leaves props non-colliding (scenery the player walks through), but the
+	 * block layer *is* the ground and the buildings, so it must collide.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "MCReplica")
+	void ConfigureBlockLayer(UStaticMesh* InMesh, UMaterialInterface* InMaterial,
+	                         bool bEnableCollision, float InStartCull,
+	                         float InEndCull);
+
 	/** Number of instances currently held. */
 	UFUNCTION(BlueprintCallable, Category = "MCReplica")
 	int32 GetInstanceCount() const;
