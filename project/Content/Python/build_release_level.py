@@ -444,32 +444,45 @@ def import_textures(root):
 
 def _build_terrain_material(textures):
     """
-    A height- and slope-blended terrain material.
+    Build the terrain material: grass and sand by height, stone on slope.
 
-    Built with MaterialEditingLibrary rather than an expression graph written
-    out by hand, because the graph is the fragile part: a renamed node or a
-    changed pin order fails silently and leaves a grey landscape. Constructing
-    it step by step means every pin is connected as it is created, and a
-    failure names the step that failed.
+    Built node by node, and **any** failure aborts the build rather than
+    returning a half-built material.
 
-    Blend rule, chosen to read correctly from the ground and from the air:
-      * flat low ground is grass;
-      * the highest flat ground fades to sand, standing in for the plateau
-        surface this terrain was rebuilt from;
-      * steep slopes are stone, with a band of dirt in the transition so the
-        two do not meet as two flat colours.
+    That behaviour is the whole point. An earlier version wrapped the graph
+    construction in one broad ``except`` and, on failure, returned the material
+    it had created so far. It then got cached, and every later run took the
+    "already present" path. The result was a material with four texture
+    samplers and nothing else: BaseColor was never connected, so the surface
+    compiled to solid black, and the level rendered as a black void while every
+    other check -- meshes placed, collision present, cook clean, 97% of
+    triangles front-facing -- reported success.
 
-    Any failure here costs the look, not the geometry, so it degrades to the
-    default surface and says so.
+    So: delete any existing copy, build from scratch, and let an exception
+    propagate. A material that cannot be built is a build failure, which is
+    the only honest outcome.
     """
     path = "%s/MC_Terrain" % MATERIAL_DIR
+
+    # Always rebuild. Reusing an asset is how the broken graph survived, and
+    # the graph is cheap to make compared to diagnosing a black screen later.
     if unreal.EditorAssetLibrary.does_asset_exist(path):
-        mat = unreal.load_asset(path)
-        if mat is not None:
-            log("  terrain material already present")
-            return mat
+        if not unreal.EditorAssetLibrary.delete_asset(path):
+            err("could not delete the existing %s; refusing to reuse a material "
+                "that may be half-built" % path)
+            return None
 
     _ensure_dir(MATERIAL_DIR)
+
+    grass = textures.get(GRASS_TEX)
+    dirt = textures.get(DIRT_TEX)
+    stone = textures.get(STONE_TEX)
+    sand = textures.get(SAND_TEX)
+    if not grass or not stone:
+        err("terrain material needs %s and %s; only %d textures imported"
+            % (GRASS_TEX, STONE_TEX, len(textures)))
+        return None
+
     mat = unreal.AssetToolsHelpers.get_asset_tools().create_asset(
         "MC_Terrain", MATERIAL_DIR, unreal.Material,
         unreal.MaterialFactoryNew())
@@ -478,154 +491,174 @@ def _build_terrain_material(textures):
         return None
 
     mel = unreal.MaterialEditingLibrary
-    try:
-        grass = textures.get(GRASS_TEX)
-        dirt = textures.get(DIRT_TEX)
-        stone = textures.get(STONE_TEX)
-        sand = textures.get(SAND_TEX)
-        if not grass or not stone:
-            err("terrain material needs at least %s and %s"
-                % (GRASS_TEX, STONE_TEX))
-            return None
+    built = 0
 
-        def sampler(tex, name, y):
-            s = mel.create_material_expression(
-                mat, unreal.MaterialExpressionTextureSampleParameter2D, -1400, y)
-            s.set_editor_property("parameter_name", name)
-            s.set_editor_property("texture", tex)
-            try:
-                s.set_editor_property("sampler_type",
-                                      unreal.MaterialSamplerType.SAMPLERTYPE_Color)
-            except Exception:
-                pass
-            return s
+    def node(cls, x, y, **props):
+        """Create one expression, or fail the build.
 
-        s_grass = sampler(grass, "GrassTex", -320)
-        s_dirt = sampler(dirt or grass, "DirtTex", -180)
-        s_stone = sampler(stone, "StoneTex", -40)
-        s_sand = sampler(sand or dirt or grass, "SandTex", 100)
+        The class name is resolved through getattr so a typo raises here with a
+        clear name, instead of silently aborting a long graph mid-way.
+        """
+        nonlocal built
+        cls_obj = getattr(unreal, cls, None)
+        if cls_obj is None:
+            raise RuntimeError("this engine build has no %s" % cls)
+        expr = mel.create_material_expression(mat, cls_obj, x, y)
+        if expr is None:
+            raise RuntimeError("could not create %s at (%d, %d)" % (cls, x, y))
+        # Material expression properties are exposed under their UHT names, not
+        # snake_case. Three different conventions collide in this one function:
+        #
+        #   SmoothStep / Divide / Multiply  ->  ConstMin, ConstMax, ConstB
+        #   VectorParameter                 ->  DefaultValue
+        #   Constant                        ->  R
+        #
+        # Writing "const_min" or "default_value" raises "Failed to find
+        # property", which is exactly what silently aborted the original
+        # material graph and left a BaseColor-less black surface behind --
+        # see this function's docstring.
+        renames = {
+            "const_min": "ConstMin",
+            "const_max": "ConstMax",
+            "const_b": "ConstB",
+            "const_a": "ConstA",
+            "default_value": "DefaultValue",
+            "parameter_name": "ParameterName",
+            # ComponentMask's channels are uint32 bit fields, exposed as the
+            # single-letter UHT names rather than lowerCamel.
+            "r": "R",
+            "g": "G",
+            "b": "B",
+            "a": "A",
+        }
+        for key, value in props.items():
+            prop_name = renames.get(key, key)
+            # A Python int fails a float conversion with an error naming the
+            # property rather than the type, so ints are widened here.
+            if isinstance(value, (int, float)) and not isinstance(value, bool):
+                value = float(value)
+            expr.set_editor_property(prop_name, value)
+        built += 1
+        return expr
 
-        # ---- slope ------------------------------------------------------
-        # A world-space normal dotted against world Z is a usable slope proxy:
-        # 1 when flat, lower as the surface tilts. UE 5.8 names these
-        # expressions PixelNormalWS / VertexNormalWS and DotProduct; the older
-        # MaterialExpressionNormal and MaterialExpressionDot are gone.
-        wpos = mel.create_material_expression(
-            mat, unreal.MaterialExpressionWorldPosition, -1400, 420)
-        nrm = mel.create_material_expression(
-            mat, unreal.MaterialExpressionVertexNormalWS, -1200, 420)
-        dot = mel.create_material_expression(
-            mat, unreal.MaterialExpressionDotProduct, -1000, 420)
-        mel.connect_material_expressions(nrm, "", dot, "A")
-        mel.connect_material_expressions(wpos, "", dot, "B")
+    def sampler(tex, name, y):
+        return node("MaterialExpressionTextureSampleParameter2D",
+                    -1200, y, parameter_name=name, texture=tex)
 
-        inv = mel.create_material_expression(
-            mat, unreal.MaterialExpressionOneMinus, -840, 420)
-        mel.connect_material_expressions(dot, "Result", inv, "Input")
-        sat = mel.create_material_expression(
-            mat, unreal.MaterialExpressionSaturate, -680, 420)
-        mel.connect_material_expressions(inv, "Output", sat, "Input")
-        steep = mel.create_material_expression(
-            mat, unreal.MaterialExpressionSmoothStep, -520, 420)
-        mel.connect_material_expressions(sat, "Output", steep, "Min")
-        for prop, value in (("min_default", 0.10), ("max_default", 0.38)):
-            try:
-                steep.set_editor_property(prop, value)
-            except Exception:
-                pass
+    # ---- textures --------------------------------------------------------
+    s_grass = sampler(grass, "GrassTex", -320)
+    s_dirt = sampler(dirt or grass, "DirtTex", -180)
+    s_stone = sampler(stone, "StoneTex", -40)
+    s_sand = sampler(sand or dirt or grass, "SandTex", 100)
 
-        # ---- height -----------------------------------------------------
-        # The terrain spans 400..6300 cm. Normalising over that band puts the
-        # sand blend at the top of the plateau where phase 2 says the high
-        # ground is, rather than at an arbitrary engine default.
-        sep = mel.create_material_expression(
-            mat, unreal.MaterialExpressionSeparateXYZ, -1200, 200)
-        mel.connect_material_expressions(wpos, "", sep, "")
-        az = mel.create_material_expression(
-            mat, unreal.MaterialExpressionAbs, -1040, 200)
-        mel.connect_material_expressions(sep, "Z", az, "Input")
-        hn = mel.create_material_expression(
-            mat, unreal.MaterialExpressionDivide, -880, 200)
-        mel.connect_material_expressions(az, "Output", hn, "A")
+    # ---- slope: 1 when flat, 0 when vertical ------------------------------
+    # VertexNormalWS rather than a Dot against WorldPosition: the world-space
+    # vertex normal's Z component *is* the slope, and taking it directly avoids
+    # a DotProduct node and the axis-mix-up that comes with one.
+    nrm = node("MaterialExpressionVertexNormalWS", -1200, 420)
+    sep = node("MaterialExpressionComponentMask", -1000, 420, r=True,
+               g=False, b=False, a=False)
+    mel.connect_material_expressions(nrm, "", sep, "Vector")
+    steep = node("MaterialExpressionSmoothStep", -820, 420, const_min=0.10,
+                 const_max=0.38)
+    mel.connect_material_expressions(sep, "", steep, "Min")
+
+    # ---- height: high flat ground fades to sand ---------------------------
+    wpos = node("MaterialExpressionWorldPosition", -1200, 160)
+    hsep = node("MaterialExpressionComponentMask", -1000, 160, r=False,
+                g=False, b=True, a=False)
+    mel.connect_material_expressions(wpos, "", hsep, "Vector")
+    hdiv = node("MaterialExpressionDivide", -820, 160, const_b=1.0 / 5900.0)
+    mel.connect_material_expressions(hsep, "", hdiv, "A")
+    hsat = node("MaterialExpressionSaturate", -660, 160)
+    mel.connect_material_expressions(hdiv, "", hsat, "Input")
+    hgate = node("MaterialExpressionSmoothStep", -500, 160, const_min=0.84,
+                 const_max=0.99)
+    mel.connect_material_expressions(hsat, "", hgate, "Min")
+
+    # ---- grass -> sand by height -----------------------------------------
+    lerp_h = node("MaterialExpressionLinearInterpolate", -300, 60)
+    mel.connect_material_expressions(s_grass, "RGB", lerp_h, "A")
+    mel.connect_material_expressions(s_sand, "RGB", lerp_h, "B")
+    mel.connect_material_expressions(hgate, "", lerp_h, "Alpha")
+
+    # ---- overlay stone on slopes ------------------------------------------
+    inv_steep = node("MaterialExpressionOneMinus", -320, 420)
+    mel.connect_material_expressions(steep, "", inv_steep, "Input")
+    lerp_s = node("MaterialExpressionLinearInterpolate", -120, 220)
+    mel.connect_material_expressions(lerp_h, "Result", lerp_s, "A")
+    mel.connect_material_expressions(s_stone, "RGB", lerp_s, "B")
+    mel.connect_material_expressions(inv_steep, "", lerp_s, "Alpha")
+
+    # A trace of dirt so grass does not meet rock as two flat colours.
+    damp = node("MaterialExpressionMultiply", -320, 640, const_b=0.35)
+    mel.connect_material_expressions(steep, "", damp, "A")
+    final = node("MaterialExpressionLinearInterpolate", 60, 260)
+    mel.connect_material_expressions(lerp_s, "Result", final, "A")
+    mel.connect_material_expressions(s_dirt, "RGB", final, "B")
+    mel.connect_material_expressions(damp, "Result", final, "Alpha")
+
+    mel.connect_material_property(final, "Result",
+                                  unreal.MaterialProperty.MP_BASE_COLOR)
+
+    rough = node("MaterialExpressionConstant", 300, 420, r=0.85)
+    mel.connect_material_property(rough, "",
+                                  unreal.MaterialProperty.MP_ROUGHNESS)
+
+    # Prove the graph is complete before declaring success. BaseColor reaching
+    # the material with no expression on it compiles to black, and that is
+    # precisely the failure this whole rebuild exists to prevent.
+    final_expressions = None
+    if hasattr(mel, "get_material_property_input_as_vector"):
         try:
-            hn.set_editor_property("const_b", 1.0 / 5900.0)
+            final_expressions = mel.get_material_expressions(mat)
         except Exception:
-            pass
-        hs = mel.create_material_expression(
-            mat, unreal.MaterialExpressionSaturate, -720, 200)
-        mel.connect_material_expressions(hn, "Result", hs, "Input")
-        hgate = mel.create_material_expression(
-            mat, unreal.MaterialExpressionSmoothStep, -560, 200)
-        mel.connect_material_expressions(hs, "Output", hgate, "Min")
-        for prop, value in (("min_default", 0.84), ("max_default", 0.99)):
-            try:
-                hgate.set_editor_property(prop, value)
-            except Exception:
-                pass
+            final_expressions = None
 
-        # ---- grass -> sand by height -------------------------------------
-        lerp_h = mel.create_material_expression(
-            mat, unreal.MaterialExpressionLinearInterpolate, -380, 60)
-        mel.connect_material_expressions(s_grass, "RGB", lerp_h, "A")
-        mel.connect_material_expressions(s_sand, "RGB", lerp_h, "B")
-        mel.connect_material_expressions(hgate, "", lerp_h, "Alpha")
-
-        # ---- overlay stone on slopes -------------------------------------
-        inv_steep = mel.create_material_expression(
-            mat, unreal.MaterialExpressionOneMinus, -340, 420)
-        mel.connect_material_expressions(steep, "", inv_steep, "Input")
-        lerp_s = mel.create_material_expression(
-            mat, unreal.MaterialExpressionLinearInterpolate, -180, 200)
-        mel.connect_material_expressions(lerp_h, "Result", lerp_s, "A")
-        mel.connect_material_expressions(s_stone, "RGB", lerp_s, "B")
-        mel.connect_material_expressions(inv_steep, "Output", lerp_s, "Alpha")
-
-        # A trace of dirt keeps grass from meeting rock as two flat colours.
-        damp = mel.create_material_expression(
-            mat, unreal.MaterialExpressionMultiply, -340, 620)
-        mel.connect_material_expressions(steep, "", damp, "A")
-        try:
-            damp.set_editor_property("const_b", 0.35)
-        except Exception:
-            pass
-        mix = mel.create_material_expression(
-            mat, unreal.MaterialExpressionLinearInterpolate, -20, 260)
-        mel.connect_material_expressions(lerp_s, "Result", mix, "A")
-        mel.connect_material_expressions(s_dirt, "RGB", mix, "B")
-        mel.connect_material_expressions(damp, "Result", mix, "Alpha")
-
-        mel.connect_material_property(mix, "Result",
-                                      unreal.MaterialProperty.MP_BASE_COLOR)
-
-        rough = mel.create_material_expression(
-            mat, unreal.MaterialExpressionConstant, 200, 420)
-        try:
-            rough.set_editor_property("r", 0.85)
-        except Exception:
-            pass
-        mel.connect_material_property(rough, "",
-                                      unreal.MaterialProperty.MP_ROUGHNESS)
-
-        unreal.EditorAssetLibrary.save_loaded_asset(mat)
-        log("  terrain material built: grass/sand by height, stone on slope, "
-            "dirt in the transition band")
-        return mat
-
-    except Exception as exc:
-        warn("terrain material graph could not be built (%s); the surface will "
-             "use the engine default" % exc)
-        # A half-built graph would be cached and reused on the next run, hiding
-        # whatever caused it. Drop it so a retry starts clean.
+    linked = _material_has_base_color(mat)
+    if not linked:
+        err("the terrain material compiled without a BaseColor input; the "
+            "surface would render black. Refusing to ship it.")
         try:
             unreal.EditorAssetLibrary.delete_asset(path)
         except Exception:
             pass
-        return mat
+        return None
+
+    unreal.EditorAssetLibrary.save_loaded_asset(mat)
+    log("  terrain material built: %d expressions, BaseColor linked"
+        % built)
+    return mat
 
 
-# =============================================================================
-# LEVEL + TERRAIN
-# =============================================================================
+def _material_has_base_color(mat):
+    """
+    -> True when the material's BaseColor actually resolves to an expression.
+
+    A material whose BaseColor is left at its default compiles to opaque black,
+    which is not an error anywhere -- it just renders as a void. Reading the
+    compiled input back is the only way to tell a finished graph from a
+    partial one.
+    """
+    mel = unreal.MaterialEditingLibrary
+    for getter in ("get_material_property_input_as_vector",
+                   "get_material_property_input_as_texture"):
+        if not hasattr(mel, getter):
+            continue
+        try:
+            value = getattr(mel, getter)(mat)
+            if value is not None:
+                return True
+        except Exception:
+            continue
+    # No readable input API: fall back to counting expressions, which is a weak
+    # signal but still separates a 5-node stub from a complete graph.
+    try:
+        exprs = mel.get_material_expressions(mat)
+        return exprs is not None and len(exprs) >= 12
+    except Exception:
+        return False
+
 
 def open_level():
     """
@@ -1111,41 +1144,50 @@ def _prop_materials():
     default = unreal.LinearColor(0.45, 0.45, 0.45, 1.0)
     _ensure_dir(MATERIAL_DIR)
     out = {}
+    vec_cls = getattr(unreal, "MaterialExpressionVectorParameter", None)
+    const_cls = getattr(unreal, "MaterialExpressionConstant", None)
+    if vec_cls is None:
+        err("this engine build exposes no vector parameter expression; the "
+            "props would render black")
+        return {"_default": None}
+
     for cls, colour in palette.items():
         path = "%s/MC_Prop_%s" % (MATERIAL_DIR, cls)
+        # Rebuild, never reuse -- see _build_terrain_material for why a cached
+        # half-built material is worse than no material at all.
         if unreal.EditorAssetLibrary.does_asset_exist(path):
-            out[cls] = unreal.load_asset(path)
-            continue
+            unreal.EditorAssetLibrary.delete_asset(path)
+
         mat = unreal.AssetToolsHelpers.get_asset_tools().create_asset(
             "MC_Prop_%s" % cls, MATERIAL_DIR, unreal.Material,
             unreal.MaterialFactoryNew())
         if mat is None:
+            err("could not create the %s prop material" % cls)
             continue
-        try:
-            mat.set_editor_property("shading_model",
-                                    unreal.MaterialShadingModel.MSM_DEFAULT_LIT)
-        except Exception:
-            pass
+
         mel = unreal.MaterialEditingLibrary
-        try:
-            const = mel.create_material_expression(
-                mat, unreal.MaterialExpressionVectorParameter, -300, 0)
-            const.set_editor_property("parameter_name", "Tint")
-            const.set_editor_property("default_value", colour)
-            mel.connect_material_property(
-                const, "", unreal.MaterialProperty.MP_BASE_COLOR)
-            rough = mel.create_material_expression(
-                mat, unreal.MaterialExpressionConstant, -300, 200)
-            try:
-                rough.set_editor_property("r", 0.9)
-            except Exception:
-                pass
-            mel.connect_material_property(
-                rough, "", unreal.MaterialProperty.MP_ROUGHNESS)
-        except Exception as exc:
-            warn("prop material graph failed for %s (%s)" % (cls, exc))
+        const = mel.create_material_expression(mat, vec_cls, -300, 0)
+        if const is None:
+            err("could not create the tint for the %s prop material" % cls)
+            continue
+        const.set_editor_property("ParameterName", "Tint")
+        const.set_editor_property("DefaultValue", colour)
+        mel.connect_material_property(const, "",
+                                      unreal.MaterialProperty.MP_BASE_COLOR)
+
+        if const_cls is not None:
+            rough = mel.create_material_expression(mat, const_cls, -300, 200)
+            if rough is not None:
+                try:
+                    rough.set_editor_property("R", 0.9)
+                except Exception:
+                    pass
+                mel.connect_material_property(
+                    rough, "", unreal.MaterialProperty.MP_ROUGHNESS)
+
         unreal.EditorAssetLibrary.save_loaded_asset(mat)
         out[cls] = mat
+
     out["_default"] = out.get("prop") or (list(out.values())[0] if out else None)
     return out
 
@@ -1236,8 +1278,14 @@ def make_playable(root):
         err("no world; cannot make the level playable")
         return False
 
+    # One sample, used for both the XY the PlayerStart sits at and the Z it
+    # sits at. Sampling the height somewhere other than where the pawn is
+    # placed is how it ended up 43 m in the air: the script read the plateau's
+    # height and then placed the pawn over the low ground beside it.
     ground = _terrain_height_cm(root)
-    spawn = unreal.Vector(0.0, 0.0, ground + 300.0)
+    spawn = unreal.Vector(0.0, 0.0, ground + 200.0)
+    log("  PlayerStart will sit at (%.0f, %.0f, %.0f) over ground at %.0f cm"
+        % (spawn.x, spawn.y, spawn.z, ground))
 
     # ---- PlayerStart ------------------------------------------------------
     start = None
@@ -1380,8 +1428,13 @@ def _build_character_material(skin):
     character, which is what keeps a third-person view cheap.
     """
     path = "%s/MC_Character" % MATERIAL_DIR
+    # Rebuild rather than reuse, for the same reason as the terrain material: a
+    # half-built graph reads as "already present" on the next run and renders
+    # black forever.
     if unreal.EditorAssetLibrary.does_asset_exist(path):
-        return unreal.load_asset(path)
+        if not unreal.EditorAssetLibrary.delete_asset(path):
+            err("could not delete the existing %s; refusing to reuse it" % path)
+            return None
 
     mat = unreal.AssetToolsHelpers.get_asset_tools().create_asset(
         "MC_Character", MATERIAL_DIR, unreal.Material,
@@ -1391,34 +1444,35 @@ def _build_character_material(skin):
         return None
 
     mel = unreal.MaterialEditingLibrary
-    try:
-        tex = mel.create_material_expression(
-            mat, unreal.MaterialExpressionTextureSampleParameter2D, -400, 0)
-        tex.set_editor_property("parameter_name", "Skin")
-        tex.set_editor_property("texture", skin)
 
-        mel.connect_material_property(tex, "RGB",
-                                      unreal.MaterialProperty.MP_BASE_COLOR)
-
-        rough = mel.create_material_expression(
-            mat, unreal.MaterialExpressionConstant, -400, 200)
-        try:
-            rough.set_editor_property("r", 0.9)
-        except Exception:
-            pass
-        mel.connect_material_property(rough, "",
-                                      unreal.MaterialProperty.MP_ROUGHNESS)
-
-        unreal.EditorAssetLibrary.save_loaded_asset(mat)
-        return mat
-    except Exception as exc:
-        warn("character material graph failed (%s); the figure will use the "
-             "engine default" % exc)
-        try:
-            unreal.EditorAssetLibrary.delete_asset(path)
-        except Exception:
-            pass
+    cls = getattr(unreal, "MaterialExpressionTextureSampleParameter2D", None)
+    if cls is None:
+        err("this engine build exposes no texture sample expression")
         return None
+
+    tex = mel.create_material_expression(mat, cls, -400, 0)
+    if tex is None:
+        err("could not create the skin sampler")
+        return None
+    tex.set_editor_property("ParameterName", "Skin")
+    tex.set_editor_property("texture", skin)
+    mel.connect_material_property(tex, "RGB",
+                                  unreal.MaterialProperty.MP_BASE_COLOR)
+
+    rough_cls = getattr(unreal, "MaterialExpressionConstant", None)
+    if rough_cls is not None:
+        rough = mel.create_material_expression(mat, rough_cls, -400, 200)
+        if rough is not None:
+            try:
+                rough.set_editor_property("R", 0.9)
+            except Exception:
+                pass
+            mel.connect_material_property(rough, "",
+                                          unreal.MaterialProperty.MP_ROUGHNESS)
+
+    unreal.EditorAssetLibrary.save_loaded_asset(mat)
+    log("  character material built, BaseColor linked to the skin")
+    return mat
 
 
 def _spawn_player_character(figure, start):
@@ -1476,25 +1530,59 @@ def _terrain_height_cm(root):
     """
     Terrain height at the map centre, in cm.
 
-    Read out of the heightmap rather than guessed, so the pawn spawns above the
-    ground instead of inside it. The campus is a plateau, so the centre is a
-    safe sample.
+    Reads the committed heightmaps rather than guessing, so the pawn spawns on
+    the surface instead of in it.
+
+    The sample is taken **at (0, 0) world blocks** -- the same XY the pawn is
+    placed at. An earlier version sampled the centre of ``tiles[0]`` instead,
+    which is block (-86, -408): a different place, and one that happens to sit
+    on the only high ground in the map. The pawn was therefore placed at the
+    height of the plateau while standing over the low ground at z = 400 cm, so
+    it spawned **4320 cm in the air** and the player looked down at the campus
+    from 43 m up. Nothing reported it: the spawn is legal, the fall is survivable
+    on its own, and the level verifies clean.
+
+    The search below is a plain nearest-sample lookup in world-block space, so
+    it stays correct if the map origin ever moves.
     """
     lsc_dir = os.path.join(root, "out", "phase2", DIMENSION, "landscape")
     meta_path = os.path.join(lsc_dir, "landscape.json")
     if not os.path.isfile(meta_path):
         return 2000.0
     meta = _load_json(meta_path)
-    tile = meta["tiles"][0]
-    try:
-        w, h, rows, ch = read_heightmap(
-            os.path.join(lsc_dir, tile["file"]))
-    except Exception:
+
+    ox0, oy0 = meta["block_origin"]
+    bw, bh = meta["block_size"]
+    target = (ox0 + bw // 2, oy0 + bh // 2)
+
+    best = None
+    best_d2 = None
+    for tile in meta["tiles"]:
+        png = os.path.join(lsc_dir, tile["file"])
+        if not os.path.isfile(png):
+            continue
+        try:
+            w, h, rows, ch = read_heightmap(png)
+        except Exception:
+            continue
+        px, py = tile["block_origin"]
+        hm = tile["height_cm_meta"]
+        # Nearest column to the wanted block.
+        c = min(max(target[0] - px, 0), w - 1)
+        r = min(max(target[1] - py, 0), h - 1)
+        line = rows[r]
+        (v,) = struct.unpack(">H", bytes(line[c * ch * 2:c * ch * 2 + 2]))
+        z = decode_height_cm(v, hm)
+        d2 = (px + c - target[0]) ** 2 + (py + r - target[1]) ** 2
+        if best_d2 is None or d2 < best_d2:
+            best_d2 = d2
+            best = (z, px + c, py + r)
+
+    if best is None:
         return 2000.0
-    line = rows[h // 2]
-    i = ((w // 2) * ch) * 2
-    (v,) = struct.unpack(">H", bytes(line[i:i + 2]))
-    return decode_height_cm(v, tile["height_cm_meta"])
+    z, bx, by = best
+    log("  terrain at map centre (block %d,%d): %.0f cm" % (bx, by, z))
+    return z
 
 
 def _world_settings():
@@ -1694,6 +1782,7 @@ def verify(meshes_placed, props_placed):
     ok = True
     visual = collision = proxies = starts = 0
     pawn_ok = mode_ok = False
+    dark_materials = []
 
     for actor in unreal.EditorLevelLibrary.get_all_level_actors():
         name = actor.get_class().get_name()
@@ -1727,6 +1816,38 @@ def verify(meshes_placed, props_placed):
         elif name == "PlayerStart":
             starts += 1
 
+    # ---- every material in the level must actually colour something -------
+    # A material whose BaseColor is left unconnected compiles to opaque black.
+    # That is not an error anywhere: the asset saves, the cook succeeds, the
+    # mesh has valid collision, and the surface renders as a void. This walk is
+    # what catches it, and it exists because the black-screen build passed
+    # every other check the pipeline had.
+    seen_materials = set()
+    for actor in unreal.EditorLevelLibrary.get_all_level_actors():
+        comp = actor.get_component_by_class(unreal.StaticMeshComponent) \
+            if actor.get_class().get_name() == "StaticMeshActor" else None
+        if comp is None:
+            continue
+        mesh = comp.get_editor_property("static_mesh")
+        if mesh is None:
+            continue
+        try:
+            slots = mesh.get_editor_property("static_materials")
+        except Exception:
+            continue
+        for slot in slots:
+            mat = slot.get_editor_property("material_interface")
+            if mat is None:
+                dark_materials.append("<none on %s>"
+                                       % actor.get_actor_label())
+                continue
+            path = mat.get_path_name()
+            if path in seen_materials:
+                continue
+            seen_materials.add(path)
+            if not _material_has_base_color(mat):
+                dark_materials.append(path)
+
     # Read the pawn and GameMode back off the GameMode CDO: that is where a
     # packaged build looks, so it is what has to be verified. AGameModeBase
     # already defaults to ADefaultPawn, so "not None" proves nothing -- the
@@ -1745,10 +1866,16 @@ def verify(meshes_placed, props_placed):
         pawn_name = "(unreadable)"
 
     log("verify: %d visual meshes, %d collision proxies (%d with a collision "
-        "surface), %d PlayerStart, %d props, gamemode=%s pawn=%s"
+        "surface), %d PlayerStart, %d props, gamemode=%s pawn=%s, "
+        "%d materials all colour something"
         % (visual, proxies, collision, starts, props_placed,
            "ok" if mode_ok else "MISSING",
-           pawn_name if pawn_ok else "MISSING (%s)" % pawn_name))
+           pawn_name if pawn_ok else "MISSING (%s)" % pawn_name,
+           len(seen_materials) - len(dark_materials)))
+
+    if dark_materials:
+        err("these materials have no BaseColor input and would render black: "
+            "%s" % ", ".join(sorted(dark_materials)))
 
     if meshes_placed != 4:
         err("expected 4 terrain meshes, placed %d" % meshes_placed)
