@@ -75,3 +75,11 @@ character/        # make_character.py 生成的网格与皮肤
 shots/            # 评测渲染图
 dist/ dist2/ dist3/
 *.tar.gz
+
+# ---- CC0 材质（可重建）--------------------------------------------------
+# 由 tools/fetch_cc0_textures.py + assets_cc0/polyhaven/manifest.json 一键重下，
+# 与 voxel_data/ 同理不入库。manifest.json 本身入库（记录选了哪个资产、哪个图种）。
+assets_cc0/**/*.jpg
+assets_cc0/**/*.png
+assets_cc0/**/*.part
+assets_cc0/**/*.exr

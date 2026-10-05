@@ -1,0 +1,138 @@
+{
+  "asphalt": {
+    "asset": "asphalt_01",
+    "maps": {
+      "Diffuse": "asphalt_diffuse.jpg",
+      "Rough": "asphalt_rough.jpg",
+      "nor_dx": "asphalt_nor_dx.jpg"
+    }
+  },
+  "bark": {
+    "asset": "bark_brown_01",
+    "maps": {
+      "Diffuse": "bark_diffuse.jpg",
+      "Rough": "bark_rough.jpg",
+      "nor_dx": "bark_nor_dx.jpg"
+    }
+  },
+  "brick": {
+    "asset": "brick_4",
+    "maps": {
+      "Diffuse": "brick_diffuse.jpg",
+      "Rough": "brick_rough.jpg",
+      "nor_dx": "brick_nor_dx.jpg"
+    }
+  },
+  "concrete": {
+    "asset": "brushed_concrete",
+    "maps": {
+      "Diffuse": "concrete_diffuse.jpg",
+      "Rough": "concrete_rough.jpg",
+      "nor_dx": "concrete_nor_dx.jpg"
+    }
+  },
+  "fabric": {
+    "asset": "cotton_jersey",
+    "maps": {
+      "Diffuse": "fabric_diffuse.jpg",
+      "Rough": "fabric_rough.jpg",
+      "nor_dx": "fabric_nor_dx.jpg"
+    }
+  },
+  "granite": {
+    "asset": "granite_tile",
+    "maps": {
+      "Diffuse": "granite_diffuse.jpg",
+      "Rough": "granite_rough.jpg",
+      "nor_dx": "granite_nor_dx.jpg"
+    }
+  },
+  "grass": {
+    "asset": "grass_ground",
+    "maps": {
+      "Diffuse": "grass_diffuse.jpg",
+      "Rough": "grass_rough.jpg",
+      "nor_dx": "grass_nor_dx.jpg"
+    }
+  },
+  "gravel": {
+    "asset": "gravel_floor",
+    "maps": {
+      "Diffuse": "gravel_diffuse.jpg",
+      "Rough": "gravel_rough.jpg",
+      "nor_dx": "gravel_nor_dx.jpg"
+    }
+  },
+  "leaves": {
+    "asset": "forest_leaves_04",
+    "maps": {
+      "Diffuse": "leaves_diffuse.jpg",
+      "Rough": "leaves_rough.jpg",
+      "nor_dx": "leaves_nor_dx.jpg"
+    }
+  },
+  "metal": {
+    "asset": "metal_plate",
+    "maps": {
+      "Diffuse": "metal_diffuse.jpg",
+      "Rough": "metal_rough.jpg",
+      "nor_dx": "metal_nor_dx.jpg"
+    }
+  },
+  "path": {
+    "asset": "grass_path_3",
+    "maps": {
+      "Diffuse": "path_diffuse.jpg",
+      "Rough": "path_rough.jpg",
+      "nor_dx": "path_nor_dx.jpg"
+    }
+  },
+  "plaster": {
+    "asset": "beige_wall_001",
+    "maps": {
+      "Diffuse": "plaster_diffuse.jpg",
+      "Rough": "plaster_rough.jpg",
+      "nor_dx": "plaster_nor_dx.jpg"
+    }
+  },
+  "rock": {
+    "asset": "rock_face",
+    "maps": {
+      "Diffuse": "rock_diffuse.jpg",
+      "Rough": "rock_rough.jpg",
+      "nor_dx": "rock_nor_dx.jpg"
+    }
+  },
+  "roof": {
+    "asset": "clay_roof_tiles",
+    "maps": {
+      "Diffuse": "roof_diffuse.jpg",
+      "Rough": "roof_rough.jpg",
+      "nor_dx": "roof_nor_dx.jpg"
+    }
+  },
+  "soil": {
+    "asset": "dirt",
+    "maps": {
+      "Diffuse": "soil_diffuse.jpg",
+      "Rough": "soil_rough.jpg",
+      "nor_dx": "soil_nor_dx.jpg"
+    }
+  },
+  "tiles": {
+    "asset": "concrete_tiles_02",
+    "maps": {
+      "Diffuse": "tiles_diffuse.jpg",
+      "Rough": "tiles_rough.jpg",
+      "nor_dx": "tiles_nor_dx.jpg"
+    }
+  },
+  "wood": {
+    "asset": "brown_planks_03",
+    "maps": {
+      "Diffuse": "wood_diffuse.jpg",
+      "Rough": "wood_rough.jpg",
+      "nor_dx": "wood_nor_dx.jpg"
+    }
+  }
+}
