@@ -55,6 +55,13 @@ AMCReplicaCharacter::AMCReplicaCharacter()
 		// lets it hang slightly over a ledge instead of sliding off it.
 		Move->PerchRadiusThreshold = 20.0f;
 		Move->PerchAdditionalHeight = 12.0f;
+
+		// Turn the body to face the direction it is travelling. Movement input
+		// is camera-relative (see MoveForward/MoveRight); without this the body
+		// keeps its spawn yaw and strafes sideways across the campus, which
+		// reads as "the character will not walk where I am looking".
+		Move->bOrientRotationToMovement = true;
+		Move->RotationRate = FRotator(0.0f, 540.0f, 0.0f);
 	}
 
 	// ---- figure ----------------------------------------------------------
@@ -235,8 +242,13 @@ void AMCReplicaCharacter::MoveForward(float Value)
 	if (!FMath::IsNearlyZero(Value))
 	{
 		// Movement is relative to where the camera is looking, so walking
-		// always goes the way the view faces regardless of character yaw.
-		AddMovementInput(GetActorForwardVector(), Value);
+		// always goes the way the view faces. The actor's own forward vector
+		// is wrong here: the body turns to follow travel (see
+		// bOrientRotationToMovement), so on the frame a turn starts the actor
+		// still faces the old way and half the input would push backwards.
+		AddMovementInput(FRotationMatrix(
+			FRotator(0.0f, GetControlRotation().Yaw, 0.0f)).GetUnitAxis(EAxis::X),
+			Value);
 	}
 }
 
@@ -244,7 +256,9 @@ void AMCReplicaCharacter::MoveRight(float Value)
 {
 	if (!FMath::IsNearlyZero(Value))
 	{
-		AddMovementInput(GetActorRightVector(), Value);
+		AddMovementInput(FRotationMatrix(
+			FRotator(0.0f, GetControlRotation().Yaw, 0.0f)).GetUnitAxis(EAxis::Y),
+			Value);
 	}
 }
 

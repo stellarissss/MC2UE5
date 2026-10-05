@@ -735,15 +735,22 @@ def _import_obj(path, dest_name):
 
 def _place_mesh_actor(label, mesh, origin, material=None, collision=False):
     """
-    Spawn a StaticMeshActor for `mesh` at `origin` and configure it.
+    Spawn a StaticMeshActor for `mesh` and configure it.
 
-    Returns the component, or None if the actor could not be placed. Terrain is
-    the walkable surface, so the visual mesh is placed with collision off and a
-    separate decimated proxy carries the collision -- see ``import_terrain``.
+    ``origin`` is accepted and deliberately ignored, and the actor is spawned
+    at the world origin. The terrain OBJ already carries **world** coordinates
+    -- tile 00_00's vertices span X -27200..10000 cm -- so placing the actor at
+    ``origin_cm`` as well applies the tile offset twice: the terrain ends up
+    272 m east and 672 m north of where the pipeline says it is. The pawn then
+    spawns over ground that is not there and falls forever, while the campus
+    sits in the distance looking like an island -- which is the bug report.
+
+    The parameter is kept so call sites read naturally, but the actor transform
+    is the identity. Returns the component, or None if the actor could not be
+    placed.
     """
-    ox, oy = origin
     actor = unreal.EditorLevelLibrary.spawn_actor_from_class(
-        unreal.StaticMeshActor, unreal.Vector(float(ox), float(oy), 0.0),
+        unreal.StaticMeshActor, unreal.Vector(0.0, 0.0, 0.0),
         unreal.Rotator(0.0, 0.0, 0.0))
     if actor is None:
         return None
@@ -851,6 +858,12 @@ def import_terrain(root):
         if not _enable_complex_collision(cmesh, "C_" + cname):
             err("collision proxy %s has no collision surface" % cname)
             continue
+        # The trace flag and bAllowCPUAccess were just changed on the asset;
+        # persist them, or the next load reverts to an empty physics mesh.
+        try:
+            unreal.EditorAssetLibrary.save_loaded_asset(cmesh)
+        except Exception as exc:
+            warn("could not save the collision proxy %s (%s)" % (cname, exc))
         ccomp = _place_mesh_actor("TerrainCollision_" + tile["obj"], cmesh,
                                   tile["origin_cm"], material, collision=True)
         if ccomp is not None:
@@ -875,8 +888,23 @@ def _enable_complex_collision(mesh, name):
     on the component is accepted and then ignored, which reads as a successful
     configure and a pawn that falls through the world.
 
+    ``bAllowCPUAccess`` must also be true. Complex-as-simple collision cooks its
+    physics trimesh from the mesh's CPU-accessible render data; with it false
+    the buffer is released after GPU upload and the cook yields an empty trimesh
+    -- which is exactly the "pawn falls through the campus" symptom. The flag
+    is set here, at import, so it is serialised into the asset and the runtime
+    load keeps the data the cook needs.
+
     Returns True when collision is usable.
     """
+    # Keep the vertex data CPU-readable so the runtime can cook the trimesh.
+    for prop in ("b_allow_cpu_access", "allow_cpu_access", "bAllowCPUAccess"):
+        try:
+            mesh.set_editor_property(prop, True)
+            break
+        except Exception:
+            continue
+
     body = None
     try:
         body = mesh.get_editor_property("body_setup")
@@ -1622,7 +1650,12 @@ def _set_game_mode():
 
     ok = True
 
-    gm_path = "/Script/Engine.GameModeBase"
+    # Prefer the project's own game mode when the C++ module is loaded: it
+    # subclasses GameModeBase and adds the deferred frame capture that makes
+    # the render observable on a machine with no window.
+    gm_path = "/Script/MCReplica.MCFrameCaptureGameMode"
+    if unreal.load_class(None, gm_path) is None:
+        gm_path = "/Script/Engine.GameModeBase"
     gm_cls = unreal.load_class(None, gm_path)
     if gm_cls is None:
         warn("could not load %s" % gm_path)
@@ -1782,6 +1815,8 @@ def verify(meshes_placed, props_placed):
     ok = True
     visual = collision = proxies = starts = 0
     pawn_ok = mode_ok = False
+    pawn_name = "(none)"
+    mode_name = "(none)"
     dark_materials = []
 
     for actor in unreal.EditorLevelLibrary.get_all_level_actors():
@@ -1848,28 +1883,40 @@ def verify(meshes_placed, props_placed):
             if not _material_has_base_color(mat):
                 dark_materials.append(path)
 
-    # Read the pawn and GameMode back off the GameMode CDO: that is where a
-    # packaged build looks, so it is what has to be verified. AGameModeBase
-    # already defaults to ADefaultPawn, so "not None" proves nothing -- the
-    # check is that it names a pawn class *other* than the base default, i.e.
-    # that something was actually assigned.
+    # Read the pawn and GameMode back off whatever the level actually uses.
+    # Hard-coding GameModeBase here would have silently passed while the level
+    # ran on a subclass with no pawn assigned -- the base's CDO says nothing
+    # about the derived one a GameMode chain actually instantiates.
     try:
-        gm_cls = unreal.load_class(None, "/Script/Engine.GameModeBase")
-        cdo = unreal.get_default_object(gm_cls) if gm_cls else None
+        ws = _world_settings()
+        active = None
+        if ws is not None:
+            for prop in ("default_game_mode", "game_mode"):
+                try:
+                    active = ws.get_editor_property(prop)
+                    if active is not None:
+                        break
+                except Exception:
+                    continue
+        cdo = unreal.get_default_object(active) if active is not None else None
         if cdo is not None:
-            pawn_cls = cdo.get_editor_property("default_pawn_class")
             mode_ok = True
+            pawn_cls = cdo.get_editor_property("default_pawn_class")
+            # AGameModeBase already defaults to ADefaultPawn, so "not None"
+            # proves nothing; the check is that a different pawn was assigned.
             pawn_ok = pawn_cls is not None and \
                 _class_name(pawn_cls) not in ("DefaultPawn", "SpectatorPawn")
             pawn_name = _class_name(pawn_cls) if pawn_cls else "(none)"
-    except Exception:
-        pawn_name = "(unreadable)"
+            mode_name = _class_name(active) if active is not None else "(none)"
+    except Exception as exc:
+        pawn_name = "(unreadable: %s)" % str(exc)[:40]
+        mode_name = "(unreadable)"
 
     log("verify: %d visual meshes, %d collision proxies (%d with a collision "
         "surface), %d PlayerStart, %d props, gamemode=%s pawn=%s, "
         "%d materials all colour something"
         % (visual, proxies, collision, starts, props_placed,
-           "ok" if mode_ok else "MISSING",
+           mode_name if mode_ok else "MISSING",
            pawn_name if pawn_ok else "MISSING (%s)" % pawn_name,
            len(seen_materials) - len(dark_materials)))
 

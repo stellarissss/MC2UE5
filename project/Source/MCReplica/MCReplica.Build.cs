@@ -24,6 +24,12 @@ public class MCReplica : ModuleRules
 		{
 			"Slate",
 			"SlateCore",
+			// UMCFrameCapture encodes the captured frame through ImageWrapper.
+			// It is an engine module rather than an image plugin, so it has no
+			// plugin dependency and is always present.
+			"ImageWrapper",
+			"RHI",
+			"RenderCore",
 		});
 	}
 }

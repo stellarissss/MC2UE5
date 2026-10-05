@@ -1,6 +1,6 @@
 # MC2UE5 — Release Build Notes
 
-**Tag:** `v0.1.0` · **Engine:** Unreal Engine 5.8.3 (CL 58210709) · **Platform:** Win64
+**Tag:** `v0.4.0` · **Engine:** Unreal Engine 5.8.3 (CL 58210709) · **Platform:** Win64
 
 A Minecraft 1.16.5 save rebuilt as a walkable UE5 world.
 
@@ -34,10 +34,69 @@ placements.
 
 ---
 
+## Playability fixes in this build (v0.4.0)
+
+Four defects stood between "the level exists and verifies" and "a player can
+walk around it". Each one reported success somewhere, which is why they survived
+a green build.
+
+### 1. The camera could not turn: no input was mapped
+
+`Config/DefaultInput.ini` carried only the axis dead-zone defaults -- there were
+**no `+AxisMappings` or `+ActionMappings` at all**. The character binds the
+legacy names `MoveForward`, `MoveRight`, `Turn`, `LookUp`, `Jump` and `Sprint`
+(`MCReplicaCharacter::SetupPlayerInputComponent`), so with nothing mapped to them
+the mouse could not turn the view and WASD did nothing: the reported "the camera
+never moves, all I can see is sky". The mappings are now present (WASD / arrows,
+mouse, gamepad, space, shift). Legacy mappings are read even when Enhanced Input
+is the default input class, so `DefaultPlayerInputClass` did not need to change.
+
+### 2. Movement was not camera-relative, and the body did not face travel
+
+`MoveForward` used `GetActorForwardVector()`. With `bUseControllerRotationYaw`
+off and no `bOrientRotationToMovement`, the body kept its spawn yaw, so "forward"
+was a fixed world direction rather than the way the player was looking. Movement
+input is now built from `GetControlRotation().Yaw`, and the movement component
+turns the body to face its travel (`bOrientRotationToMovement`, `RotationRate`
+540 deg/s).
+
+### 3. The pawn fell through the terrain: complex-as-simple collision is never cooked in an uncooked `-game` session
+
+The collision proxies use `CTF_UseComplexAsSimple`, so the engine cooks their
+physics trimesh from the mesh's render triangles. That cook never happens in an
+uncooked `UnrealEditor.exe ... -game` session:
+
+- `UBodySetup::Serialize` only writes `CookedFormatData` when `Ar.IsCooking()`,
+  so an editor `.uasset` carries no baked physics;
+- the same function only sets `ChaosDerivedDataReader` when loading cooked data;
+- `CreatePhysicsMeshes()`'s runtime-cook branch is gated on `IsRuntime(this)`,
+  which needs the BodySetup's outer to resolve to a game world -- false for a
+  package asset.
+
+So the trimesh stayed empty, a straight-down complex trace missed, and the pawn
+fell to Z ~ -151000. The fix is to **ship the game cooked**: the cooker runs with
+`RequiresCookedData() == false`, so it builds and bakes the trimesh into the
+cooked package (the cooked collision `.uexp` files are 40-333 KB, where the old
+editor assets carried no trimesh at all). `bAllowCPUAccess` is set on the
+proxies as well, which the cook requires.
+
+### 4. Dead cvars in `DefaultScalability.ini` failed the cook outright
+
+`Scalability.ini` may only set `ECVF_Scalability` console variables. Any other
+cvar raises an engine **ensure**, and a failed ensure counts as an error, so the
+cook commandlet reports failure and `BuildCookRun` aborts. The file carried
+several (`r.Nanite.Streaming.StreamingPoolSize`,
+`r.DynamicGlobalIlluminationMethod`, `r.Shadow.Virtual.Enable`,
+`r.Streaming.PoolSize`, `r.Streaming.MaxTempMemoryAllowed`,
+`grass.DensityScale`). They are removed; the ones that genuinely vary per tier
+at runtime are applied by `apply_quality.py` instead.
+
+---
+
 ## Running it
 
-Unzip and run `MCReplica.exe`. Controls are the default spectator-pawn
-bindings — WASD to move, mouse to look.
+Unzip and run `MCReplica.exe`. Controls are WASD / arrows to move, the mouse to
+look, Space to jump and Shift to sprint.
 
 The map opens at the campus centre on a `PlayerStart` placed from the
 heightmap's actual surface height, so the pawn starts on the ground rather than
@@ -156,11 +215,21 @@ UnrealEditor.exe project/MCReplica.uproject \
     -ExecutePythonScript=project/Content/Python/build_release_level.py \
     -unattended -nopause -nosplash -nullrhi
 
-# 4. Package
+# 4. Package. The toolchain lives on Q:, and the Windows SDK registry entry is
+#    lost whenever the system drive resets, so the SDK root is re-registered
+#    (tools/reg_sdk.py) and UBT is pointed at it first:
+#      UE_SDKS_ROOT=Q:\AutoSDK  WindowsSDKDir=Q:\WindowsKits
+#      WindowsSDKVersion=10.0.26100.0  DOTNET_ROOT=Q:\dotnet  UBA_ROOT=Q:\UBA
+#    Cook to loose files with -SkipZenStore; without it the cooked packages go
+#    into the Zen store and the staging step cannot read them back.
+Engine/Binaries/Win64/UnrealEditor-Cmd.exe <checkout>/project/MCReplica.uproject \
+    -run=Cook -TargetPlatform=Windows -unversioned -SkipZenStore \
+    -unattended -nopause -nosplash -nullrhi -stdout
 Engine/Build/BatchFiles/RunUAT.bat BuildCookRun \
     -project=<checkout>/project/MCReplica.uproject \
-    -platform=Win64 -clientconfig=Shipping -cook -build -stage -pak -archive \
-    -archivedirectory=<out>
+    -platform=Win64 -clientconfig=Shipping -nocompile -nocompileeditor -skipcook \
+    -stage -pak -archive -archivedirectory=<out> \
+    -unattended -nopause -nosplash -NoCodeSign
 ```
 
 Every step fails loudly. The level builder validates the heightmaps against
