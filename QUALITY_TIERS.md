@@ -449,7 +449,7 @@ PerfIndexThresholds_ShadingQuality="GPU 30 120 400"
 | 剔除配置 | 淡出带顺序、低配仍可用、按类分档、降级不中断导入 | `tests/test_hism_culling.py` | 已通过 |
 | 产物正确性 | Landscape 分块覆盖、高度解码范围 | `tests/test_import_phase2_offline.py`（46 项） | 已通过 |
 | 管线正确性 | 分块、重采样、坐标配准 | `tests/run_tests.py` | 已通过 |
-| 实际帧率 | 各档在目标硬件上的 fps | **必须在 Windows + UE 5.5.4 实测** | **未验证** |
+| 实际帧率 | 各档在目标硬件上的 fps | **必须在 Windows + UE 5.8.3 实测** | **未验证** |
 
 **未实测的部分不会被声称为「已验证」。** 帧率与观感验收清单写在
 `project/README.md`。

@@ -1,14 +1,36 @@
 # MC2UE5
 
-把 Minecraft Java 版存档重建为 UE5 渲染世界的两阶段管线。
+把 `SYFZ_1.16.5` 的 Minecraft 校园**管道化迁移为 UE5 可游玩世界**的两阶段管线。
 
 参考论文：*Minecraft to 3D*（SIGGRAPH Posters '25, DOI [10.1145/3721250.3743044](https://doi.org/10.1145/3721250.3743044)）
 
 ---
 
+## 目标（开发前必读）
+
+**最终任务：实现 SYFZ MC 地图的 UE 游戏化。**
+
+这句话有两层，两层都是验收标准，缺一不算完成：
+
+1. **几何来自 MC 地图。** 校园（`regions.campus = x[-144..303] z[-544..223]`）的
+   地形、建筑、植被的**位置与尺度**必须忠实于存档，不是另起炉灶的艺术创作。
+2. **观感是真实世界，不是 MC 方块。** 渲染结果要像**真实校园**：真实材质
+   （混凝土/砖/玻璃/瓦/植被）、真实光照与大气。**把 MC 的方块贴图直接贴上去、
+   或用几何图元占位（box / cone_on_cylinder / billboard）都不是本项目的目标。**
+
+> **反面教材（v0.7.0 及以前的实际做法，已作废）**：把 609 个 structure 渲染成
+> 统一 `box`、54 棵树渲染成 `cone_on_cylinder`、材质是「一类别一个色 + MC 方块
+> 贴图」。结果是满屏绿色曲面块 —— 既不是真实校园，也不是 MC 原貌。
+> 见 [`RENDER_PLAN.md`](RENDER_PLAN.md)。
+
+**不在范围内**：荒野 / nether / end / 多人联机 / 玩法系统。本项目是**数据转换
++ 关卡装配 + 渲染**，不是新玩法设计。
+
+---
+
 ## 这是什么
 
-`SYFZ_1.16.5`（Minecraft 1.16.5 Java 版，seed `156786179664273985`，`was_modded=true`）经两层管线转成 UE5.5 工程：
+`SYFZ_1.16.5`（Minecraft 1.16.5 Java 版，seed `156786179664273985`，`was_modded=true`）经两层管线转成 UE5.8 工程：
 
 | 层 | 输入 | 输出 | 状态 |
 |---|---|---|---|
@@ -16,7 +38,7 @@
 | **层2 语义重建** | MC2WV2（只读） | Landscape 高度图 PNG + 水体 + 物体实例 + 元数据 | 完成，回归测试全绿 |
 | **画质分级** | 引擎性能指数 / 适配器名 | 五档 Scalability + DeviceProfile + 运行时覆盖 | 配置与契约测试全绿，**帧率须实机验证** |
 | **性能优化** | — | HISM 按类剔除、地形 LOD、component 分块 | 脚本就绪，**收益须实机验证** |
-| **UE5 装配** | 上述两者 | World Partition 关卡（HISM 方块层 + Landscape 地形层） | 脚本就绪，**须在装有 UE 5.5.4 的 Windows 机器上执行** |
+| **UE5 装配** | 上述两者 | 可游玩关卡（地形由高度场运行时构建 + 实例化道具 + 玩家角色） | **已实机验证**（UE 5.8.3，Win64 Shipping） |
 
 坐标约定贯穿全流程：**`world block (x, y, z) → UE cm (x·100, y·100, z·100)`**
 （Minecraft 约定 1 block = 1 m = 100 cm）。层1 的 HISM 方块层与层2 的 Landscape 地形层
@@ -129,7 +151,26 @@ python3 tests/test_hism_culling.py              # HISM 剔除与地形 LOD（无
 > 公式的分母上，值**越大降级越早**。把它按「数字大 = 画质高」来配，整条
 > 档位梯度会倒过来，而关卡照样能跑。详见 [`QUALITY_TIERS.md`](QUALITY_TIERS.md) §4.2。
 
-### 5. UE5 装配（**须在 Windows + UE 5.5.4 上执行**）
+### 5. UE5 装配（**须在 Windows + UE 5.8.3 上执行**）
+
+> **架构分叉说明（务必先读）**：本节及上面的「为什么地形走 UE5 Landscape」
+> 描述的是**原设计**——Landscape 高度图 + HISM 方块层。**当前发行版没有采用它**，
+> 原因是两条都走不通：
+>
+> * **Landscape 无法脚本化。** UE 5.8 的 Python 里没有 `LandscapeEditorSubsystem`
+>   / `LandscapeEditorObject`，无法在无头流程里创建 Landscape 并导入高度图。
+> * **OBJ 导入器只读文件前约 640 个顶点**（实测：12,502 顶点的碰撞 OBJ 只导入
+>   1,122；196,944 顶点的视觉网格只导入 2,179）。地形网格因此"包围盒正确、几乎
+>   没有三角形"，既不可见也没有碰撞。
+>
+> **实际做法**：地形在**运行时**由 C++ 从随包发布的 16 位高度场
+> （`project/Terrain/<tile>.u16`）三角化（`AMCFrameCaptureGameMode::
+> BuildProceduralTerrain` + `ProceduralMeshComponent`），道具用实例化簇
+> （`MCReplicaPropCluster`）。`tools/export_heightmaps.py` 可从已入库的高度图
+> 字节级复现那些 `.u16`。
+>
+> Landscape 路线是否恢复，取决于渲染重制方案（见
+> [`RENDER_PLAN.md`](RENDER_PLAN.md)）。
 
 见 [`project/README.md`](project/README.md)，§14 是首次本机验证的分步清单。
 
@@ -261,7 +302,7 @@ Landscape 尺寸求解时把多余格数用**边缘填充**吸收，而不是缩
    （PNG 解码、高度编码往返、tile 校验的拒绝行为、画质分级的引擎契约、
    剔除带配置），但**从未对真实引擎 API 执行过**。
 2. **帧率与观感未实测。** 五档画质与 HISM 剔除的配置正确性有测试保证，
-   但实际收益必须在 Windows + UE 5.5.4 上测。验收清单见
+   但实际收益必须在 Windows + UE 5.8.3 上测。验收清单见
    `project/README.md` §14。**未实测的部分不会被声称为「已验证」。**
 3. **物体模型是「配方」而非文件。** `BuiltinModelProvider` 输出
    `builtin:tree:cone_on_cylinder` 这类图元配方，没有实际网格。接真实 CC0 模型：

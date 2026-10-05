@@ -1,8 +1,25 @@
 # MC2UE5 — Release Build Notes
 
-**Tag:** `v0.4.0` · **Engine:** Unreal Engine 5.8.3 (CL 58210709) · **Platform:** Win64
+**Tag:** `v0.7.0` · **Engine:** Unreal Engine 5.8.3 (CL 58210709) · **Platform:** Win64
 
 A Minecraft 1.16.5 save rebuilt as a walkable UE5 world.
+
+---
+
+> ## ⚠️ 已知 P0：渲染不符合项目目标（正在重制）
+>
+> **本版的画面不可作为交付。** 实机验证显示：
+>
+> * 609 个 structure 被渲染成 `box` 图元、54 棵树是 `cone_on_cylinder`
+>   —— **占位几何，不是 MC 地图的真实形态**；
+> * 地表用的是 MC 的 16×16 方块贴图（`grass_block_top` 还是灰度图，
+>   被预乘一个固定绿色）—— **是"我的世界草和石头"，不是真实校园**；
+> * 光照只有"能看见"级别，没有 GI / 接触阴影 / 曝光控制。
+>
+> 项目目标是**把 MC 地图管道化迁移为 UE 真实景观**——几何忠实于存档、
+> 观感写实。本版两者都不满足。
+>
+> **重制方案与待决事项见 [`RENDER_PLAN.md`](RENDER_PLAN.md)。**
 
 ---
 

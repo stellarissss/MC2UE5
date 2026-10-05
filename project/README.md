@@ -1,7 +1,20 @@
 # MCReplica — 在你的 Windows 机器上运行导入与打包
 
-本工程由沙箱（无 GPU、无 UE）生成，**沙箱内没有运行过 UE 编辑器**。
-所有资产导入、世界装配、Nanite 构建都必须在你本机装有 **UE 5.5.4** 的机器上完成。
+> **文档漂移更正（2026-10-05）**：本文件原先描述的是**沙箱侧的设计意图**
+> （Landscape 高度图 + HISM 方块层、UE 5.5.4、导入脚本 `import_phase2.py`）。
+> 本机实测后发现该路线有两处走不通，**实际发行版走的是另一条链**：
+>
+> * **UE 5.8 的 Python 没有 Landscape 创建接口**（无 `LandscapeEditorSubsystem`），
+>   无头流程建不了 Landscape，也导不进高度图。
+> * **OBJ 导入器只读文件前约 640 个顶点**（12,502 顶点的碰撞 OBJ → 1,122；
+>   196,944 顶点的视觉网格 → 2,179），地形网格因此几乎为空。
+>
+> **实际链路**（`project/Content/Python/build_release_level.py` + C++）：
+> 地形在运行时由 C++ 从 `project/Terrain/<tile>.u16` 三角化
+> （`AMCFrameCaptureGameMode::BuildProceduralTerrain`），道具用实例化簇
+> （`MCReplicaPropCluster`），打包走 `Q:\MC2UE5\package.bat`。
+> 下文的导入脚本流程仅作历史参考。渲染重制方案见
+> [`../RENDER_PLAN.md`](../RENDER_PLAN.md)。
 
 ---
 
@@ -9,20 +22,17 @@
 
 | 项 | 要求 |
 |---|---|
-| 引擎 | **UE 5.5.4**（与沙箱内 `wukakuki/unreal-engine:dev-5.5.4` 同版本） |
-| 显卡 | 需真实 GPU + 渲染上下文（Nanite 网格构建、World Partition 流送都依赖它） |
+| 引擎 | **UE 5.8.3**（本机安装于 `Q:\UE\UE_5.8`） |
+| 显卡 | 需真实 GPU + 渲染上下文；**渲染验证不要加 `-nullrhi`**（会把画面关掉） |
 | 内存 | 建世界峰值很高，见 §5 的量级估算；建议 ≥ 32 GB，系统盘留 ≥ 60 GB |
-| 磁盘 | 工程本体 150 MB（voxel）+ 生成的 Content（纹理/材质/关卡）数 GB ~ 数十 GB |
-| Python | 编辑器自带，无需另装 |
+| 磁盘 | 工程本体 + 生成的 Content + cook 产物，合计数十 GB |
+| Python | 编辑器自带；外部脚本用 `Q:\MC2UE5\venv` |
+| 编译环境 | MSVC 在 `Q:\VSBuildTools`、Windows SDK 在 `Q:\WindowsKits`。**C 盘被清后注册表会丢**，须先跑 `tools/reg_sdk.py` 再编译 |
 
 > **关于 `EngineAssociation`**
-> `.uproject` 里写的是 `"EngineAssociation": "5.5"`。如果你用 Epic Launcher 装 5.5.4，
-> 这个值通常可以直接匹配。若双击 `.uproject` 弹出「选择引擎」对话框，说明你本机的
-> 关联名不同（Launcher 版常见为 `5.5` 或带后缀的自定义名）。两种处理方式：
-> 1. 在弹窗里选你的 5.5.4，勾选「不再询问」，UE 会自动改写该字段；
-> 2. 或手工编辑 `MCReplica.uproject`，把值改成你本机在
->    `注册表 HKEY_CURRENT_USER\Software\Epic Games\Unreal Engine\Builds` 里
->    对 5.5.4 登记的键名。
+> 本机 `.uproject` 里是 `"EngineAssociation": ""`（源码构建版，靠
+> `Q:\UE\UE_5.8` 直接打开，不依赖 Launcher 关联名）。若双击 `.uproject`
+> 弹出「选择引擎」，指向本机引擎目录即可。
 
 ---
 
@@ -353,7 +363,7 @@ LEVEL_PATH = "/Game/Maps/MCReplica"
 
 > ⚠️ Z Scale 是 100 cm 单位还是厘米，取决于引擎的 Transform 面板语义。
 > 本项目按 **厘米** 处理（`z_scale_cm = span × 100 / 512`）。若你在
-> UE 5.5.4 里看到地形高度不对，第一个要核对的就是这个值：它必须让
+> UE 5.8.3 里看到地形高度不对，第一个要核对的就是这个值：它必须让
 > `512 × Z Scale` 恰好等于 `y_span × 100` cm。
 
 ## 12. 已知限制（第二阶段）
@@ -381,7 +391,7 @@ LEVEL_PATH = "/Game/Maps/MCReplica"
 4. **水体材质是最简半透明面。** 深度渐变需要渲染目标或 SceneDepth，那是美术活不是数据导入。
 
 5. **尚未在真实编辑器中验证。** 脚本经过离线验证（PNG 解码与 PIL 逐字节一致、
-   高度往返误差 ≤0.9 mm、篡改检测有效），但从未在 UE 5.5.4 里执行过。
+   高度往返误差 ≤0.9 mm、篡改检测有效），但从未在 UE 5.8.3 里执行过。
    §14 给出首次本机验证步骤。
 
 ## 13. 第二阶段的沙箱侧复现
@@ -431,7 +441,7 @@ python3 -m py_compile project/Content/Python/apply_quality.py
 这三处都不会报错，只是让分级系统**不起作用**。本机装 UE 之前先跑这四套
 测试，能省掉一轮往返。
 
-## 14. UE 5.5.4 首次本机验证步骤
+## 14. UE 5.8.3 首次本机验证步骤
 
 按顺序做，每步都有明确的通过判据。**不要跳过第 1 步。**
 
