@@ -120,6 +120,37 @@ def import_maps(tools, fam, maps):
     return got
 
 
+#: Per-family albedo tint, applied on top of the sampled CC0 texture.
+#:
+#: Only families with an *unambiguous* direction are listed. Vegetation is the
+#: clear case: the textures available are olive-brown (measured above) and campus
+#: planting has to read green. Structural stone is the other: concrete, quartz and
+#: plaster are the light neutral surfaces a campus is built from, and the raw
+#: textures are warm mid-tones. Everything else is left at white rather than
+#: guessed at -- a wrong tint is harder to notice than a missing one.
+FAMILY_TINT = {
+    # R, G, B multipliers on the sampled albedo.
+    "grass":     (0.70, 1.70, 0.55),   # olive -> green
+    "leaves":    (0.55, 1.80, 0.45),   # brown -> foliage green
+    "quartz":    (1.25, 1.30, 1.45),   # warm marble -> near-white stone
+    "concrete":  (1.35, 1.40, 1.45),   # warm grey -> light neutral concrete
+    "plaster":   (1.25, 1.28, 1.35),
+    "greystone": (1.55, 1.55, 1.60),   # olive-grey -> neutral light grey
+    "rock":      (1.30, 1.35, 1.55),
+    "tiles":     (1.30, 1.32, 1.38),
+    "granite":   (1.45, 1.45, 1.45),
+    # The two largest visible families, found by counting the top surface inside
+    # the spawn's view frustum rather than by eyeballing the render:
+    # `fabric` 2710 columns and `brick` 2353. Those counts are what made the
+    # campus read as sand -- `fabric`'s CC0 diffuse averages (194,170,156), a warm
+    # beige, and it covers the courtyard floor.
+    "fabric":    (1.22, 1.38, 1.52),   # warm beige -> neutral off-white paving
+    "brick":     (1.10, 0.86, 0.92),   # orange-tan -> brick red
+    "wood":      (1.05, 0.98, 0.92),
+    "gravel":    (1.25, 1.30, 1.35),
+}
+
+
 def build_master(placeholders=None):
     """
     One graph, deliberately mirroring the material that is *known to compile*.
@@ -227,7 +258,28 @@ def build_master(placeholders=None):
     rough.set_editor_property("ParameterName", "Roughness")
     rough.set_editor_property("DefaultValue", 0.85)
 
-    mel.connect_material_property(base, "RGB",
+    # A per-instance Tint multiplied into the albedo.
+    #
+    # Measured, the whole CC0 set available here is warm: every family's diffuse
+    # mean has R > B by 18-56, and the two that matter most for a campus are the
+    # worst offenders -- `grass` averages (109,96,61) and `leaves` (129,94,58),
+    # i.e. olive-brown rather than green, which is why the whole site read as
+    # desert rather than as a planted campus. Swapping textures does not fix it;
+    # four neutral-looking candidates all measured just as warm.
+    #
+    # Tinting the sampled albedo is the standard way to resolve this and it costs
+    # one multiply: the instance corrects hue and level per family without any
+    # graph divergence, and the correction is visible and reviewable in the same
+    # table as the texture assignment.
+    tint = node(unreal.MaterialExpressionVectorParameter, -700, 520)
+    tint.set_editor_property("ParameterName", "Tint")
+    tint.set_editor_property("DefaultValue",
+                             unreal.LinearColor(1.0, 1.0, 1.0, 1.0))
+    tinted = node(unreal.MaterialExpressionMultiply, -520, 380)
+    mel.connect_material_expressions(base, "RGB", tinted, "A")
+    mel.connect_material_expressions(tint, "", tinted, "B")
+
+    mel.connect_material_property(tinted, "",
                                   unreal.MaterialProperty.MP_BASE_COLOR)
     mel.connect_material_property(rough, "",
                                   unreal.MaterialProperty.MP_ROUGHNESS)
@@ -321,6 +373,10 @@ def main():
                 mi, "Tiling", 0.5)
             mel.set_material_instance_scalar_parameter_value(
                 mi, "Roughness", 0.85)
+            t = FAMILY_TINT.get(fam)
+            if t is not None:
+                mel.set_material_instance_vector_parameter_value(
+                    mi, "Tint", unreal.LinearColor(t[0], t[1], t[2], 1.0))
             unreal.EditorAssetLibrary.save_loaded_asset(mi)
             say("  %-9s -> %s (%d maps)" % (fam, path, len(tex)))
 

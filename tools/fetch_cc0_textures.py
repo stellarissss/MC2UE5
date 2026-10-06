@@ -55,6 +55,10 @@ FAMILIES = {
     # material. Mapping it to the brown `rock` texture made the campus
     # courtyard (31% of the surface) read as soil.
     "quartz":       "marble_01",
+    "cand_concrete": "concrete_floor_01",
+    "cand_plaster":  "white_plaster_rough_02",
+    "cand_greystone": "granite_tile_02",
+    "cand_paving":   "precast_stone_paving",
     "greystone":    "stone_tiles",
 }
 
