@@ -83,3 +83,6 @@ assets_cc0/**/*.jpg
 assets_cc0/**/*.png
 assets_cc0/**/*.part
 assets_cc0/**/*.exr
+
+# S1+ pipeline intermediates (regenerable; large npy volumes)
+out/
