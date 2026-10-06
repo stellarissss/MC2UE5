@@ -51,6 +51,11 @@ FAMILIES = {
     "gravel":       "gravel_floor",
     "rock":         "rock_face",
     "fabric":       "cotton_jersey",
+    # MC quartz is a near-white smooth stone; marble is the closest real
+    # material. Mapping it to the brown `rock` texture made the campus
+    # courtyard (31% of the surface) read as soil.
+    "quartz":       "marble_01",
+    "greystone":    "stone_tiles",
 }
 
 

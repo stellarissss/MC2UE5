@@ -168,8 +168,18 @@ ADD_BATCH = 20000
 # r.ViewDistanceScale from the quality tier multiplies these, so the Low tier
 # ends up culling blocks at 40000 * 0.4 = 160 m. That is the intent: the
 # silhouette of the map is the *near* field, and the near field is what reads.
-HISM_CULL_START_CM = 30000.0     # begin fading out here
-HISM_CULL_END_CM = 40000.0       # fully culled past here
+# These are the single biggest frame-time lever and they were set far too
+# generously: 400 m for a 1 m cube is roughly 10 pixels at 1080p, i.e. the far
+# half of the campus was being drawn to fill a handful of pixels. Halved to
+# 80/140 m, where a block still reads at ~25 px and the instance count submitted
+# per frame drops by an order of magnitude.
+#
+# Per-frame cost on a HISM is proportional to the instances that survive this
+# test, so this is the difference between walking 1.17 M instances and walking a
+# few tens of thousands -- and it is why the frame time was collapsing while the
+# GPU sat idle.
+HISM_CULL_START_CM = 8000.0      # begin fading out here
+HISM_CULL_END_CM = 14000.0       # fully culled past here
 
 # Instances per leaf node of the HISM cluster tree. The engine default is 32,
 # which is a reasonable general-purpose compromise. This map is not general: the

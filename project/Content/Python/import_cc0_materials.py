@@ -120,8 +120,35 @@ def import_maps(tools, fam, maps):
     return got
 
 
-def build_master():
-    """One graph: three texture parameters and a tiling scalar."""
+def build_master(placeholders=None):
+    """
+    One graph, deliberately mirroring the material that is *known to compile*.
+
+    ``/Game/MC/Materials/MC_Terrain`` compiles for PCD3D_SM5 on this machine and
+    is exactly this shape: a ``TextureSampleParameter2D`` feeding BaseColor plus
+    a ``Constant`` for roughness. Measured against it, a graph that added a
+    ``MaterialExpressionWorldPosition`` chain did **not** compile, and the engine
+    only ever said
+
+        Failed to compile Material for platform PCD3D_SM5,
+        Default Material will be used in game
+
+    with no expression, no line and nothing about samplers -- so the world-space
+    UV projection is the thing that broke it. Building on the shape that is
+    already proven in this project beats debugging the one that is not, and the
+    per-block texture repeat it gives up is the behaviour a voxel world wants
+    anyway: every block shows its material, as Minecraft does, but with a real
+    PBR texture instead of 16-pixel art.
+
+    So each block face samples the family's texture across 0..1, scaled by
+    ``Tiling``. Instances override the texture per family; the sampler and the
+    roughness constant live here.
+
+    ``placeholders`` binds a real texture on the master. A texture parameter with
+    nothing bound compiles to a null sampler and the failure surfaces only at
+    cook time, so the master gets a real one and the instances override it.
+    """
+    placeholders = placeholders or {}
     if unreal.EditorAssetLibrary.does_asset_exist(MASTER_PATH):
         unreal.EditorAssetLibrary.delete_asset(MASTER_PATH)
     mat = unreal.AssetToolsHelpers.get_asset_tools().create_asset(
@@ -137,35 +164,57 @@ def build_master():
             raise RuntimeError("could not create %s" % cls)
         return e
 
-    def sampler(param, x, y, normal=False):
-        e = node(unreal.MaterialExpressionTextureSampleParameter2D, x, y)
-        e.set_editor_property("ParameterName", param)
-        return e
-
-    # Tiling: vertex UVs are per-face 0..1, so one texture repeat per
-    # `1/Tiling` faces. Driving it from a scalar keeps the real-world size of
-    # the pattern adjustable per instance without touching the graph.
-    uv = node(unreal.MaterialExpressionTextureCoordinate, -1100, 300)
-    tiling = node(unreal.MaterialExpressionScalarParameter, -1100, 440)
+    uv = node(unreal.MaterialExpressionTextureCoordinate, -900, 200)
+    tiling = node(unreal.MaterialExpressionScalarParameter, -900, 380)
     tiling.set_editor_property("ParameterName", "Tiling")
-    tiling.set_editor_property("DefaultValue", 0.25)
-    mul = node(unreal.MaterialExpressionMultiply, -880, 340)
-    mel.connect_material_expressions(uv, "", mul, "A")
-    mel.connect_material_expressions(tiling, "", mul, "B")
+    # One texture per 1 m block face. The textures are 1k, so this is roughly the
+    # density they were captured for.
+    tiling.set_editor_property("DefaultValue", 0.5)
+    suv = node(unreal.MaterialExpressionMultiply, -700, 260)
+    mel.connect_material_expressions(uv, "", suv, "A")
+    mel.connect_material_expressions(tiling, "", suv, "B")
 
-    base = sampler("BaseColorTex", -640, -200)
-    nrm = sampler("NormalTex", -640, 40)
-    rough = sampler("RoughTex", -640, 260)
-    for s in (base, nrm, rough):
-        mel.connect_material_expressions(mul, "", s, "UVs")
+    base = node(unreal.MaterialExpressionTextureSampleParameter2D, -480, -120)
+    base.set_editor_property("ParameterName", "BaseColorTex")
+    if placeholders.get("BaseColorTex") is not None:
+        base.set_editor_property("texture", placeholders["BaseColorTex"])
+    mel.connect_material_expressions(suv, "", base, "UVs")
+
+    rough = node(unreal.MaterialExpressionConstant, -480, 220)
+    try:
+        rough.set_editor_property("r", 0.85)
+    except Exception:
+        root = mat.get_editor_property("roughness")
+        mat.set_editor_property("roughness", 0.85)
 
     mel.connect_material_property(base, "RGB",
                                   unreal.MaterialProperty.MP_BASE_COLOR)
-    mel.connect_material_property(nrm, "RGB",
-                                  unreal.MaterialProperty.MP_NORMAL)
-    mel.connect_material_property(rough, "", unreal.MaterialProperty.MP_ROUGHNESS)
+    mel.connect_material_property(rough, "",
+                                  unreal.MaterialProperty.MP_ROUGHNESS)
     mel.recompile_material(mat)
     unreal.EditorAssetLibrary.save_loaded_asset(mat)
+    return mat
+
+
+def build_master_simple():
+    """Per-face-UV fallback, kept for comparison against the triplanar look."""
+    if unreal.EditorAssetLibrary.does_asset_exist(MASTER_PATH):
+        unreal.EditorAssetLibrary.delete_asset(MASTER_PATH)
+    mat = unreal.AssetToolsHelpers.get_asset_tools().create_asset(
+        "M_MC_Surface", DEST_ROOT, unreal.Material,
+        unreal.MaterialFactoryNew())
+    if mat is None:
+        raise RuntimeError("could not create the master material")
+    mel = unreal.MaterialEditingLibrary
+
+    def node(cls, x, y):
+        return mel.create_material_expression(mat, cls, x, y)
+
+    base = node(unreal.MaterialExpressionTextureSampleParameter2D, -640, -200)
+    base.set_editor_property("ParameterName", "BaseColorTex")
+    mel.connect_material_property(base, "RGB",
+                                  unreal.MaterialProperty.MP_BASE_COLOR)
+    mel.recompile_material(mat)
     return mat
 
 
@@ -191,7 +240,22 @@ def main():
         fams = families()
         say("families: %d" % len(fams))
 
-        master = build_master()
+        # Import every family's textures FIRST, so the master can be given a
+        # real placeholder per parameter. Building the master before any texture
+        # exists is what left its parameters unbound and its shader map
+        # uncompilable.
+        imported = {}
+        for fam, maps in fams.items():
+            imported[fam] = import_maps(tools, fam, maps)
+        placeholder = {}
+        for fam, tex in sorted(imported.items()):
+            for kind, param in (("diffuse", "BaseColorTex"),
+                                ("normal", "NormalTex"),
+                                ("rough", "RoughTex")):
+                if kind in tex:
+                    placeholder.setdefault(param, tex[kind])
+        say("placeholders: %s" % sorted(placeholder))
+        master = build_master(placeholder)
         src = mel.get_material_property_input_node(
             master, unreal.MaterialProperty.MP_BASE_COLOR)
         say("master BaseColor <- %s"
@@ -200,8 +264,9 @@ def main():
             say("aborting: master has no BaseColor")
             return
 
+
         for fam, maps in fams.items():
-            tex = import_maps(tools, fam, maps)
+            tex = imported.get(fam) or {}
             res = make_instance(tools, fam, master)
             if not res:
                 continue
@@ -213,7 +278,7 @@ def main():
                     mel.set_material_instance_texture_parameter_value(
                         mi, param, tex[kind])
             mel.set_material_instance_scalar_parameter_value(
-                mi, "Tiling", 0.25)
+                mi, "Tiling", 0.5)
             unreal.EditorAssetLibrary.save_loaded_asset(mi)
             say("  %-9s -> %s (%d maps)" % (fam, path, len(tex)))
 

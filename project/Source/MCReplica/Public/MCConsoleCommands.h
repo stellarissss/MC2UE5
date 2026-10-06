@@ -50,22 +50,64 @@ public:
 	/**
 	 * Build the campus terrain as procedural meshes.
 	 *
-	 * The terrain cannot come from the imported OBJ tiles: the OBJ importer
-	 * reads only the first ~640 vertices of a file (measured: a 12,502-vertex
-	 * collision OBJ arrives as 1,122 verts, a 196,944-vertex visual tile as
-	 * 2,179), so the meshes have correct bounds and almost no triangles. The
-	 * campus was therefore invisible and had no collision.
+	 * **Superseded -- off by default, see ``bBuildLegacyTerrain``.**
 	 *
-	 * Instead the raw 16-bit heightfields are shipped as ``<Tile>.u16`` beside
-	 * the executable and triangulated here, at load. That also produces correct
-	 * collision, built at runtime, which avoids the trimesh cooking problems a
-	 * complex-as-simple StaticMesh has in an uncooked game.
+	 * This was written when the terrain could not come from the imported OBJ
+	 * tiles: the OBJ importer reads only the first ~640 vertices of a file
+	 * (measured: a 12,502-vertex collision OBJ arrives as 1,122 verts, a
+	 * 196,944-vertex visual tile as 2,179), so the meshes had correct bounds and
+	 * almost no triangles, and the campus was invisible and had no collision.
+	 *
+	 * It triangulates the raw 16-bit heightfields shipped as ``<Tile>.u16``
+	 * beside the executable, which fixed that -- but it is now the *wrong*
+	 * layer. The level carries 1,171,144 individual voxel blocks whose tops are
+	 * the real surface, and this mesh is a 4-block-averaged approximation of
+	 * the same surface. Running both put two surfaces a few centimetres apart
+	 * everywhere, which is what produced the reported symptoms:
+	 *
+	 *   * **speckle / shimmering ground** -- z-fighting between the two
+	 *     coplanar surfaces;
+	 *   * **a floating character** -- the ground-snap trace hits whichever
+	 *     surface is higher, the smooth heightfield, while the visible blocks
+	 *     are stepped, so the capsule rests above them;
+	 *   * **severe stutter** -- this mesh builds ~1.57 M triangles of *complex*
+	 *     collision (four triangle-mesh bodies) on top of the block layer's own
+	 *     collision, and the camera boom sweeps against the combined broadphase
+	 *     every frame.
+	 *
+	 * Kept rather than deleted because it is the only collision source if the
+	 * voxel layer is ever dropped, and because the heightfield route is worth
+	 * revisiting for distant terrain.
 	 */
 	void BuildProceduralTerrain();
 
 	void RunRuntimeDiag();
 
+	/**
+	 * Turn collision on the voxel block layer on or off, live.
+	 *
+	 * Exists to settle one question with a measurement instead of an argument:
+	 * the block layer is 1.17 M instances, and an instanced mesh with collision
+	 * enabled creates a physics body **per instance**. Whether that is what
+	 * makes the frame time collapse is worth ten seconds of A/B rather than an
+	 * opinion, and a rebuild costs minutes.
+	 *
+	 *     MCReplica.exe -ExecCmds="MCBlockCollision 0"
+	 */
+	UFUNCTION(Exec)
+	void MCBlockCollision(float Enable);
+
 protected:
+	/**
+	 * Build the legacy heightfield terrain at BeginPlay.
+	 *
+	 * Default **false**: the voxel block layer is the terrain. Turning this on
+	 * alongside it reproduces the z-fighting / floating / stutter described on
+	 * ``BuildProceduralTerrain``.
+	 */
+	UPROPERTY(EditDefaultsOnly, Category = "MCReplica|Terrain")
+	bool bBuildLegacyTerrain = false;
+
 	/** Handle for the delayed capture timer. */
 	FTimerHandle GCaptureHandle;
 

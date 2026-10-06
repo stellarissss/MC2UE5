@@ -21,15 +21,19 @@
 #include "Engine/StaticMesh.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
+#include "UnrealEngine.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/PlayerController.h"
 #include "HAL/FileManager.h"
 #include "HAL/IConsoleManager.h"
+#include "Misc/CommandLine.h"
 #include "Misc/FileHelper.h"
 #include "Misc/Paths.h"
 #include "PhysicsEngine/BodySetup.h"
 #include "ProceduralMeshComponent.h"
+#include "MCReplicaPropCluster.h"
+#include "Components/HierarchicalInstancedStaticMeshComponent.h"
 #include "TimerManager.h"
 
 DEFINE_LOG_CATEGORY(LogMCFrame);
@@ -81,8 +85,16 @@ namespace
 		APlayerController* PC = W->GetFirstPlayerController();
 		APawn* Pawn = PC ? PC->GetPawn() : nullptr;
 
-		FString Line = FString::Printf(TEXT("[%6.1fs] pawn=%s"),
-			W->GetTimeSeconds(), Pawn ? TEXT("yes") : TEXT("NO"));
+		// Frame time from the world's own delta. GAverageFPS/GAverageMS are the
+		// usual way to show this but they are not exported by this engine build
+		// (no declaration survives in the installed headers), and a missing
+		// symbol here would cost a build cycle to discover.
+		const double DeltaSec = W->GetDeltaSeconds();
+		FString Line = FString::Printf(
+			TEXT("[%6.1fs] frame=%.1fms fps=%.0f pawn=%s"),
+			W->GetTimeSeconds(), DeltaSec * 1000.0,
+			DeltaSec > 0.0 ? 1.0 / DeltaSec : 0.0,
+			Pawn ? TEXT("yes") : TEXT("NO"));
 
 		if (Pawn)
 		{
@@ -316,7 +328,37 @@ void AMCFrameCaptureGameMode::BeginPlay()
 {
 	Super::BeginPlay();
 
-	BuildProceduralTerrain();
+	// Off by default: the voxel block layer is the terrain now. See
+	// BuildProceduralTerrain() -- running both surfaces z-fights (shimmering
+	// ground), gives the capsule a smooth collision surface that disagrees with
+	// the stepped blocks (floating character), and doubles the collision cost
+	// (stutter).
+	if (bBuildLegacyTerrain)
+	{
+		BuildProceduralTerrain();
+	}
+
+	// Start the runtime report here rather than from -ExecCmds: that runs while
+	// the command line is still being processed, before a game world exists, and
+	// the console command needs a world. A flag read at BeginPlay is the point
+	// at which "the game is actually running" is true.
+	//
+	// MCReplica.exe -MCdiag
+	if (FParse::Param(FCommandLine::Get(), TEXT("MCdiag")))
+	{
+		UWorld* W = GetWorld();
+		if (W)
+		{
+			WriteMCDiagLine(W);
+			W->GetTimerManager().SetTimer(
+				GDiagTimer,
+				FTimerDelegate::CreateLambda([W]()
+				{
+					WriteMCDiagLine(W);
+				}),
+				1.0f, /*bLoop*/ true);
+		}
+	}
 
 #if WITH_EDITOR
 	// Everything below is editor-side diagnostic scaffolding: it rebuilds the
@@ -530,6 +572,40 @@ void AMCFrameCaptureGameMode::BeginPlay()
 void AMCFrameCaptureGameMode::RunRuntimeDiag()
 {
 	WriteMCDiagLine(GetWorld());
+}
+
+void AMCFrameCaptureGameMode::MCBlockCollision(float Enable)
+{
+	UWorld* W = GetWorld();
+	if (!W)
+	{
+		return;
+	}
+
+	const bool bOn = Enable != 0.0f;
+	int32 Touched = 0;
+	for (TActorIterator<AMCReplicaPropCluster> It(W); It; ++It)
+	{
+		UHierarchicalInstancedStaticMeshComponent* C = It->Instances;
+		if (!C)
+		{
+			continue;
+		}
+		if (bOn)
+		{
+			C->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+			C->SetCollisionProfileName(TEXT("BlockAll"));
+		}
+		else
+		{
+			C->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		}
+		++Touched;
+	}
+
+	UE_LOG(LogMCFrame, Warning,
+		TEXT("MCBlockCollision %s on %d clusters"), bOn ? TEXT("ON") : TEXT("OFF"),
+		Touched);
 }
 
 void AMCFrameCaptureGameMode::BuildProceduralTerrain()

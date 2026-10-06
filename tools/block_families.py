@@ -21,7 +21,7 @@ it everywhere.
 FAMILIES = (
     "grass", "path", "soil", "asphalt", "concrete", "plaster", "brick",
     "granite", "tiles", "roof", "wood", "bark", "leaves", "metal", "gravel",
-    "rock", "fabric",
+    "rock", "fabric", "quartz", "greystone",
 )
 
 #: (substring, family). First match wins; the list is ordered so the more
@@ -66,10 +66,19 @@ _RULES = (
     ("sandstone", "gravel"),
     ("clay", "soil"),
     # rock / masonry
-    ("cobblestone", "rock"),
-    ("cobble", "rock"),
-    ("stone_bricks", "rock"),
-    ("bricks", "brick"),
+    #
+    # Split by *colour*, because one grey family is not enough and the mapping
+    # is what the eye checks first. Measured on the campus surface within 60
+    # blocks of the spawn: quartz_block alone is 31% of it, and Minecraft
+    # renders that **near-white** -- sending it to the brown `rock` texture made
+    # the whole courtyard read as bare soil, which is the "everything is one
+    # grey/brown mass" report.
+    ("quartz", "quartz"),                  # white smooth stone (MC: near-white)
+    ("cobblestone", "greystone"),          # MC: mid grey
+    ("cobble", "greystone"),
+    ("stone_bricks", "greystone"),
+    ("smooth_stone", "greystone"),
+    ("_bricks", "brick"),
     ("brick", "brick"),
     ("terracotta", "brick"),
     ("granite", "granite"),
@@ -80,13 +89,12 @@ _RULES = (
     ("deepslate", "rock"),
     ("obsidian", "rock"),
     ("bedrock", "rock"),
-    ("stone", "rock"),
     ("prismarine", "rock"),
-    ("quartz", "rock"),
     ("_ore", "rock"),
     ("netherrack", "rock"),
     ("end_stone", "rock"),
     ("purpur", "rock"),
+    ("stone", "greystone"),
     ("concrete_powder", "gravel"),
     ("concrete", "concrete"),
     ("plaster", "plaster"),
