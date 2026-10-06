@@ -178,6 +178,10 @@ def main():
     ap.add_argument("--min-structure", type=int, default=40,
                     help="blocks; smaller components are dropped as noise")
     ap.add_argument("--min-tree", type=int, default=12)
+    ap.add_argument("--pave-max-above", type=int, default=2,
+                    help="blocks a paved surface may sit above the ground "
+                         "material in its column; keeps roofs out of the "
+                         "height field")
     ap.add_argument("--wall-rise", type=int, default=3,
                     help="blocks above terrain that count as wall, for "
                          "separating touching buildings")
@@ -251,12 +255,32 @@ def main():
     for y in range(H):
         here = (role[:, y, :] == TERRAIN)
         terrain_h = np.where(here, y, terrain_h)
-    # Where the surface is flat pavement, that pavement IS the terrain.
-    terrain_h = np.where(flat & (top_y > terrain_h), top_y, terrain_h)
+
+    # Where the surface is flat pavement, that pavement IS the terrain -- but
+    # ONLY if it is at ground level.
+    #
+    # Without the "at ground level" test a building's roof qualifies: a roof is
+    # flat, so the flatness rule called it a paved surface and stamped it into
+    # the height field. Measured consequence: columns at y=23 (9,907 of them)
+    # and a smoothing displacement of up to 16 m, i.e. the terrain mesh ballooned
+    # over every building. That is precisely the kind of silent error that
+    # destroys the "campus matches the save" property, so it is worth the extra
+    # test: pavement may sit at most `pave_max_above` blocks above the ground
+    # material in its own column.
+    pave = flat & (top_y <= terrain_h + args.pave_max_above) & (terrain_h >= 0)
+    terrain_h = np.where(pave & (top_y > terrain_h), top_y, terrain_h)
 
     print("terrain columns: %d / %d (%.1f%%)"
           % (int((terrain_h >= 0).sum()), W * D,
              100.0 * (terrain_h >= 0).mean()))
+    # Sanity: the height field should not have buildings' roofs in it. Report
+    # the columns sitting far above their own ground material.
+    ground_only = np.full((W, D), -1, dtype=np.int16)
+    for y in range(H):
+        ground_only = np.where(role[:, y, :] == TERRAIN, y, ground_only)
+    lifted = (terrain_h - ground_only)
+    print("  pavement lift: max %d block(s), columns lifted >2: %d"
+          % (int(lifted.max()), int((lifted > 2).sum())))
 
     # ---- objects: connected components -----------------------------------
     from scipy import ndimage
