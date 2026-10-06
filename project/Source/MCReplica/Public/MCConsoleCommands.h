@@ -97,6 +97,59 @@ public:
 	UFUNCTION(Exec)
 	void MCBlockCollision(float Enable);
 
+	/**
+	 * Walk a fixed tour of campus viewpoints, capturing one frame at each.
+	 *
+	 * Checking that the scene corresponds to the save means looking at the
+	 * sports field, the buildings and the approaches, not at wherever the player
+	 * happens to spawn. Doing that by hand is a launch per viewpoint; this runs
+	 * the whole set in one session and drops a numbered PNG per stop.
+	 *
+	 *     MCReplica.exe -MCtour
+	 *
+	 * Each stop is teleported to first, then **snapped to the ground with a
+	 * downward trace**. Hard-coded heights would silently bury the camera inside
+	 * a building the moment the level changes; a trace cannot.
+	 */
+	UFUNCTION(Exec)
+	void MCTour();
+
+	/**
+	 * Park the camera at one tour stop, identified by index, and leave it there.
+	 *
+	 * Declared as a member rather than handled inline in BeginPlay because the
+	 * stop table lives in an anonymous namespace further down the translation
+	 * unit, so it is not yet visible where BeginPlay is defined.
+	 */
+	void ParkAtStop(int32 Index);
+
+	/**
+	 * Apply the physically based look: sun, sky, fog and post-process.
+	 *
+	 * Done here, in code, rather than by writing the level's PostProcessVolume.
+	 * Measured: assigning the volume's settings struct works in the editor
+	 * session (0.4 -> 15.0 on read-back), but **saving the level reverts it** --
+	 * the shipped build kept reading 0.4 / 1.8. Whatever the WP/external-actor
+	 * save path does to that actor, the value does not survive, and a look that
+	 * silently reverts is worse than one that is hard-coded.
+	 *
+	 * Applying it at BeginPlay also makes the look reviewable in version control
+	 * and identical between editor, cook and packaged runs.
+	 */
+	void ApplyLook();
+
+	/**
+	 * Set the exposure to a fixed EV100, live.
+	 *
+	 * Exposure is the single value that decides whether a physically lit scene
+	 * reads correctly, and it is not worth a rebuild per attempt. Lower EV100 is
+	 * brighter. Bright sun exterior is around 15; overcast around 12.
+	 *
+	 *     MCReplica.exe -ExecCmds="MCExposure 12"
+	 */
+	UFUNCTION(Exec)
+	void MCExposure(float EV100);
+
 protected:
 	/**
 	 * Build the legacy heightfield terrain at BeginPlay.

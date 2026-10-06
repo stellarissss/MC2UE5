@@ -9,7 +9,7 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
-#include "GameFramework/SpringArmComponent.h"
+#include "Camera/CameraComponent.h"
 
 AMCReplicaCharacter::AMCReplicaCharacter()
 {
@@ -18,7 +18,10 @@ AMCReplicaCharacter::AMCReplicaCharacter()
 	// ---- capsule ---------------------------------------------------------
 	// Minecraft proportions: 60 cm across, 200 cm tall. UE's capsule total
 	// height is 2*HalfHeight + 2*Radius, so HalfHeight is (200-60)/2 = 70.
-	GetCapsuleComponent()->InitCapsuleSize(30.0f, 70.0f);
+	// 180 cm tall, 68 cm across: a real adult. The campus is at 1 block = 1 m, so
+	// a real capsule is what makes a 1 m doorway and a 1 m stair tread clear the
+	// way they should -- a short capsule walked under lintels a person would hit.
+	GetCapsuleComponent()->InitCapsuleSize(34.0f, 88.0f);
 	GetCapsuleComponent()->SetCollisionProfileName(TEXT("Pawn"));
 
 	// A character turns to face its movement rather than snapping, which keeps
@@ -106,23 +109,31 @@ AMCReplicaCharacter::AMCReplicaCharacter()
 	// exist; record the intended dimensions so the mesh can be authored to fit.
 	(void)T; (void)W; (void)D;
 
-	// ---- camera ----------------------------------------------------------
-	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
-	CameraBoom->SetupAttachment(RootComponent);
-	CameraBoom->TargetArmLength = CameraBoomLength;
-	CameraBoom->bUsePawnControlRotation = true;
-	// Pull the camera in when a wall is behind the character, so the view does
-	// not disappear into the campus buildings.
-	CameraBoom->bDoCollisionTest = true;
-	CameraBoom->CameraLagSpeed = 12.0f;
-	CameraBoom->bEnableCameraLag = true;
-
+	// ---- camera: first person -------------------------------------------
+	//
+	// The camera is attached to the capsule at eye height and takes the
+	// controller rotation directly. There is no spring arm: a boom exists to hold
+	// a third-person camera away from the body, and for first person it would
+	// only add camera lag, a collision test that pulls the view into the player's
+	// own wall, and a parallax offset that makes the world swim while walking.
 	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
-	Camera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
-	// Looking slightly down the length of the boom shows the figure and the
-	// ground in front of it, which is what makes a blocky character read.
-	Camera->bUsePawnControlRotation = false;
-	Camera->SetRelativeRotation(FRotator(-12.0f, 0.0f, 0.0f));
+	Camera->SetupAttachment(GetCapsuleComponent());
+	Camera->SetRelativeLocation(FVector(0.0f, 0.0f, EyeHeight));
+	Camera->bUsePawnControlRotation = true;
+	Camera->SetFieldOfView(FieldOfView);
+
+	// First person means the body is not in the picture. Hiding the whole figure
+	// rather than trimming it to arms and legs keeps the blocky Minecraft
+	// silhouette out of the frame entirely -- which matters here, because the
+	// point of the render rework is a realistic-looking campus, and a voxel man
+	// standing in it is the one thing that would still read as Minecraft.
+	//
+	// The limb components stay in the hierarchy: a proper viewmodel wants them
+	// once there are real arm meshes to attach.
+	if (BodyRoot)
+	{
+		BodyRoot->SetVisibility(false, /*bPropagateToChildren*/ true);
+	}
 }
 
 void AMCReplicaCharacter::BeginPlay()

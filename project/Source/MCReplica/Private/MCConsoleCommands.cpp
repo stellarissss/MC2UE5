@@ -21,6 +21,13 @@
 #include "Engine/StaticMesh.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
+#include "Engine/DirectionalLight.h"
+#include "Engine/SkyLight.h"
+#include "Components/SkyLightComponent.h"
+#include "Components/ExponentialHeightFogComponent.h"
+#include "Engine/ExponentialHeightFog.h"
+#include "Engine/PostProcessVolume.h"
+#include "Components/LightComponent.h"
 #include "UnrealEngine.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -28,6 +35,7 @@
 #include "HAL/FileManager.h"
 #include "HAL/IConsoleManager.h"
 #include "Misc/CommandLine.h"
+#include "UnrealClient.h"
 #include "Misc/FileHelper.h"
 #include "Misc/Paths.h"
 #include "PhysicsEngine/BodySetup.h"
@@ -344,6 +352,45 @@ void AMCFrameCaptureGameMode::BeginPlay()
 	// at which "the game is actually running" is true.
 	//
 	// MCReplica.exe -MCdiag
+	// The landmark tour: one frame per campus viewpoint, for checking that the
+	// scene corresponds to the save.
+	//
+	// MCReplica.exe -MCtour
+	// Apply the looked-after look. In code, not from the level: measured, the
+	// PostProcessVolume's settings do not survive saving this World Partition
+	// level, and a look that silently reverts is worse than one in source.
+	ApplyLook();
+
+	// Park the camera at one tour stop and stay there. One stop per launch,
+	// because the reliable way to get a picture out of this build is an external
+	// window grab (tools/focus_capture.py), which needs the camera to sit still.
+	//
+	// MCReplica.exe -MCstop=2
+	{
+		FString StopArg;
+		if (FParse::Value(FCommandLine::Get(), TEXT("MCstop="), StopArg))
+		{
+			const int32 StopIndex = FCString::Atoi(*StopArg);
+			FTimerHandle ParkKick;
+			GetWorldTimerManager().SetTimer(ParkKick,
+				FTimerDelegate::CreateLambda([this, StopIndex]()
+				{
+					ParkAtStop(StopIndex);
+				}), 14.0f, false);
+		}
+	}
+
+	if (FParse::Param(FCommandLine::Get(), TEXT("MCtour")))
+	{
+		// Delayed so World Partition has streamed the blocks in and Lumen has
+		// converged; an early frame shows a half-lit, half-loaded world that
+		// proves nothing.
+		FTimerHandle TourKick;
+		GetWorldTimerManager().SetTimer(TourKick,
+			FTimerDelegate::CreateUObject(this,
+				&AMCFrameCaptureGameMode::MCTour), 12.0f, false);
+	}
+
 	if (FParse::Param(FCommandLine::Get(), TEXT("MCdiag")))
 	{
 		UWorld* W = GetWorld();
@@ -606,6 +653,356 @@ void AMCFrameCaptureGameMode::MCBlockCollision(float Enable)
 	UE_LOG(LogMCFrame, Warning,
 		TEXT("MCBlockCollision %s on %d clusters"), bOn ? TEXT("ON") : TEXT("OFF"),
 		Touched);
+}
+
+namespace
+{
+	/**
+	 * Camera stops for MCTour, in world cm.
+	 *
+	 * Chosen from the landmark survey (tools/survey_landmarks.py) and the
+	 * top-down map (tools/campus_map.py), so each stop is aimed at something the
+	 * save says is there:
+	 *
+	 *   field      the wool surface, centroid (96, -212)
+	 *   buildings  the light-stone cluster around (-36, -300)
+	 *   tall       the tallest structure, (-28, -500), 61 blocks
+	 *   west       the building band along the campus's west edge
+	 *   approach   the field's northern edge, looking across it
+	 *
+	 * Yaw is Unreal's: 0 looks down +X, 90 down +Y. Minecraft's +z maps to Unreal
+	 * +Y, so a player looking "north" in the save (decreasing z) looks down -Y,
+	 * i.e. yaw -90.
+	 */
+	struct FMCTourStop
+	{
+		const TCHAR* Name;
+		double X;
+		double Y;
+		double Yaw;
+		double Pitch;
+	};
+
+	const FMCTourStop GTourStops[] = {
+		{ TEXT("01_sports_field"), 15000.0, -21200.0, 180.0,  -5.0 },
+		{ TEXT("02_buildings"),     4000.0, -30000.0, 180.0,  -2.0 },
+		{ TEXT("03_tall_block"),    7500.0, -50000.0, 180.0,   6.0 },
+		{ TEXT("04_west_band"),    11500.0, -30000.0, 225.0,  -2.0 },
+		{ TEXT("05_field_axis"),    9600.0, -34000.0, -90.0,  -4.0 },
+	};
+
+	/** Index of the stop being captured, and the timer that advances it. */
+	struct FMCTourState
+	{
+		int32 Index = 0;
+		FTimerHandle Handle;
+	};
+
+	FMCTourState GTour;
+
+namespace
+{
+	/**
+	 * Append a line to the tour log.
+	 *
+	 * A Shipping build has no log file at all, so the only way to see how far the
+	 * tour got is to write it down. Without this the failure mode is "no PNGs
+	 * appeared" with nothing to say whether the command never ran, the timer
+	 * never fired, or the capture itself refused.
+	 */
+	void TourLog(const FString& Msg)
+	{
+		const FString Dir = TEXT("Q:/MC2UE5/logs/tour");
+		IFileManager::Get().MakeDirectory(*Dir, true);
+		const FString Path = Dir / TEXT("tour_log.txt");
+		const FString Line = FString::Printf(TEXT("%s\r\n"), *Msg);
+		FFileHelper::SaveStringToFile(Line, *Path,
+			FFileHelper::EEncodingOptions::AutoDetect, &IFileManager::Get(),
+			FILEWRITE_Append);
+	}
+}
+
+	/** Puts the possessed pawn on the ground under (X, Y) and faces it. */
+	void PlaceTourPawn(UWorld* W, const FMCTourStop& Stop)
+	{
+		APlayerController* PC = W->GetFirstPlayerController();
+		APawn* Pawn = PC ? PC->GetPawn() : nullptr;
+		if (!Pawn)
+		{
+			TourLog(TEXT("  no pawn -- cannot place the camera"));
+			return;
+		}
+
+		// Land on whatever is actually there rather than trusting a height: a
+		// hard-coded Z buries the camera in a building the first time the level
+		// changes.
+		double Z = 20000.0;
+		FHitResult Hit;
+		FCollisionQueryParams P(SCENE_QUERY_STAT(MCTourGround), false);
+		P.AddIgnoredActor(Pawn);
+		if (W->LineTraceSingleByChannel(Hit,
+				FVector(Stop.X, Stop.Y, 20000.0),
+				FVector(Stop.X, Stop.Y, -20000.0), ECC_Visibility, P))
+		{
+			Z = Hit.ImpactPoint.Z;
+		}
+		Pawn->SetActorLocation(FVector(Stop.X, Stop.Y, Z + 5.0), false, nullptr,
+			ETeleportType::TeleportPhysics);
+		PC->SetControlRotation(FRotator(Stop.Pitch, Stop.Yaw, 0.0));
+
+		UE_LOG(LogMCFrame, Warning, TEXT("MCTour: %s at (%.0f, %.0f, %.0f)"),
+			Stop.Name, Stop.X, Stop.Y, Z);
+	}
+}
+
+void AMCFrameCaptureGameMode::ApplyLook()
+{
+	UWorld* W = GetWorld();
+	if (!W)
+	{
+		return;
+	}
+
+	// ---- the physical quantities the whole look derives from ---------------
+	//
+	// Sun illuminance in lux and the matching exposure are not two independent
+	// knobs. EV100 = log2(Lux / pi), so a 100,000 lux clear-sky sun requires
+	// EV100 = log2(31831) = 15.0 to place an 18% grey card at 18% grey. Setting
+	// one without the other is the reason the scene previously managed to be
+	// both blown out and muddy: the levels were arbitrary, so nothing could be
+	// judged against anything.
+	// Values are in EV100 (log2 luminance), where the engine default is 1.0.
+	//
+	// A pinned exposure was tried first and blown the frame out: EV100 15 assumes
+	// a mid-grey surface luminance around 31831 cd/m2, which this scene does not
+	// have -- the directional light's lux does not translate 1:1 into surface
+	// luminance, because that also depends on each material's albedo. Pinning a
+	// number therefore requires solving for the scene, and a window plus a small
+	// positive bias gets there for every viewpoint without that solve.
+	//
+	// The window is deliberately narrow (1.0 - 3.5 EV100 either side of default):
+	// wide enough to adapt between a sunlit courtyard and a shaded colonnade,
+	// narrow enough that the metering cannot swing the whole image while the view
+	// turns, which is what free auto-exposure does on a scene this contrasty.
+	constexpr float SunLux = 100000.0f;
+	constexpr float ExposureWindowMin = 1.0f;
+	constexpr float ExposureWindowMax = 3.5f;
+	constexpr float ExposureBias = 0.3f;
+
+	for (TActorIterator<ADirectionalLight> It(W); It; ++It)
+	{
+		ADirectionalLight* Sun = *It;
+		// Oblique but high: one lit face, one sky-lit face, and short enough
+		// shadows that the courtyard is not swallowed.
+		Sun->SetActorRotation(FRotator(-48.0f, -135.0f, 0.0f));
+
+		if (ULightComponent* L = Sun->GetLightComponent())
+		{
+			// Movable is a correctness requirement, not a preference: Lumen
+			// gathers indirect light only from movable lights, so a Stationary sun
+			// contributes nothing to GI and the scene stays flat however bright it
+			// is set.
+			L->SetMobility(EComponentMobility::Movable);
+			L->SetIntensity(SunLux);
+			L->SetCastShadows(true);
+			L->SetUseTemperature(true);
+			L->SetTemperature(5500.0f);
+		}
+	}
+
+	for (TActorIterator<ASkyLight> It(W); It; ++It)
+	{
+		if (USkyLightComponent* C = (*It)->GetLightComponent())
+		{
+			// Real-time capture keeps the sky light consistent with the
+			// atmosphere, whose luminance is itself derived from the sun. A baked
+			// capture is a constant that stops matching the moment the sun moves.
+			C->SetMobility(EComponentMobility::Movable);
+			C->bRealTimeCapture = true;
+			C->SetIntensity(1.0f);
+			// Ground bounce on: with it off every shaded face is flat black,
+			// because outdoors much of the fill comes from the ground.
+			C->bLowerHemisphereIsBlack = false;
+			C->LowerHemisphereColor =
+				FLinearColor(0.18f, 0.16f, 0.14f, 1.0f);
+			C->MarkRenderStateDirty();
+		}
+	}
+
+	for (TActorIterator<AExponentialHeightFog> It(W); It; ++It)
+	{
+		if (UExponentialHeightFogComponent* C = (*It)->GetComponent())
+		{
+			// Density in the "subtle depth cue" band from the reference values
+			// (0.005-0.015). The campus is ~500 m across, so this gives the far
+			// buildings atmosphere without greying the middle distance.
+			C->SetFogDensity(0.008f);
+			C->SetFogHeightFalloff(0.15f);
+			C->SetVolumetricFog(true);
+			C->SetFogInscatteringColor(FLinearColor(0.6f, 0.72f, 0.95f));
+		}
+	}
+
+	for (TActorIterator<APostProcessVolume> It(W); It; ++It)
+	{
+		APostProcessVolume* V = *It;
+		V->bUnbound = true;
+		FPostProcessSettings& S = V->Settings;
+
+		// Exposure pinned, with Min == Max so the metering has no range to move
+		// in. Free auto-exposure swims constantly on a scene this contrasty --
+		// the ground is bright quartz and the shaded façades are far darker --
+		// which reads as the picture breathing as you turn.
+		S.bOverride_AutoExposureMethod = true;
+		S.AutoExposureMethod = EAutoExposureMethod::AEM_Histogram;
+		S.bOverride_AutoExposureMinBrightness = true;
+		S.bOverride_AutoExposureMaxBrightness = true;
+		S.AutoExposureMinBrightness = ExposureWindowMin;
+		S.AutoExposureMaxBrightness = ExposureWindowMax;
+		S.bOverride_AutoExposureBias = true;
+		S.AutoExposureBias = ExposureBias;
+		// Physical camera exposure would apply a second, independent exposure on
+		// top of the window above and fight it. Off.
+		S.bOverride_AutoExposureApplyPhysicalCameraExposure = true;
+		S.AutoExposureApplyPhysicalCameraExposure = false;
+
+		// A filmic shoulder and toe, so highlights roll off instead of clipping
+		// and shadows keep their shape.
+		S.bOverride_FilmSlope = true;
+		S.FilmSlope = 0.88f;
+		S.bOverride_FilmToe = true;
+		S.FilmToe = 0.55f;
+
+		// Bloom sparingly: enough to soften the sky edge, not to haze the frame.
+		S.bOverride_BloomIntensity = true;
+		S.BloomIntensity = 0.35f;
+		S.bOverride_BloomThreshold = true;
+		S.BloomThreshold = 1.1f;
+
+		S.bOverride_MotionBlurAmount = true;
+		S.MotionBlurAmount = 0.0f;
+		S.bOverride_VignetteIntensity = true;
+		S.VignetteIntensity = 0.18f;
+		S.bOverride_SceneFringeIntensity = true;
+		S.SceneFringeIntensity = 0.15f;
+
+		// Saturation slightly *down*. Scanned albedo is more saturated than
+		// outdoor footage, and pulling it back is most of what stops a PBR render
+		// reading as a game.
+		S.bOverride_ColorSaturation = true;
+		S.ColorSaturation = FVector4(0.92, 0.92, 0.92, 1.0);
+	}
+}
+
+void AMCFrameCaptureGameMode::ParkAtStop(int32 Index)
+{
+	const int32 Count = int32(UE_ARRAY_COUNT(GTourStops));
+	if (Index < 0 || Index >= Count)
+	{
+		TourLog(FString::Printf(TEXT("ParkAtStop: %d out of range (0..%d)"),
+			Index, Count - 1));
+		return;
+	}
+	UWorld* W = GetWorld();
+	if (!W)
+	{
+		TourLog(TEXT("ParkAtStop: no world"));
+		return;
+	}
+	PlaceTourPawn(W, GTourStops[Index]);
+	TourLog(FString::Printf(TEXT("parked at %s"), GTourStops[Index].Name));
+}
+
+void AMCFrameCaptureGameMode::MCTour()
+{
+	UWorld* W = GetWorld();
+	if (!W)
+	{
+		TourLog(TEXT("MCTour: no world"));
+		return;
+	}
+	TourLog(FString::Printf(TEXT("MCTour: start, %d stops"),
+		int32(UE_ARRAY_COUNT(GTourStops))));
+
+	GTour.Index = 0;
+	const int32 Count = UE_ARRAY_COUNT(GTourStops);
+
+	// One stop per tick of the timer, so each frame is captured after the world
+	// has settled: teleporting and capturing in the same frame photographs the
+	// previous viewpoint, because the render is a frame behind the game thread.
+	W->GetTimerManager().SetTimer(GTour.Handle, FTimerDelegate::CreateLambda(
+		[W, Count]()
+		{
+			if (GTour.Index >= Count)
+			{
+				W->GetTimerManager().ClearTimer(GTour.Handle);
+				UE_LOG(LogMCFrame, Warning, TEXT("MCTour: complete (%d frames)"),
+					Count);
+				return;
+			}
+			const FMCTourStop& Stop = GTourStops[GTour.Index];
+			PlaceTourPawn(W, Stop);
+			TourLog(FString::Printf(TEXT("stop %d: %s"),
+				GTour.Index, Stop.Name));
+
+			// Capture on the *next* tick, from a one-shot timer, so the world
+			// has had a frame at the new viewpoint.
+			FTimerHandle Shot;
+			W->GetTimerManager().SetTimer(Shot, FTimerDelegate::CreateLambda(
+				[W, Stop]()
+				{
+					// FScreenshotRequest, not the viewport capture.
+					//
+					// UMCFrameCapture::CaptureViewport reads the back buffer with
+					// FViewport::ReadPixels, and outside a real frame that returns
+					// a blank white buffer: all five stops produced byte-identical
+					// 16 KB PNGs of nothing, while the same build rendered
+					// correctly on screen. FScreenshotRequest is the engine's own
+					// path and defers the grab to the right point in the frame, so
+					// it captures what is actually presented.
+					//
+					// Writes to Saved/Screenshots/<platform>/.
+					FScreenshotRequest::RequestScreenshot(FString(Stop.Name),
+						/*bShowUI*/ false, /*bAddFilenameSuffix*/ false);
+					TourLog(FString::Printf(TEXT("  screenshot requested: %s"),
+						Stop.Name));
+					UE_LOG(LogMCFrame, Warning,
+						TEXT("MCTour: screenshot requested for %s"), Stop.Name);
+				}), 0.8f, false);
+
+			++GTour.Index;
+		}), 1.4f, /*bLoop*/ true);
+}
+
+void AMCFrameCaptureGameMode::MCExposure(float EV100)
+{
+	UWorld* W = GetWorld();
+	if (!W)
+	{
+		return;
+	}
+
+	int32 Touched = 0;
+	for (TActorIterator<APostProcessVolume> It(W); It; ++It)
+	{
+		FPostProcessSettings S = It->Settings;
+		// Histogram metering with Min == Max is the standard way to pin exposure:
+		// the metering still runs, but it has no range to move in, so the image
+		// does not swim as the view turns.
+		S.bOverride_AutoExposureMethod = true;
+		S.AutoExposureMethod = EAutoExposureMethod::AEM_Histogram;
+		S.bOverride_AutoExposureMinBrightness = true;
+		S.bOverride_AutoExposureMaxBrightness = true;
+		S.AutoExposureMinBrightness = EV100;
+		S.AutoExposureMaxBrightness = EV100;
+		S.bOverride_AutoExposureBias = true;
+		S.AutoExposureBias = 0.0f;
+		It->Settings = S;
+		++Touched;
+	}
+
+	UE_LOG(LogMCFrame, Warning, TEXT("MCExposure %.2f on %d volume(s)"),
+		EV100, Touched);
 }
 
 void AMCFrameCaptureGameMode::BuildProceduralTerrain()

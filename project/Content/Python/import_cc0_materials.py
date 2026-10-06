@@ -174,22 +174,31 @@ def build_master(placeholders=None):
     mel.connect_material_expressions(uv, "", suv, "A")
     mel.connect_material_expressions(tiling, "", suv, "B")
 
-    base = node(unreal.MaterialExpressionTextureSampleParameter2D, -480, -120)
-    base.set_editor_property("ParameterName", "BaseColorTex")
-    if placeholders.get("BaseColorTex") is not None:
-        base.set_editor_property("texture", placeholders["BaseColorTex"])
-    mel.connect_material_expressions(suv, "", base, "UVs")
+    def sampler(param, y):
+        e = node(unreal.MaterialExpressionTextureSampleParameter2D, -480, y)
+        e.set_editor_property("ParameterName", param)
+        if placeholders.get(param) is not None:
+            e.set_editor_property("texture", placeholders[param])
+        mel.connect_material_expressions(suv, "", e, "UVs")
+        return e
 
-    rough = node(unreal.MaterialExpressionConstant, -480, 220)
-    try:
-        rough.set_editor_property("r", 0.85)
-    except Exception:
-        root = mat.get_editor_property("roughness")
-        mat.set_editor_property("roughness", 0.85)
+    base = sampler("BaseColorTex", -400)
+    # Normal and roughness are what separate "a photograph of stone" from "a
+    # flat colour with a picture on it". Without them every surface is lit as
+    # though it were paper: the albedo varies but the *shape* of the light does
+    # not, so paving, brick and marble all read as the same matte card. These
+    # are the maps Poly Haven captured alongside the albedo, and they were
+    # already downloaded and cooked -- only the graph was missing them.
+    nrm = sampler("NormalTex", 20)
+    rgh = sampler("RoughTex", 440)
 
     mel.connect_material_property(base, "RGB",
                                   unreal.MaterialProperty.MP_BASE_COLOR)
-    mel.connect_material_property(rough, "",
+    mel.connect_material_property(nrm, "RGB",
+                                  unreal.MaterialProperty.MP_NORMAL)
+    # Roughness is a single channel; take R rather than feeding all three, so the
+    # compiler is not asked to coerce a float3 into a float.
+    mel.connect_material_property(rgh, "R",
                                   unreal.MaterialProperty.MP_ROUGHNESS)
     mel.recompile_material(mat)
     unreal.EditorAssetLibrary.save_loaded_asset(mat)

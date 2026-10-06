@@ -8,7 +8,7 @@
 #include "MCReplicaCharacter.generated.h"
 
 class UCameraComponent;
-class USpringArmComponent;
+class UCameraComponent;
 class UStaticMeshComponent;
 
 /**
@@ -33,9 +33,27 @@ class MCREPLICA_API AMCReplicaCharacter : public ACharacter
 public:
 	AMCReplicaCharacter();
 
-	/** Camera boom length in cm. Long enough to see the figure and the campus. */
+	/**
+	 * Camera height above the feet, in cm.
+	 *
+	 * First person: the camera sits at eye level rather than on a boom behind the
+	 * character. 165 cm is average adult eye height, and the campus is built at
+	 * real scale (1 block = 1 m), so a real eye height is what makes a doorway
+	 * and a stair tread look the size they should.
+	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera")
-	float CameraBoomLength = 420.0f;
+	float EyeHeight = 165.0f;
+
+	/**
+	 * Horizontal field of view in degrees.
+	 *
+	 * 90 is the usual first-person value: wide enough to feel like you are in
+	 * the space and to take in a façade without walking backwards, narrow enough
+	 * that verticals stay straight at the edges. 60 would read as a telephoto,
+	 * and anything past ~100 visibly bows the sides.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera")
+	float FieldOfView = 90.0f;
 
 	/** Metres per second at full walk speed (Minecraft walks at ~4.3). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
@@ -117,10 +135,6 @@ private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "MCReplica",
 		meta = (AllowPrivateAccess = "true"))
 	UStaticMeshComponent* LegRight;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "MCReplica",
-		meta = (AllowPrivateAccess = "true"))
-	USpringArmComponent* CameraBoom;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "MCReplica",
 		meta = (AllowPrivateAccess = "true"))
