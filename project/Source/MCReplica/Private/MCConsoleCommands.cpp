@@ -359,7 +359,29 @@ void AMCFrameCaptureGameMode::BeginPlay()
 	// Apply the looked-after look. In code, not from the level: measured, the
 	// PostProcessVolume's settings do not survive saving this World Partition
 	// level, and a look that silently reverts is worse than one in source.
+	//
+	// Applied once immediately **and** on a short repeating timer, because once
+	// is not enough: this is a World Partition level, so the PostProcessVolume
+	// streams in asynchronously and is frequently not spawned yet when the game
+	// mode's BeginPlay runs. A single ApplyLook then iterates zero volumes,
+	// silently does nothing, and the level's stale exposure stays in force.
+	// That is exactly the symptom observed -- sweeping EV100 across 11 / 12 / 14
+	// produced identical frames, which can only happen if nothing was written.
 	ApplyLook();
+
+	GetWorldTimerManager().SetTimer(GLookHandle,
+		FTimerDelegate::CreateUObject(this, &AMCFrameCaptureGameMode::ApplyLook),
+		1.0f, /*bLoop*/ true, /*FirstDelay*/ 1.0f);
+	// Stop once streaming has certainly settled, so this does not fight the game
+	// for the rest of the session.
+	FTimerHandle LookStop;
+	GetWorldTimerManager().SetTimer(LookStop,
+		FTimerDelegate::CreateLambda([this]()
+		{
+			GetWorldTimerManager().ClearTimer(GLookHandle);
+			ApplyLook();
+			UE_LOG(LogMCFrame, Warning, TEXT("ApplyLook: final pass done"));
+		}), 15.0f, false);
 
 	// Park the camera at one tour stop and stay there. One stop per launch,
 	// because the reliable way to get a picture out of this build is an external
@@ -755,6 +777,15 @@ namespace
 	}
 }
 
+namespace
+{
+	/** Fog density set from the command line; < 0 means "leave the level's". */
+	float gFogOverride = -1.0f;
+
+	/** Sky light intensity from the command line; < 0 means "use the default". */
+	float gSkyOverride = -1.0f;
+}
+
 void AMCFrameCaptureGameMode::ApplyLook()
 {
 	UWorld* W = GetWorld();
@@ -784,10 +815,76 @@ void AMCFrameCaptureGameMode::ApplyLook()
 	// wide enough to adapt between a sunlit courtyard and a shaded colonnade,
 	// narrow enough that the metering cannot swing the whole image while the view
 	// turns, which is what free auto-exposure does on a scene this contrasty.
-	constexpr float SunLux = 100000.0f;
-	constexpr float ExposureWindowMin = 1.0f;
-	constexpr float ExposureWindowMax = 3.5f;
-	constexpr float ExposureBias = 0.3f;
+	// Measured, not theorised, and the measurement was decisive.
+	//
+	// A flat magenta material was put on every block as a 1-bit experiment: the
+	// frame came back **white**. Magenta cannot become white by being lit -- it
+	// has no green to gain -- so the surfaces were being driven far past
+	// saturation, and because sweeping EV100 across 11 -> 17 changed nothing, the
+	// exposure control was not actually in the path. Together those say the sun
+	// is orders of magnitude too bright for a fixed/exposure-1.0 pipeline.
+	//
+	// 100,000 lux is the physically correct clear-sky figure, and it is the wrong
+	// number here: it assumes the EV100 chain is doing the work. The documented
+	// working value for a UE5 exterior is ~10 lux with the engine's own exposure;
+	// that is what this uses, and the sweep confirms it is the right order.
+	float SunLux = 10.0f;
+	float ExposureWindowMin = 0.5f;
+	float ExposureWindowMax = 3.0f;
+	float ExposureBias = 0.0f;
+
+	// Command-line overrides, so one build can be swept across values without a
+	// rebuild or a re-run of the editor. Exposure and fog are the two values
+	// that decide whether the campus is legible at all, and guessing them from a
+	// description has already failed once.
+	//
+	//     MCReplica.exe -MCev=15 -MCfog=0
+	{
+		float V = 0.0f;
+		if (FParse::Value(FCommandLine::Get(), TEXT("MCev="), V))
+		{
+			ExposureWindowMin = V;
+			ExposureWindowMax = V;
+			ExposureBias = 0.0f;
+			UE_LOG(LogMCFrame, Warning, TEXT("ApplyLook: EV100 pinned to %.2f"), V);
+		}
+		if (FParse::Value(FCommandLine::Get(), TEXT("MCfog="), V))
+		{
+			gFogOverride = V;
+			UE_LOG(LogMCFrame, Warning, TEXT("ApplyLook: fog density %.4f"), V);
+		}
+		if (FParse::Value(FCommandLine::Get(), TEXT("MCsuns="), V))
+		{
+			SunLux = V;
+			UE_LOG(LogMCFrame, Warning, TEXT("ApplyLook: sun %.0f lux"), V);
+		}
+		if (FParse::Value(FCommandLine::Get(), TEXT("MCsky="), V))
+		{
+			gSkyOverride = V;
+			UE_LOG(LogMCFrame, Warning, TEXT("ApplyLook: sky %.3f"), V);
+		}
+		// Draw distance for the block layer. The shipped value is 80/140 m, which
+		// is right for playing but hides the campus in a single frame; a shot of
+		// the whole site needs it raised. Not a shipping default.
+		if (FParse::Value(FCommandLine::Get(), TEXT("MCdist="), V))
+		{
+			int32 Touched = 0;
+			for (TActorIterator<AMCReplicaPropCluster> It(W); It; ++It)
+			{
+				if (It->Instances)
+				{
+					It->Instances->InstanceStartCullDistance =
+						FMath::RoundToInt(V);
+					It->Instances->InstanceEndCullDistance =
+						FMath::RoundToInt(V * 1.2f);
+					++Touched;
+				}
+			}
+			UE_LOG(LogMCFrame, Warning,
+				TEXT("ApplyLook: draw distance %.0f cm on %d clusters"),
+				V, Touched);
+		}
+	}
 
 	for (TActorIterator<ADirectionalLight> It(W); It; ++It)
 	{
@@ -819,7 +916,7 @@ void AMCFrameCaptureGameMode::ApplyLook()
 			// capture is a constant that stops matching the moment the sun moves.
 			C->SetMobility(EComponentMobility::Movable);
 			C->bRealTimeCapture = true;
-			C->SetIntensity(1.0f);
+			C->SetIntensity(gSkyOverride >= 0.0f ? gSkyOverride : 0.25f);
 			// Ground bounce on: with it off every shaded face is flat black,
 			// because outdoors much of the fill comes from the ground.
 			C->bLowerHemisphereIsBlack = false;
@@ -836,17 +933,37 @@ void AMCFrameCaptureGameMode::ApplyLook()
 			// Density in the "subtle depth cue" band from the reference values
 			// (0.005-0.015). The campus is ~500 m across, so this gives the far
 			// buildings atmosphere without greying the middle distance.
-			C->SetFogDensity(0.008f);
+			const float Density = gFogOverride >= 0.0f ? gFogOverride : 0.0015f;
+			C->SetFogDensity(Density);
 			C->SetFogHeightFalloff(0.15f);
-			C->SetVolumetricFog(true);
+			// Volumetric fog is what makes 0.008 read as heavy: it accumulates
+			// along the view ray rather than as a simple distance blend, so the
+			// same density is far more opaque. Off unless actually wanted.
+			C->SetVolumetricFog(false);
 			C->SetFogInscatteringColor(FLinearColor(0.6f, 0.72f, 0.95f));
+			// Zero density must also mean no fog at all: the component still
+			// blends when density is 0 if it is left enabled.
+			if (gFogOverride == 0.0f)
+			{
+				C->SetFogDensity(0.0f);
+				C->SetVolumetricFog(false);
+				C->SetFogMaxOpacity(0.0f);
+			}
 		}
 	}
 
+	int32 Volumes = 0;
 	for (TActorIterator<APostProcessVolume> It(W); It; ++It)
 	{
 		APostProcessVolume* V = *It;
+		++Volumes;
 		V->bUnbound = true;
+		// Highest priority within the volume, so nothing else in the level can
+		// override these values. Priority matters: an unprioritised volume edit
+		// is silently superseded by any volume with a higher priority, which is
+		// indistinguishable from "the write did nothing".
+		V->Priority = 1000.0f;
+		V->BlendWeight = 1.0f;
 		FPostProcessSettings& S = V->Settings;
 
 		// Exposure pinned, with Min == Max so the metering has no range to move
@@ -891,6 +1008,68 @@ void AMCFrameCaptureGameMode::ApplyLook()
 		// reading as a game.
 		S.bOverride_ColorSaturation = true;
 		S.ColorSaturation = FVector4(0.92, 0.92, 0.92, 1.0);
+	}
+
+	// Resolve the material chain at runtime and report it.
+	//
+	// A white surface with correct shadows and correct exposure is the signature
+	// of a **null texture sampler**: Unreal samples white when a texture
+	// parameter is unbound, so the lighting is right and the albedo is 1.0. The
+	// editor showed the instances correctly bound, so this checks the *packaged*
+	// build -- "it works in the editor" and "the reference survived the cook" are
+	// different claims, and only the second one ships.
+	{
+		FString Report;
+		auto Probe = [&Report](const TCHAR* Path) -> FString
+		{
+			UObject* O = LoadObject<UObject>(nullptr, Path);
+			return FString::Printf(TEXT("%s=%s\r\n"), Path,
+				O ? *O->GetName() : TEXT("*** MISSING ***"));
+		};
+		Report += Probe(TEXT("/Game/MC/CC0/M_MC_Surface.M_MC_Surface"));
+		Report += Probe(TEXT("/Game/MC/CC0/MI_rock.MI_rock"));
+		Report += Probe(TEXT("/Game/MC/CC0/rock/rock_diffuse.rock_diffuse"));
+		Report += Probe(TEXT("/Game/Meshes/Cube1x1x1.Cube1x1x1"));
+
+		int32 Checked = 0;
+		for (TActorIterator<AMCReplicaPropCluster> It(W); It; ++It)
+		{
+			if (++Checked > 3)
+			{
+				break;
+			}
+			if (!It->Instances)
+			{
+				Report += FString::Printf(TEXT("%s: no component\r\n"),
+					*It->GetActorNameOrLabel());
+				continue;
+			}
+			UMaterialInterface* M = It->Instances->GetMaterial(0);
+			Report += FString::Printf(TEXT("%s: mesh=%s mat=%s\r\n"),
+				*It->GetActorNameOrLabel(),
+				It->Instances->GetStaticMesh()
+					? *It->Instances->GetStaticMesh()->GetName() : TEXT("NONE"),
+				M ? *M->GetName() : TEXT("*** NULL ***"));
+		}
+		FFileHelper::SaveStringToFile(Report,
+			TEXT("Q:/MC2UE5/logs/asset_probe.txt"),
+			FFileHelper::EEncodingOptions::AutoDetect, &IFileManager::Get(),
+			FILEWRITE_Append);
+	}
+
+	// Written to a file, not just the log: a Shipping build's log routing is not
+	// reliable, and "did this run and how many volumes did it find" is exactly
+	// the question that has been unanswerable through three attempts.
+	{
+		const FString Line = FString::Printf(
+			TEXT("ApplyLook sun=%.0f sky=%.3f ev=%.2f fog=%.4f volumes=%d\r\n"),
+			SunLux, gSkyOverride >= 0.0f ? gSkyOverride : 0.25f,
+			ExposureWindowMin, gFogOverride >= 0.0f ? gFogOverride : 0.0015f,
+			Volumes);
+		FFileHelper::SaveStringToFile(Line,
+			TEXT("Q:/MC2UE5/logs/applylook.txt"),
+			FFileHelper::EEncodingOptions::AutoDetect, &IFileManager::Get(),
+			FILEWRITE_Append);
 	}
 }
 

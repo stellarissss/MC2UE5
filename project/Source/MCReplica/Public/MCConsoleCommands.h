@@ -166,4 +166,13 @@ protected:
 
 	/** Handle for the repeating runtime diagnostic timer. */
 	FTimerHandle GDiagHandle;
+
+	/**
+	 * Handle for the periodic look re-apply.
+	 *
+	 * A member rather than a local, because the stop timer has to clear it and
+	 * FTimerManager::ClearTimer wants a non-const reference -- a local captured
+	 * by value in the stopping lambda is const and will not compile.
+	 */
+	FTimerHandle GLookHandle;
 };

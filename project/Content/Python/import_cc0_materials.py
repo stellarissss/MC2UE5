@@ -149,11 +149,34 @@ def build_master(placeholders=None):
     cook time, so the master gets a real one and the instances override it.
     """
     placeholders = placeholders or {}
+    # **Reuse** the existing asset rather than delete-and-recreate.
+    #
+    # Deleting an asset and creating a new one at the same path leaves every
+    # reference to it dangling: the 1041 block-cluster actors in the level pointed
+    # at the old object, so after a rebuild they resolved to nothing and the
+    # engine silently substituted its default material -- which is the white
+    # checkerboard that made the campus look like an untextured prototype. The
+    # cook reports no error for this either, because an unresolvable material
+    # reference is not a compile failure.
+    #
+    # Reusing the asset keeps its identity, so existing references stay valid.
     if unreal.EditorAssetLibrary.does_asset_exist(MASTER_PATH):
-        unreal.EditorAssetLibrary.delete_asset(MASTER_PATH)
-    mat = unreal.AssetToolsHelpers.get_asset_tools().create_asset(
-        "M_MC_Surface", DEST_ROOT, unreal.Material,
-        unreal.MaterialFactoryNew())
+        mat = unreal.load_asset(MASTER_PATH)
+        if mat is None:
+            raise RuntimeError("could not load the existing %s" % MASTER_PATH)
+        # Replace the graph rather than adding to it. Materials have public
+        # APIs for both; rebuilding the graph is what makes this step idempotent,
+        # which matters because it runs on every chain invocation.
+        for e in unreal.MaterialEditingLibrary.get_material_expressions(mat):
+            unreal.MaterialEditingLibrary.delete_material_expression(mat, e)
+        for prop in (unreal.MaterialProperty.MP_BASE_COLOR,
+                     unreal.MaterialProperty.MP_NORMAL,
+                     unreal.MaterialProperty.MP_ROUGHNESS):
+            unreal.MaterialEditingLibrary.disconnect_material_property(mat, prop)
+    else:
+        mat = unreal.AssetToolsHelpers.get_asset_tools().create_asset(
+            "M_MC_Surface", DEST_ROOT, unreal.Material,
+            unreal.MaterialFactoryNew())
     if mat is None:
         raise RuntimeError("could not create the master material")
     mel = unreal.MaterialEditingLibrary
@@ -189,16 +212,24 @@ def build_master(placeholders=None):
     # not, so paving, brick and marble all read as the same matte card. These
     # are the maps Poly Haven captured alongside the albedo, and they were
     # already downloaded and cooked -- only the graph was missing them.
-    nrm = sampler("NormalTex", 20)
-    rgh = sampler("RoughTex", 440)
+    # Roughness as a PARAMETER, and no normal map.
+    #
+    # The normal and rough maps were added, and the campus then rendered white.
+    # Everything else in the chain checks out -- assets resolve in the packaged
+    # build, the graph pins are connected, exposure changes the frame -- which
+    # leaves the maps as the difference. A texture that resolves but samples
+    # degenerate UVs gives the *mean* of the texture for albedo (brown) but can
+    # still drive roughness to 0, and a fully smooth surface is a mirror: with a
+    # bright sky above it, every wall and road then reflects white. Reverting to
+    # the shape that is known to render correctly here (a base colour sampler and
+    # a scalar roughness, which is exactly what MC_Terrain does) isolates it.
+    rough = node(unreal.MaterialExpressionScalarParameter, -400, 320)
+    rough.set_editor_property("ParameterName", "Roughness")
+    rough.set_editor_property("DefaultValue", 0.85)
 
     mel.connect_material_property(base, "RGB",
                                   unreal.MaterialProperty.MP_BASE_COLOR)
-    mel.connect_material_property(nrm, "RGB",
-                                  unreal.MaterialProperty.MP_NORMAL)
-    # Roughness is a single channel; take R rather than feeding all three, so the
-    # compiler is not asked to coerce a float3 into a float.
-    mel.connect_material_property(rgh, "R",
+    mel.connect_material_property(rough, "",
                                   unreal.MaterialProperty.MP_ROUGHNESS)
     mel.recompile_material(mat)
     unreal.EditorAssetLibrary.save_loaded_asset(mat)
@@ -288,6 +319,8 @@ def main():
                         mi, param, tex[kind])
             mel.set_material_instance_scalar_parameter_value(
                 mi, "Tiling", 0.5)
+            mel.set_material_instance_scalar_parameter_value(
+                mi, "Roughness", 0.85)
             unreal.EditorAssetLibrary.save_loaded_asset(mi)
             say("  %-9s -> %s (%d maps)" % (fam, path, len(tex)))
 

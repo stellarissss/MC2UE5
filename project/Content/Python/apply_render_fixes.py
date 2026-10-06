@@ -10,7 +10,9 @@ Order matters:
   1. clear     -- drop the old MCblk_/Terrain_/Props_ actors (superseded geometry)
   2. cc0       -- rebuild the CC0 material instances (Tiling corrected)
   3. voxel     -- rebuild the block layer against those materials + new cull band
-  4. lighting  -- sun/sky/exposure window
+  4. (lighting is applied at runtime by AMCFrameCaptureGameMode::ApplyLook;
+     the level's PostProcessVolume does not persist edits, so it is not
+     written here at all)
 """
 
 import os
@@ -41,9 +43,9 @@ os.environ["MC2UE5_DRY_RUN"] = "0"
 
 STEPS = (
     ("clear", "clear_generated", "main"),
+    ("spawn", "apply_spawn", "main"),
     ("cc0 materials", "import_cc0_materials", "main"),
     ("voxel blocks", "import_world", "run"),
-    ("lighting", "setup_lighting", "main"),
 )
 
 for label, module_name, func_name in STEPS:
