@@ -215,6 +215,22 @@ material's runtime evaluation, the mesh's UV/material-index assignment, or the
 look pipeline. **I did not localise it further**; that is the next step, not a
 claim I am making.
 
+**Independently cross-checked (quality-lead-2).** They rebuilt the surface
+family map from their own data (not importing mine) and used the spawn data
+(`logs/spawn.json`) to compute the family composition *inside the camera
+frustum*: grass **45.9 %** at half-angle 30°, 43.8 % at 45°, 42.2 % at 60°
+(fabric 26–39 %, brick 11–18 %). So the camera is **not** pointed away from
+grass. If the family albedo reached the screen the frame should be ~42 % green;
+it is **0.0 %**. This independently confirms the loss is albedo, not framing.
+
+**Related but independent defect (do not conflate).** quality-lead-2 also
+confirms the sports field's fabric (near-white) + brick (orange-red) combination
+is a *separate* blocker: `pink_terracotta` → brick and `lime/green_wool` →
+fabric, with the `sports` family used 0 times. So even once the albedo reaches
+the screen, the field colour is **still** wrong. Fixing one will not fix the
+other.
+
+
 Things ruled out along the way:
 
 - **Not exposure/lighting being off-spec**: `logs/applylook.txt` shows
@@ -231,6 +247,12 @@ Things ruled out along the way:
 ## 6. Defects and contradictions found (important)
 
 ### 6.1 `-MClayers` silently honours only the FIRST comma-separated token
+
+> **KNOWN INVALIDATING CONDITION FOR THIS A/B — read before quoting any
+> `-MClayers` comparison.** If a `-MClayers` spec contained more than one
+> token, only the first was applied, so **every multi-token layer A/B is an
+> invalid conclusion** (it measured the first token only). Single-token specs
+> are fine. Confirmed independently by quality-lead-2 as the correct reading.
 
 Verified by four launches, reading `logs/mclayers.txt`:
 
@@ -359,3 +381,30 @@ Per-run p50: **2.4–3.3 ms → ~300–400 fps**. `class=ok` throughout (no
 plateau, no spikes) on the packaged build. The honest figures are the ring
 buffer's distribution, not the `frame=` column (that is clamped by
 `MaxDeltaTime`).
+
+---
+
+## 10. `granite` vs `greystone` — note only, not fixed
+
+Per the brief's item 4. Measured on the **family textures now in the render
+path** (`out/families/*.png`), mean sRGB → CIELAB, ΔE76 between means:
+
+| pair | mean RGB | ΔE76 |
+|---|---|---|
+| granite vs greystone | (110,110,112) vs (104,106,104) | **3.17** |
+| granite vs concrete | (110,110,112) vs (112,112,110) | **2.42** |
+| greystone vs concrete | (104,106,104) vs (112,112,110) | **2.72** |
+
+ΔE76 = 3.17 **reproduces the brief's number exactly** (independent computation,
+so the brief is right here). The guideline is ≥ 8.
+
+**A worse finding than the brief states: it is not a pair, it is a trio.**
+`granite`, `greystone` and `concrete` are three near-neutral greys, all within
+ΔE ≈ 2.4–3.2 of each other. On screen they will read as one material, and the
+three are used *separately* in the meshes (e.g. `bld_001_structure` carries
+both `concrete` and `greystone` as distinct slots), so a viewer cannot tell
+which is which. `quartz` (L\* 79.7) and `brick` (a\* 14.1) are the only
+strongly separated families in the palette.
+
+Not nudged, per instruction — this is a report.
+
