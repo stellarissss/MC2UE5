@@ -393,16 +393,44 @@ lime_wool + green_wool = 18,199 块全部落进近白的 `fabric` 族
 （内容以 `version https://git-lfs...` 开头）。所以 MC 原版贴图本地不可直接读，
 颜色变体只能走 tint 或另找源 —— 这与 §6.3「允许另找素材源」的决策一致。
 
-### 8.5 另外两个静默失败（新增到 §2.3）
+### 8.5 静默失败（新增到 §2.3）
 
 | 现象 | 根因 |
 |---|---|
-| 组件级 `set_material(i, ...)` 报成功、存了关卡、**画面零变化** | 绘制路径读的是**资产**的 `static_materials` 数组，不是组件覆盖。且 UE 5.8 Python 的 `StaticMesh` **没有** `set_material`/`get_num_materials`（实测每次调用抛 AttributeError） |
+| ~~组件级 `set_material(i, ...)` 无效，绘制走资产的 `static_materials`~~ **← 误判，见 §8.12** | 真实原因**不是渲染路径**，而是 `save_dirty_packages` 对 `.umap` 是空操作：改的组件材质从未落盘，同时一个早已存在的图集 override 一直在赢。被误归因成"组件 override 无效" |
 | `EditorLoadingAndSavingUtils.save_dirty_packages` 对 `.umap` **是空操作** | 必须用 `LevelEditorSubsystem.save_current_level()`；且保存后要**重新 `load_map` 再数一遍 actor**才算证据 |
+| UE 5.8 Python 的 `StaticMesh` **没有** `set_material`/`get_num_materials` | 实测每次调用抛 AttributeError；槽位只能通过 `static_materials` 数组访问 |
+| 材质槽位只刷 slot 0 时其余槽仍是 `WorldGridMaterial` | `bld_001_structure` 13 槽里 12 槽是引擎默认灰，15 个可见族里 14 个糊成一片 |
 
-还有一个曾被误判的点：**材质槽位只刷 slot 0** 时，`bld_001_structure` 的 13 个槽里
-12 个仍是 `WorldGridMaterial`（引擎默认灰），
-15 个可见族里 14 个渲染成引擎灰糊成一片 —— 这也是「一片单色」的贡献者之一。
+### 8.12 阻断性 bug：组件 override 覆盖资产槽位（引擎源码定论）
+
+`FStaticMeshComponentHelper::GetMaterial()`
+（`Q:/UE/UE_5.8/Engine/Source/Runtime/Engine/Public/StaticMeshComponentHelper.h:133-164`，
+`UStaticMeshComponent::GetMaterial` 转调它）：
+
+```cpp
+// If we have a base materials array, use that
+if (OverrideMaterials.IsValidIndex(MaterialIndex) && OverrideMaterials[MaterialIndex])
+    OutMaterial = OverrideMaterials[MaterialIndex];
+// Otherwise get from static mesh
+else if (Component.GetStaticMesh())
+    OutMaterial = Component.GetStaticMesh()->GetMaterial(MaterialIndex);
+```
+
+**→ 组件 override 非空时优先；只有该槽 override 为 null 才回退到资产的 `static_materials`。**
+同一模式在 `StaticMeshComponent.cpp:2911-2925`（`GetEditorMaterial`）与 `GetUsedRayTracingOnlyMaterials`
+重复出现三次，是确定语义，不是分支怪癖。
+
+**实测后果（actor 普查）**：
+
+| 对象 | 资产槽位 | 组件 override | 实际渲染 |
+|---|---|---|---|
+| 158 个结构 actor（370 槽） | ✅ 全部 `M_MC_<family>`，逐位正确 | ❌ **每槽都是旧 `M_MC_Atlas`** | **旧图集** —— 22 个新族材质**完全没被用上** |
+| 24 个地形 actor（90 槽） | ✅ 逐位正确 | slot 0 = `M_MC_Atlas`，其余 null | grass（占地形 quads **82%**）用旧图集；soil/rock/greystone 正确 |
+
+**这是一个「资产全对、画面不变」的 bug** —— 最难查的一类：它会让 S5 的全部工作**视觉上等于没做**，
+「整片单色」原样保留，而且没有任何报错。**修法**：清空这 182 个 actor 的 `override_materials`
+（资产槽位已是唯一权威），**并在 `run_meshes()` 里固化为管线步骤** —— 否则任何人重导网格都会让它静默复发。
 
 ### 8.6 工程卫生（S6–S9 的具体化）
 
