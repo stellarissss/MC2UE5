@@ -26,8 +26,11 @@ rules from spec 4.3 are load-bearing and implemented here:
    variants have the same texture variance -- otherwise the same wall reads as
    different materials. Blurring kills the mortar lines (std 15.7 -> 2.6) which
    is what makes baked brick read as smooth clay terracotta.
-3. **Mirror edges come last** (same 16 px mirror the base textures use), so a
-   new border introduced by the blur is made seamless again.
+3. **Mirror follows the base.** A variant mirrors its border only if its base
+   texture is mirrored (read from `out/families/manifest.json`). Base textures
+   derived from a tileable CC0 source are NOT mirrored -- pasting a mirrored
+   band onto them would re-introduce the wrap seam the source derivation just
+   removed (measured: total wrap seam 208 -> 296).
 
 The target table lives in `block_families.VARIANT_TARGET` -- the single source
 of truth shared with `family_key()`, so the two cannot drift.
@@ -160,6 +163,18 @@ def main():
     want = sorted(VARIANT_TARGET)
     print("烘焙 %d 个颜色变体 -> %s" % (len(want), FAMILIES_DIR))
 
+    # Whether each BASE texture is border-mirrored. The variant must follow its
+    # base: mirroring a texture that was derived from a tileable source would
+    # replace its seamless border with a mirrored band and *introduce* the wrap
+    # seam the source derivation just removed (measured: total wrap seam
+    # 208 -> 296 when a mirrored band is pasted onto source-derived cells).
+    base_mirrored = {}
+    if os.path.isfile(MANIFEST):
+        with open(MANIFEST) as fh:
+            for rec in json.load(fh).get("families", []):
+                base_mirrored[rec.get("family")] = bool(rec.get("mirrored", True))
+    print("基础族镜像边: %s" % {k: v for k, v in sorted(base_mirrored.items())})
+
     # Regression guard: snapshot EVERY pre-existing texture in the families
     # directory (the 22 base families and anything else already there) before
     # anything is written, and re-verify at the end. A bake that overwrote a
@@ -170,7 +185,7 @@ def main():
         if fn.endswith(".png") and not fn.startswith("_") \
                 and os.path.splitext(fn)[0] not in VARIANT_TARGET:
             before[p] = hashlib.sha256(open(p, "rb").read()).hexdigest()
-    print("基线快照：%d 个既有贴图（含 22 个基础族）" % len(before))
+    print("基线快照：%d 个既有贴图（含全部基础族）" % len(before))
 
     # Brick's blurred base is built ONCE and shared by all brick_* variants.
     brick_blur = None
@@ -207,7 +222,9 @@ def main():
         gain = target / base_mean
         out = np.asarray(Image.fromarray(
             src.astype(np.uint8)).convert("RGB").point(gain_lut(gain)))
-        out = mirror_edges(out.copy())
+        do_mirror = base_mirrored.get(base, True)
+        if do_mirror:
+            out = mirror_edges(out.copy())
 
         realized = out.reshape(-1, 3).mean(0).round(3)
         de = de2000(realized, target)
@@ -219,6 +236,7 @@ def main():
         rows.append({
             "variant": v,
             "base_family": base,
+            "mirrored": bool(do_mirror),
             "source": ("brick blurred r=%d" % BLUR_RADIUS) if base == "brick"
                       else "%s.png" % base,
             "target_rgb": [int(x) for x in target],
@@ -250,6 +268,8 @@ def main():
         if a.shape[:2] != (512, 512):
             bad_size.append((r["variant"], a.shape))
             continue
+        if not r["mirrored"]:
+            continue
         w = MIRROR
         d = [np.abs(a[:w].astype(int) - a[w:2 * w][::-1].astype(int)).max(),
              np.abs(a[-w:].astype(int) - a[-2 * w:-w][::-1].astype(int)).max(),
@@ -259,21 +279,43 @@ def main():
             bad_mirror.append((r["variant"], d))
     assert not bad_size, bad_size
     assert not bad_mirror, bad_mirror
-    print("断言：%d 张变体 PNG 全部 512x512 ✓；16px 镜像边精确（左右/上下 4 边 "
-          "逐像素差 = 0）✓" % len(rows))
+    n_mir = sum(1 for r in rows if r["mirrored"])
+    print("断言：%d 张变体 PNG 全部 512x512 ✓" % len(rows))
+    if n_mir:
+        print("断言：%d 张镜像基底的变体，16px 镜像边精确（4 边逐像素差 = 0）✓"
+              % n_mir)
     # The mirror also makes the *inner* joint (border <-> interior) exactly
     # continuous, which is the discontinuity a naive "stretch the edge texel"
     # approach would show. This is the seam property the mirror actually buys.
-    worst_inner = 0.0
+    worst_inner = 0
     for r in rows:
+        if not r["mirrored"]:
+            continue
         a = np.asarray(Image.open(r["png"]).convert("RGB")).astype(int)
         worst_inner = max(worst_inner,
                           np.abs(a[:, MIRROR - 1] - a[:, MIRROR]).max(),
                           np.abs(a[:, -MIRROR - 1] - a[:, -MIRROR]).max(),
                           np.abs(a[MIRROR - 1] - a[MIRROR]).max(),
                           np.abs(a[-MIRROR - 1] - a[-MIRROR]).max())
-    print("断言：内侧接缝（边框 <-> 内部，4 处）逐像素差 = %d ✓" % worst_inner)
-    assert worst_inner == 0
+    if n_mir:
+        print("断言：内侧接缝（边框 <-> 内部，4 处）逐像素差 = %d ✓" % worst_inner)
+        assert worst_inner == 0
+
+    # Tiling: for source-derived (non-mirrored) bases the variant must stay as
+    # tileable as its base. The gain is a per-channel monotone map, so it does
+    # not introduce a wrap seam -- assert that rather than assuming it.
+    worst_ratio = 0.0
+    for r in rows:
+        if r["mirrored"]:
+            continue
+        a = np.asarray(Image.open(r["png"]).convert("RGB")).astype(np.float32)
+        base = np.abs(a[:, 0] - a[:, -1]).mean()
+        ref = np.abs(a[:, 0] - a[:, 64]).mean()
+        worst_ratio = max(worst_ratio, base / ref if ref else 0.0)
+    if any(not r["mirrored"] for r in rows):
+        print("断言：非镜像变体的缠绕缝/基线 最大 %.2f（要求 <= 1.5，即不引入新接缝）✓"
+              % worst_ratio)
+        assert worst_ratio <= 1.5, worst_ratio
 
     # regression: base textures untouched
     after = {p: hashlib.sha256(open(p, "rb").read()).hexdigest() for p in before}
