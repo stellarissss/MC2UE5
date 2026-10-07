@@ -23,10 +23,13 @@ with the layer switches *verified applied* and `-MCfog=0` shows:
   lower frame has no building silhouettes at all);
 - the **new terrain renders pure black** `(0,0,0)` (std 0.16).
 
-Working hypothesis (§5.1): **every `M_MC_<family>` material renders black.**
-That explains terrain-black, structures-black-on-black = invisible, and why the
-voxels (which use the *other* material system, `MC/CC0/M_MC_Surface`+`MI_*`)
-are the only thing that still shows up.
+Working hypothesis (§5.1): the `M_MC_<family>` materials do not put their
+albedo on screen. **Partially downgraded in §5.1a** — the terrain *does*
+saturate under a 10 000× sun, so "albedo is exactly 0" is not supported; the
+precise observation is "black at working lighting while the co-located voxel
+layer is tan". That explains terrain-black, structures-black-on-black =
+invisible, and why the voxels (which use the *other* material system,
+`MC/CC0/M_MC_Surface`+`MI_*`) are the only thing that still shows up.
 
 **This supersedes my earlier reading.** The "ground matches soil, not grass" and
 "0 % green" numbers in this document were measuring the **voxel layer's**
@@ -333,6 +336,53 @@ pale grey `(209,217,225)`, which reads as "washed out ground" rather than
 `TextureSampleParameter2D.RGB → MP_BASE_COLOR` is actually connected. That
 separates "graph not wired" from "texture content black". A diagnostic-texture
 swap (grass → flat magenta) is the follow-up if the graph looks correct.
+
+### 5.1a Counter-test — the terrain DOES respond to light, so "albedo is 0" is NOT supported
+
+I ran terrain-only (`-MClayers=-vox,-struct`, `-MCfog=0`) at
+**`-MCsuns=100000`** (100 000 lux, 10 000× the working value; the project notes
+say this renders the frame white):
+
+```
+ApplyLook sun=100000 sky=0.250 ev=0.50 fog=0.0000 volumes=1
+lower frame: mean (255.0, 255.0, 255.0)  std 0.00  max 255
+```
+
+So the terrain **saturates** under strong light. Two things follow:
+
+1. **The terrain is rasterising.** It cannot be culled/invisible: at the working
+   lighting the upper frame is a blue sky gradient and the lower frame is a hard
+   black **below a sharp horizon seam** (`TERRAIN_nofog_1.png`). If nothing were
+   drawn there we would see the same sky gradient, not black.
+2. **Its albedo is not exactly zero** — a zero-albedo material stays black at any
+   light level, and this one goes to 255.
+
+**So my "all family materials output black" hypothesis is only partly supported
+and I am downgrading it.** The accurate statement is narrower:
+
+> At the working lighting (sun 10 lux, EV100 0.5–3.0, fog 0) the terrain renders
+> **(0,0,0) while the co-located voxel layer renders tan (~120)**; under a
+> 10 000× sun the terrain saturates to white.
+
+The remaining candidate explanations, none of which I have separated:
+
+- (a) the terrain's **effective albedo is very dark** at the working exposure —
+  e.g. the sampler reads a dark region/mip, or the parameter is bound to the
+  wrong texture, or the material's BaseColor is fed by something other than the
+  texture;
+- (b) a **lighting asymmetry** vs the voxel layer (different material flags,
+  two-sided/normal handling, shadowing);
+- (c) the **white at 100k lux is the sky**, and the "black" is a different
+  opaque thing (I cannot fully exclude this from a screenshot alone).
+
+**This one needs the editor, not more screenshots.** The read-only material-graph
+dump resolves (a) directly: if `TextureSampleParameter2D.RGB → MP_BASE_COLOR` is
+connected, the albedo is the texture and the question moves to which texture /
+what the sampler reads; if it is *not* connected, that is the bug.
+
+I am recording this as an **open** item, not a conclusion. Reporting the
+100k-lux result is what stops the "albedo = 0" story from being repeated as if
+established.
 
 **Note for the section-MaterialIndex probe:** if all family materials render
 black, then *any* section index renders black, so a "sections are normal"
