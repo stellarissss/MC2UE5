@@ -390,9 +390,68 @@ result does **not** clear the material side. The two questions are independent.
 
 ---
 
+## 5.2 Terrain meshes lost most of their triangles (eng-ue's find, independently corroborated)
+
+eng-ue's `probe_terrain_geom.py` reports the imported terrain meshes hold only
+**0.8–9.5 %** of the OBJ triangle count, while `bld_001_structure` holds 100 %:
+
+```
+terrain_-144_-544   32258 -> 3051   9.5%
+terrain_-144_-416   32258 -> 1974   6.1%
+terrain_-016_-032   32258 ->  252   0.8%
+bld_001_structure   94724 -> 94724  100%
+```
+
+I corroborated this **without the editor**, from the cooked bulk sizes
+(`Content/MC/Terrain/<tile>.ubulk` bytes ÷ OBJ triangle count), across all 24
+tiles:
+
+```
+tile                 obj_tris     bulk_B    B/tri
+terrain_-016_-288       32258   3,385,476    104.9
+terrain_-144_-288       32258   3,212,932     99.6
+terrain_0112_0096       32258   2,842,128     88.1
+...
+terrain_-016_-032       32258     208,980      6.5   <- collapsed
+terrain_-144_-032       32258     208,980      6.5
+terrain_144_0096        32258     208,980      6.5
+terrain_0112_-032       32258     208,980      6.5
+terrain_0240_-160       16002     208,980     13.1
+...
+```
+
+Two things this adds:
+
+1. **The direction is confirmed.** Bulk size scales with triangle count
+   (252 → 209 KB, 3051 → 2321 KB, ~11× vs ~12×), so eng-ue's loss is real.
+2. **The symptom is sharper than "1–10 %".** It is a **split**: 16 tiles carry
+   1.6–3.4 MB of geometry, while **8 tiles are at exactly 208,980 bytes** —
+   byte-identical across different tiles. Identical bulk for different tiles
+   strongly suggests those 8 collapsed to the *same minimal mesh* (most likely
+   only a distance-field volume, geometry empty). Chase it as a two-way split,
+   not a continuous ratio.
+
+This is a **mesh-import** defect, upstream of materials, and it is the leading
+candidate for "terrain looks wrong" — grass is 82 % of the terrain's faces, so a
+terrain missing 90 %+ of its faces cannot read as grass no matter how correct the
+material is. Note `import_chunks.py` (the older importer) reported "meshes that
+lost over half their geometry: 0"; the loss is in the **new block-UV reimport**
+(`import_family_materials.py --stage meshes`), so that check either does not run
+there or does not measure what it did before.
+
+---
+
 ## 6. Defects and contradictions found (important)
 
 ### 6.1 `-MClayers` silently honours only the FIRST comma-separated token — **FIXED**
+
+> **⚠️ METHODOLOGY — `logs/mclayers.txt` is APPEND-ONLY and shared.**
+> The game appends one `parse` line per launch and **never truncates it**, so
+> lines accumulate across runs. Reading it without truncating first will make
+> the same argument look non-deterministic (you read a *previous* run's line).
+> **Truncate it (`: > logs/mclayers.txt`) before every run**, and require an
+> `apply …` line — `parse` only proves what was parsed, `apply` proves what was
+> actually switched off and reports the counts.
 
 > **KNOWN INVALIDATING CONDITION FOR THIS A/B — read before quoting any
 > `-MClayers` comparison.** If a `-MClayers` spec contained more than one
