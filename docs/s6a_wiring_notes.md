@@ -14,16 +14,28 @@ the level, survive the cook, and are listed inside the packaged `.utoc`. The
 cook builds **17 family materials** and reports **0 material compile failures**.
 The build runs at ~300–400 fps.
 
-**But the scene still does not show the family materials' colours.** Every
-surface in the rendered frame is low-saturation tan/brown. Measured over the
-whole lower frame, **0.0 % of pixels are green**, in a terrain that is
-**82.1 % grass by surface area**, whose grass texture is `(84,104,66)` — clearly
-green. The pre-existing voxel-pipeline render (`shots/final_campus.png`) shows
-**36.2 % green**.
+**But the S3/S4/S5 output is not visibly in the scene at all.** Layer isolation
+with the layer switches *verified applied* and `-MCfog=0` shows:
 
-So: **the reference/cook problem is fixed; a colour problem remains, and it is
-in the render path, not in the asset graph.** Details and the evidence chain in
-§5.
+- turning the **voxel layer off changes 99.1 % of the frame** — so the entire
+  visible campus is the **old 1.17 M-voxel layer**;
+- the **new structures contribute ~nothing** (on/off differs by 0.15 %, and the
+  lower frame has no building silhouettes at all);
+- the **new terrain renders pure black** `(0,0,0)` (std 0.16).
+
+Working hypothesis (§5.1): **every `M_MC_<family>` material renders black.**
+That explains terrain-black, structures-black-on-black = invisible, and why the
+voxels (which use the *other* material system, `MC/CC0/M_MC_Surface`+`MI_*`)
+are the only thing that still shows up.
+
+**This supersedes my earlier reading.** The "ground matches soil, not grass" and
+"0 % green" numbers in this document were measuring the **voxel layer's**
+colours, not the family materials'. The reference/cook problem is fixed and real
+(§2); the family materials never reach the screen (§5.1).
+
+Also: the default fog (0.0015) washes the black terrain to pale grey
+`(209,217,225)`. **`-MCfog=0` is a prerequisite for seeing whether the new
+pipeline renders at all** — every earlier fogged capture was blind to this.
 
 ---
 
@@ -270,6 +282,64 @@ Things ruled out along the way:
 
 ---
 
+## 5.1 CORRECTION — the new pipeline is not visible; the scene is the voxel layer
+
+Found *after* §5, once the `-MClayers` fix (§6.1) made multi-token layer
+isolation actually work and `-MCfog=0` made the result legible. **This
+supersedes §4's colour reading.**
+
+Method: packaged `dist_verify3` binary, `-MCfog=0`, camera at the fixed spawn
+`cam=(1632,-21496,980) rot=(p0 y-93)`. Every layer change below is confirmed by
+an `apply …` line in `logs/mclayers.txt` naming what it touched — a parse line
+alone does not prove the switch ran, and one earlier run of mine was void for
+exactly that reason.
+
+| Configuration (all `apply`-verified) | lower-frame mean | frame-vs-FULL diff |
+|---|---|---|
+| FULL (vox + struct + terrain) | (117.9, 99.6, 78.7) σ 23.2 | — |
+| **`-vox`** (vox 1041 clusters off) | **(0.0, 0.0, 0.0) σ 0.12** | **px>8 = 1,015,233 = 99.1 %** |
+| `-struct` (struct 157 meshes off) | ≈ FULL | px>8 = 809 = 0.079 % |
+| `-vox` with struct on **vs** both off | both black | px>8 = 1511 = 0.15 % |
+| terrain only (`-vox,-struct`), fog 0 | uniform black, min 0 max 2 | column profile flat 0.0–0.1 |
+
+Three conclusions, each backed by the numbers above:
+
+1. **The visible scene is 100 % the old voxel layer.** Disabling voxels changes
+   99.1 % of the frame. The "buildings with window slits" in
+   `FULL_nofog_1.png` are **voxel blocks**, not the extracted meshes.
+2. **The 158 structure meshes are not visible.** With voxels off, toggling
+   structures changes 0.15 % — and the lower frame is a **featureless black with
+   no silhouettes** (min 0, max 2, px>10 = 0, flat column profile).
+3. **The 24 terrain tiles render pure black.**
+
+**Working hypothesis: all `M_MC_<family>` materials output black.** It explains
+all three at once: terrain black; structures black against black terrain =
+invisible; and the voxel layer still visible because it uses the *other*
+material system (`MC/CC0/M_MC_Surface` + `MI_*`), not the family materials.
+
+**What this changes about earlier analysis.** §4's hue census and the
+soil-vs-grass match were measuring the **voxel layer**, not the family
+materials. The `dE76 = 5.0` soil match is real but it is a property of the voxel
+layer's own materials. Any future colour measurement must first establish which
+layer is on screen (that is what `-MCfog=0` plus an `apply`-verified layer
+isolation is for).
+
+**Fog is a confound.** At the default 0.0015 the black terrain is washed to
+pale grey `(209,217,225)`, which reads as "washed out ground" rather than
+"black geometry". All later forensics should pass `-MCfog=0`.
+
+**Next decisive test (proposed, awaiting go-ahead):** read-only dump of
+`M_MC_grass`'s material graph to check whether
+`TextureSampleParameter2D.RGB → MP_BASE_COLOR` is actually connected. That
+separates "graph not wired" from "texture content black". A diagnostic-texture
+swap (grass → flat magenta) is the follow-up if the graph looks correct.
+
+**Note for the section-MaterialIndex probe:** if all family materials render
+black, then *any* section index renders black, so a "sections are normal"
+result does **not** clear the material side. The two questions are independent.
+
+---
+
 ## 6. Defects and contradictions found (important)
 
 ### 6.1 `-MClayers` silently honours only the FIRST comma-separated token — **FIXED**
@@ -419,6 +489,11 @@ missing". Two rounds were spent on that. The census should ideally fail loudly
 on an unknown prefix rather than report zero.
 
 ### 6.7 Hypothesis for the albedo loss (NOT proven — a constraint for the probe)
+
+> **Superseded in framing by §5.1.** The area-weighted constraint below is still
+> valid (it shows the *correct* section mapping is excluded), but §5.1 found
+> that the family materials render black at all, so section mapping cannot be
+> the whole story. Keep both: they are independent questions.
 
 Team-lead narrowed the colour loss to the per-section material assignment, and
 noted we have only ever verified the **slot array**, never
