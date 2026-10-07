@@ -24,6 +24,7 @@ step is the high-risk one and is worth verifying alone:
     --stage materials   import T_MC_<family> (Wrap) + build M_MC_<family>
     --stage meshes      reimport block-UV meshes + bind slots + save level + shot
     --stage all         both, in order (default)
+    --stage verify      read-only audit of what is on disk (no writes)
 
 Run inside the editor:
 
@@ -554,6 +555,70 @@ def bind_slots(mesh, order, tag, problems):
     return True
 
 
+def clear_component_overrides(problems):
+    """Blank the component-level `override_materials` on every B_/T_ actor.
+
+    This is the fix for the "assets all correct, picture unchanged" bug
+    documented in REFACTOR_PLAN.md section 8.12. Engine source, not a guess:
+    `FStaticMeshComponentHelper::GetMaterial()`
+    (Engine/Source/Runtime/Engine/Public/StaticMeshComponentHelper.h:133-164,
+    reached from UStaticMeshComponent::GetMaterial) is
+
+        if (OverrideMaterials.IsValidIndex(i) && OverrideMaterials[i])
+            OutMaterial = OverrideMaterials[i];      // override wins
+        else if (GetStaticMesh())
+            OutMaterial = GetStaticMesh()->GetMaterial(i);   // asset fallback
+
+    so a non-null component override shadows the asset slot completely. The
+    level had every structure slot and the terrain's dominant slot pinned to the
+    old atlas, which is why the 22 family materials were assigned but never
+    sampled. Clearing the overrides makes the asset slots authoritative again --
+    the same place the previous "component set_material is ineffective" note
+    came from, now correctly attributed.
+
+    Done here, in the pipeline, so a future mesh re-import cannot silently
+    reintroduce the overrides.
+
+    Returns (examined, cleared, had_overrides).
+    """
+    unreal.EditorLoadingAndSavingUtils.load_map(MAP_PATH)
+    world = unreal.get_editor_subsystem(
+        unreal.UnrealEditorSubsystem).get_editor_world()
+    actors = unreal.GameplayStatics.get_all_actors_of_class(world,
+                                                            unreal.StaticMeshActor)
+    examined = cleared = had = 0
+    for a in actors:
+        lbl = a.get_actor_label()
+        if not (lbl.startswith("B_") or lbl.startswith("T_")):
+            continue
+        sc = a.static_mesh_component
+        examined += 1
+        try:
+            arr = sc.get_editor_property("override_materials") or []
+        except Exception as exc:
+            problems.append("%s: cannot read override_materials (%s)"
+                            % (lbl, str(exc)[:50]))
+            continue
+        live = [m for m in arr if m is not None]
+        if not live:
+            continue
+        had += 1
+        sc.set_editor_property("override_materials", [])
+        # Read back: a set_editor_property that silently does nothing is this
+        # project's most repeated failure mode.
+        after = sc.get_editor_property("override_materials") or []
+        if [m for m in after if m is not None]:
+            problems.append("%s: %d override(s) survived the clear"
+                            % (lbl, len([m for m in after if m is not None])))
+            continue
+        cleared += 1
+    say("component override_materials: examined %d B_/T_ actors, %d had "
+        "overrides, %d cleared" % (examined, had, cleared))
+    if had and cleared != had:
+        problems.append("only %d of %d overridden actors cleared" % (cleared, had))
+    return examined, cleared, had
+
+
 def run_meshes():
     say("=== stage: meshes ===")
     problems = []
@@ -646,10 +711,16 @@ def run_meshes():
     if not all_slots_ok:
         problems.append("a probed mesh's slot names did not match its usemtl order")
 
+    # --- clear the component overrides that were shadowing the asset slots --
+    # NOTE: do NOT load_map() again between this and save_current_level(). The
+    # clear is an in-memory edit; a reload would pull the old overrides back off
+    # disk and the save would then write them out unchanged. (clear comes after
+    # its own load_map; everything after it must stay on the same world.)
+    clear_component_overrides(problems)
+
     # --- save the level the way that actually works -----------------------
     # EditorLoadingAndSavingUtils.save_dirty_packages is a no-op for .umap in
     # this project (proven with a probe actor); save_current_level writes it.
-    unreal.EditorLoadingAndSavingUtils.load_map(MAP_PATH)
     before_world = unreal.get_editor_subsystem(
         unreal.UnrealEditorSubsystem).get_editor_world()
     before = unreal.GameplayStatics.get_all_actors_of_class(before_world,
@@ -669,12 +740,138 @@ def run_meshes():
     say("actors before save=%d, after reload=%d  (B_*=%d T_*=%d)"
         % (len(before), len(labels), n_b, n_t))
 
+    # The overrides lived in the level, so a fresh reload is the only honest
+    # check that the clear persisted.
+    overrides_after = 0
+    for a in unreal.GameplayStatics.get_all_actors_of_class(world,
+                                                           unreal.StaticMeshActor):
+        lbl = a.get_actor_label()
+        if not (lbl.startswith("B_") or lbl.startswith("T_")):
+            continue
+        arr = a.static_mesh_component.get_editor_property("override_materials") or []
+        if [m for m in arr if m is not None]:
+            overrides_after += 1
+    say("after reload: actors still carrying override_materials = %d"
+        % overrides_after)
+    if overrides_after:
+        problems.append("%d actors still carry overrides after reload"
+                        % overrides_after)
+
     shot = "Q:/MC2UE5/shots/family_materials_%s.png" % time.strftime("%Y%m%d_%H%M%S")
     say("--- capture (run from outside the editor) ---")
     say("  python Q:/MC2UE5/tools/focus_capture.py --match mcreplica "
         "--out %s" % shot)
 
     return not problems and bool(saved)
+
+
+def run_verify():
+    """Read-only audit of everything the two write stages produced.
+
+    A second process loading the assets fresh from disk is the only honest check
+    that the writes persisted -- an in-process read-back shares the write cache
+    and has already fooled this project once. Nothing here writes: the map is
+    only counted, and the material recompiles are not saved.
+    """
+    say("=== stage: verify (read-only) ===")
+    ok = True
+    mel = unreal.MaterialEditingLibrary
+
+    # 1. family textures -- Wrap must survive the save
+    say("--- 22 textures (address mode) ---")
+    bad_t = []
+    for fam in FAMILIES:
+        tex = unreal.load_asset(TEX_FMT % fam)
+        if tex is None:
+            bad_t.append(fam)
+            say("  %-11s *** MISSING ***" % fam)
+            continue
+        ax = tex.get_editor_property("address_x")
+        ay = tex.get_editor_property("address_y")
+        good = (ax == unreal.TextureAddress.TA_WRAP
+                and ay == unreal.TextureAddress.TA_WRAP)
+        if not good:
+            bad_t.append(fam)
+        say("  %-11s addr_x=%-8s addr_y=%-8s srgb=%s  %s"
+            % (fam, ax.name, ay.name, tex.get_editor_property("srgb"),
+               "OK" if good else "*** NOT TA_WRAP ***"))
+    ok = ok and not bad_t
+
+    # 2. family materials -- compile + graph, read back from disk
+    say("--- 22 materials (recompile + BaseColor) ---")
+    bad_m = []
+    for fam in FAMILIES:
+        mat = unreal.load_asset(MAT_FMT % fam)
+        if mat is None:
+            bad_m.append(fam)
+            say("  %-11s *** MISSING ***" % fam)
+            continue
+        counts = {}
+        for e in mel.get_material_expressions(mat):
+            c = e.get_class().get_name()
+            counts[c] = counts.get(c, 0) + 1
+        offset = current_log_offset()
+        mel.recompile_material(mat)          # not saved; read-only check
+        comp_ok, why = scan_compile_errors("M_MC_%s" % fam, offset)
+        base = mel.get_material_property_input_node(
+            mat, unreal.MaterialProperty.MP_BASE_COLOR)
+        base_cls = base.get_class().get_name() if base else "NOTHING"
+        good = comp_ok and base_cls == "MaterialExpressionTextureSampleParameter2D"
+        if not good:
+            bad_m.append(fam)
+        say("  %-11s compile=%-6s BaseColor<-%s  graph=%s  %s"
+            % (fam, "ok" if comp_ok else why[:40], base_cls, counts,
+               "OK" if good else "*** FAIL ***"))
+    ok = ok and not bad_m
+
+    # 3. mesh slots, re-read from disk, position by position
+    say("--- slot names on disk vs usemtl order ---")
+    probes = [("bld_001_structure", "Structures", STRUCT_DIR),
+              ("bld_028_structure", "Structures", STRUCT_DIR),
+              ("bld_001_detail", "Structures", STRUCT_DIR),
+              ("terrain_-144_-544", "Terrain", TERRAIN_DIR),
+              ("terrain_-144_-416", "Terrain", TERRAIN_DIR),
+              ("terrain_-016_-032", "Terrain", TERRAIN_DIR)]
+    for name, folder, src_dir in probes:
+        obj_path = os.path.join(src_dir, name + ".obj")
+        want = usemtl_first_seen_order(obj_path) if os.path.isfile(obj_path) else None
+        mesh = unreal.load_asset("/Game/MC/%s/%s" % (folder, name))
+        if mesh is None:
+            say("  %-24s *** MISSING ***" % name)
+            ok = False
+            continue
+        arr = mesh.get_editor_property("static_materials") or []
+        got = [b.get_editor_property("material_slot_name") for b in arr]
+        got_s = [str(x) for x in got]
+        if want is None:
+            say("  %-24s slots=%d  (no obj to compare)" % (name, len(got)))
+            continue
+        match = got_s == want
+        ok = ok and match
+        say("  %-24s slots=%-2d %s" % (name, len(got),
+                                       "OK" if match else "*** MISMATCH ***"))
+        if not match:
+            say("      want: %s" % want)
+            say("      got : %s" % got_s)
+
+    # 4. the saved level
+    unreal.EditorLoadingAndSavingUtils.load_map(MAP_PATH)
+    world = unreal.get_editor_subsystem(
+        unreal.UnrealEditorSubsystem).get_editor_world()
+    labels = [a.get_actor_label() for a in
+              unreal.GameplayStatics.get_all_actors_of_class(world, unreal.Actor)]
+    n_b = sum(1 for x in labels if x.startswith("B_"))
+    n_t = sum(1 for x in labels if x.startswith("T_"))
+    say("--- level reload: total=%d  B_*=%d  T_*=%d" % (len(labels), n_b, n_t))
+    if n_b == 0 or n_t == 0:
+        ok = False
+        say("*** the level has no B_/T_ actors: the save did not persist")
+
+    if bad_t:
+        say("textures not TA_WRAP: %s" % bad_t)
+    if bad_m:
+        say("materials failing verify: %s" % bad_m)
+    return ok
 
 
 # --------------------------------------------------------------------------- #
@@ -705,7 +902,7 @@ def parse_stage(argv):
             stage, source = a.split("=", 1)[1].strip().lower(), "argv"
         elif low in ("-mcstage", "--stage") and i + 1 < len(argv):
             stage, source = argv[i + 1].strip().lower(), "argv"
-    if stage not in ("materials", "meshes", "all"):
+    if stage not in ("materials", "meshes", "all", "verify"):
         if stage:
             say("ignoring unknown stage %r; using 'all'" % stage)
         stage, source = "all", "default"
@@ -726,6 +923,8 @@ def main():
                 say("skipping meshes: materials stage did not pass")
             else:
                 ok = run_meshes() and ok
+        if stage == "verify":
+            ok = run_verify() and ok
     except Exception:
         ok = False
         say("FAILED:\n" + traceback.format_exc())
