@@ -965,5 +965,74 @@ QA 对照图已按 S6 建议**移出族目录** → `out/qa/`（`_qa_contact_she
 `engineering-lead-3` 已自查并承诺改用限定路径；它在前两个 commit（`c319041`、`94c75a6`）
 里核对是干净的。
 
+### 8.27 决定性测量：多机位下**绿色全部为 0.0%**（推翻「暖色族为主」的说法）
+
+`eng-ue` 报告「182 个 actor 里绝大多数只解析到 brick/concrete/fabric/quartz/gravel/wood/metal
+这些暖色族，**只有 6 个地形瓦片含 grass**」，并据此推断「画面偏褐与族构成本身是暖色族一致」。
+**这个前提是错的，而且我已用两个独立测量推翻它：**
+
+**① 地形瓦片 24/24 全部含 `grass`**（我直接解析每个 OBJ 的 `usemtl`）：
+```
+含 grass 的瓦片数: 24 / 24
+materials_by_family: grass quads=277488 tiles=24   ← 82% 的地形面
+每瓦片材质组数直方图: {1组:5, 2组:6, 4组:4, 5组:4, 6组:1, 7组:1, 8组:3}
+```
+
+**② 4 张多机位截图（含 `buildings`/`tall_block`/`west_band`/`field_axis`）下半帧色相统计**：
+
+| 截图 | 整帧均值 | 绿% | 褐% | 蓝% |
+|---|---|---|---|---|
+| `stop1_buildings` | (122,119,113) | **0.0** | 100.0 | 0.0 |
+| `stop2_tall_block` | (124,121,115) | **0.0** | 82.5 | 9.4 |
+| `stop3_west_band` | (127,125,120) | **0.0** | 99.4 | 0.0 |
+| `stop4_field_axis` | (133,122,107) | **0.0** | 99.4 | 0.0 |
+
+**若「暖色族为主」是对的，绿色应当是「少」而不是「恰好 0.0%」。** 4 张不同机位全部为 0.0%，
+与 `quality-lead-2` 的独立计算（相机视锥内 grass 占 **42–46%**）叠加起来，
+**唯一自洽的结论是：族反照率丢失是彻底的，不是取景或族构成问题。**
+（`stop0_sports_field` 那张撞了 `ShadowSetup.cpp:1611` 预存断言，是崩溃窗口，无效。）
+
+**③ 顺带确认绑定链已端到端打通**：182 个 actor 的**组件 `GetMaterial()`（绘制路径，优先取
+override）全部解析到 `M_MC_<族>`，引用 `M_MC_Atlas` 的 actor = 0** ——
+即 §8.12 的 override 修复已生效。**所以损失不在「用哪个材质」，而在「材质怎么求值」。**
+这让 §8.20 的 section 探针假设更值得先排除（也可能问题在材质图运行时）。
+
+### 8.28 `leaves`/`bars` 的 masked 材质已落地并断言（`eng-ue`，commit `974b083`）
+
+| 断言 | `M_MC_leaves` 实测 |
+|---|---|
+| 源 alpha 非全不透明 | `==0` **68.39%** / `==255` 30.85% / 不透明 **31.61%** ✓ |
+| `opacity_mask_clip_value` | **0.3330** ✓（磁盘重载读回）|
+| `blend_mode` | **`BLEND_MASKED`** ✓ |
+| `OpacityMask` 输入节点 | `MaterialExpressionTextureSampleParameter2D` ✓ |
+| 编译错误 | 0 ✓ |
+
+**唯一图形改动是「把已有 `TextureSampleParameter2D` 的 `A` 接到 `MP_OPACITY_MASK`」** ——
+不新增节点类型，这是本项目的关键风险控制。
+
+`bars`：alpha `==0` 63.81% / 不透明 **36.19%**（要求 30–40% ✓）、clip 0.333、masked、roughness 0.30。
+`glass`：**`BLEND_OPAQUE` + roughness 0.10**（规格明确否决玻璃半透明）。
+新增断言：**没有 masked 声明的族必须是 `BLEND_OPAQUE`** —— 防止有人误把别族设成 translucent 引入排序伪影。
+
+**24/24 纹理 `TA_WRAP`、24/24 材质编译 ok、5 节点、`RESULT: PASS`。**
+
+### 8.29 一次 commit 污染：**是我自己造成的，不是 `engineering-lead-3`**
+
+我先前把责任归给了 `engineering-lead-3` 的 `9f6621a`（它确实扫进了
+`tools/split_atlas_to_families.py` 88 行）。但 `eng-python-2` 随后质询到我头上，我核查后确认：
+
+**我的 `178af62` 扫进了 `tools/block_families.py`（9 行）+ `tools/build_atlas.py`（14 行）——
+这正是 `eng-python-2` 暂存在 index 里、准备等 `bars` 图形烘焙完成后一起提交的工作。**
+
+原因与 `9f6621a` 相同：**协作者已 `git add` 进 index，而我用了裸 `git add <我的文件> && git commit`**
+—— `git add` 只加我的文件，但 `git commit`（不带路径）**会提交整个 index**。
+
+**处置**：不回退历史（理由见 §8.26，逐字适用）。工作区内容未丢失
+（`block_families.py` 仍在改，`bars` 与玻璃变体都已落盘并被验证）。
+真相是**两个人各犯了一次同类错误**，而我先前只报了别人那次。
+
+**纪律升级（我自己的）**：**永远用 `git commit -- <paths>`（或 `git commit -o`）限定路径，
+绝不用裸 `git commit`。** 我已连续两次踩到，这条对我在这个多人并发仓库里是硬要求。
+
 ---
-*本文档为唯一权威计划。S0 定架构，S1–S4 已回填，S5 见 §8，S4.5 见 §8.10，S5.5/5.6 见 §8.13–8.26。*
+*本文档为唯一权威计划。S0 定架构，S1–S4 已回填，S5 见 §8，S4.5 见 §8.10，S5.5/5.6 见 §8.13–8.29。*
