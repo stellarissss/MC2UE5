@@ -394,9 +394,34 @@ def main():
         "targets_from": "block_families.VARIANT_TARGET",
         "items": rows,
     }
+
+    # Put the variants into "families" as well, because that is the list
+    # import_family_materials.py reads ("the manifest is the single source of
+    # truth: a family added there is processed without editing this file").
+    # Keeping them only under colour_variants produced PNGs that nothing
+    # imported, so the meshes referenced fabric_lime / brick_pink with no
+    # material to bind. The per-variant record is kept in the entry so the
+    # importer can still tell a variant from a base family.
+    have = {f.get("family") for f in man.get("families", [])}
+    for r in rows:
+        v = r["variant"]
+        if v in have:
+            continue
+        man.setdefault("families", []).append({
+            "family": v,
+            "png": "out/families\\%s.png" % v,
+            "mode": "RGBA",
+            "source_mode": "baked: %s" % r.get("source", "variant"),
+            "mirrored": bool(r.get("mirrored")),
+            "mean": r.get("target_rgb"),
+            "is_variant": True,
+            "base_family": r.get("base_family"),
+        })
+
     with open(MANIFEST, "w") as fh:
         json.dump(man, fh, indent=2)
-    print("\nreport: %s (colour_variants)" % MANIFEST)
+    print("\nreport: %s (families now %d entries, colour_variants %d)"
+          % (MANIFEST, len(man.get("families", [])), len(rows)))
     return 0
 
 

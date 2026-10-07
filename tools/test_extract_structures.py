@@ -346,8 +346,12 @@ class TestMaterialVolume(unittest.TestCase):
         bad = []
         for nid, f in pairs:
             expected = E.family_of(self.names[int(nid)])
-            if ATLAS_FAMILIES[int(f) - 1] != expected:
-                bad.append((self.names[int(nid)], ATLAS_FAMILIES[int(f) - 1],
+            # Slots are numbered over SLOT_NAMES (atlas families + colour
+            # variants), not over ATLAS_FAMILIES: a dyed block is tagged with
+            # its variant name, so reading the slot through the atlas list
+            # would both mislabel it and hide the variant entirely.
+            if E.SLOT_NAMES[int(f) - 1] != expected:
+                bad.append((self.names[int(nid)], E.SLOT_NAMES[int(f) - 1],
                             expected))
         self.assertEqual(bad, [],
                          "%d block names carry the wrong material family: %s"

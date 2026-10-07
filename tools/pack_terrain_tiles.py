@@ -41,6 +41,7 @@ import numpy as np
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from build_atlas import ATLAS_FAMILIES                          # noqa: E402
+from extract_structures import SLOT_NAMES                      # noqa: E402
 from terrain_smooth import (CAMPUS, BLOCK_CM, fill_invalid,     # noqa: E402
                             smooth_heightfield, surface_family_map)
 from extract_structures import build_material_volume            # noqa: E402
@@ -133,13 +134,13 @@ def main():
                 "mesh_path": "%s/%s" % (MESH_DIR, name),
                 "vertex_count": int(pos.shape[0]),
                 "triangle_count": int(tri.shape[0]),
-                # `.fam` holds the ABSOLUTE ATLAS_FAMILIES slot (1-based), while
+                # `.fam` holds the ABSOLUTE SLOT_NAMES slot (1-based), while
                 # `slots` lists only the families this tile actually uses. The
                 # two are paired by position so the builder can map one to the
                 # other without re-deriving the family table.
                 "slot_numbers": fams,
-                "slots": [ATLAS_FAMILIES[s - 1] for s in fams],
-                "materials": [MAT_FMT % ATLAS_FAMILIES[s - 1] for s in fams],
+                "slots": [SLOT_NAMES[s - 1] for s in fams],
+                "materials": [MAT_FMT % SLOT_NAMES[s - 1] for s in fams],
                 "origin_block": [x0 + tu, z0 + tv],
                 "size_blocks": [w, d],
             })

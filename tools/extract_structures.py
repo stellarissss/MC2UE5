@@ -70,6 +70,46 @@ BLOCK_CM = 100.0
 #: place in this file that knows it.
 MC_TO_UE = (0, 2, 1)
 
+
+#: Every name a mesh can be tagged with: the atlas families first, then the
+#: colour variants (brick_pink, fabric_lime, ...). Order matters -- this is the
+#: 1-based slot stored per voxel in the material volume AND the material index
+#: written into the OBJ, so the two have to agree. The atlas families keep
+#: their existing positions so a slot number never silently changes meaning.
+#:
+#: This has to exist because block_families.family_key() can return a variant
+#: name, and a lookup built from ATLAS_FAMILIES alone would raise KeyError on
+#: every dyed block.
+def _slot_names():
+    from block_families import VARIANT_TARGET as _VARS
+    names = list(ATLAS_FAMILIES)
+    for v in sorted(_VARS):
+        if v not in names:
+            names.append(v)
+    return names
+
+
+SLOT_NAMES = _slot_names()
+
+
+def base_family_of(slot_name):
+    """'fabric_lime' -> 'fabric': a slot name minus its dye suffix.
+
+    Only the atlas UV path needs this -- a variant shares its base family's
+    cell, because the atlas has no per-variant cell and, in block-UV mode, what
+    gets sampled is the per-family texture anyway.
+    """
+    if slot_name in ATLAS_FAMILIES:
+        return slot_name
+    from block_families import DYE_COLOURS as _DYES
+    for c in _DYES:
+        suffix = "_" + c
+        if slot_name.endswith(suffix):
+            head = slot_name[:-len(suffix)]
+            if head in ATLAS_FAMILIES:
+                return head
+    return slot_name
+
 #: Detail kinds, by block-name substring. The kind only decides which library
 #: mesh a detail component lands in; every kind is meshed identically, as the
 #: voxels the save has. Grouping exists so an artist can replace "all fences"
@@ -143,7 +183,7 @@ def build_material_volume(bin_path, cache_path):
     """
     from voxelio import VoxelFile
 
-    fam_slot = {f: i + 1 for i, f in enumerate(ATLAS_FAMILIES)}
+    fam_slot = {f: i + 1 for i, f in enumerate(SLOT_NAMES)}
     x0, x1, z0, z1 = CAMPUS
     W, D, H = x1 - x0 + 1, z1 - z0 + 1, MAX_Y
 
@@ -154,6 +194,7 @@ def build_material_volume(bin_path, cache_path):
     except OSError:
         src_stamp = 0
     stamp = {"atlas_families": list(ATLAS_FAMILIES),
+             "slot_names": list(SLOT_NAMES),
              "source_mtime": src_stamp,
              "campus": list(CAMPUS)}
 
@@ -230,8 +271,11 @@ def family_of(block_name):
     n = block_name.split(":", 1)[-1]
     if n in ("water", "flowing_water", "bubble_column"):
         return "water"
-    from block_families import family
-    return family(n)
+    # family_key, not family: the dyed blocks (lime_wool, pink_terracotta,
+    # white_concrete) are what give the sports field its colours, and under the
+    # base mapping they all collapse into fabric / brick / concrete.
+    from block_families import family_key
+    return family_key(n)
 
 
 # --------------------------------------------------------------------------- #
@@ -433,7 +477,7 @@ def scale_uvs(uvs, quads, layout):
     """
     out = np.empty_like(uvs)
     for i, (base, slot, w, h) in enumerate(quads):
-        u0, v0, u1, v1 = layout[ATLAS_FAMILIES[slot - 1]]["uv"]
+        u0, v0, u1, v1 = layout[base_family_of(SLOT_NAMES[slot - 1])]["uv"]
         du, dv = u1 - u0, v1 - v0
         inv_w = 1.0 / float(w) if w else 0.0
         inv_h = 1.0 / float(h) if h else 0.0
@@ -467,7 +511,7 @@ def write_obj(path, comments, corners, uvs, normals, quads):
             w("vn %.3f %.3f %.3f\n" % (n[0], n[1], n[2]))
         current = None
         for base, slot, _w, _h in quads:
-            name = ATLAS_FAMILIES[slot - 1]
+            name = SLOT_NAMES[slot - 1]
             if name != current:
                 w("usemtl %s\n" % name)
                 current = name
@@ -510,7 +554,7 @@ def emit(mask, fam_idx, occupied, layout, cap, out_dir, name, comments):
     # else: keep block-space UVs (0..w, 0..h per quad) for a tiling sampler.
     path = os.path.join(out_dir, name + ".obj")
     write_obj(path, comments, corners, uvs, normals, quads)
-    slots = Counter(ATLAS_FAMILIES[q[1] - 1] for q in quads)
+    slots = Counter(SLOT_NAMES[q[1] - 1] for q in quads)
     return {
         "obj": name + ".obj",
         "quads": len(quads),

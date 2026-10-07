@@ -43,10 +43,18 @@ from build_atlas import ATLAS_FAMILIES                          # noqa: E402
 CAMPUS = (-144, 303, -544, 223)
 BLOCK_CM = 100.0
 
-#: 1-based family slot per family name, matching build_material_volume's
-#: encoding (``fam_slot = {f: i+1 ...}``, 0 = air). The terrain reuses it so a
-#: column's surface family and a structure voxel's family mean the same slot.
-FAMILY_SLOT = {f: i + 1 for i, f in enumerate(ATLAS_FAMILIES)}
+#: 1-based family slot per name, matching build_material_volume's encoding
+#: (``fam_slot = {f: i+1 ...}``, 0 = air). Imported rather than rebuilt here:
+#: the slot number is the contract between the voxel volume, this file's
+#: `usemtl` lines and extract_structures' OBJ writer, so two independent copies
+#: of the table would be able to drift and mislabel surfaces without error.
+#: It covers the colour variants too (fabric_lime, brick_pink, ...), which is
+#: how the sports field gets its colours -- the field surface belongs to the
+#: terrain, not to any building mesh, so a variant that never appears in the
+#: structure OBJs is not missing, it is here.
+from extract_structures import SLOT_NAMES                     # noqa: E402
+
+FAMILY_SLOT = {f: i + 1 for i, f in enumerate(SLOT_NAMES)}
 OTHER_SLOT = FAMILY_SLOT["other"]
 
 
@@ -206,18 +214,18 @@ def build_tiles(hm, origin, tile, upscale, out_dir, fam_map=None):
                         d = idx[(i, j + 1)]
                         slot = int(fam_map[i // upscale, j // upscale])
                         face_by_fam.setdefault(slot, []).append((a, b, c, d))
-                # Slot order is ATLAS_FAMILIES order -- the same order the
+                # Slot order is SLOT_NAMES order -- the same order the
                 # structures OBJs emit -- so both meshes assign consistent
                 # material indices.
                 for slot in sorted(face_by_fam):
-                    fh.write("usemtl %s\n" % ATLAS_FAMILIES[slot - 1])
+                    fh.write("usemtl %s\n" % SLOT_NAMES[slot - 1])
                     for a, b, c, d in face_by_fam[slot]:
                         fh.write("f %d/%d/%d %d/%d/%d %d/%d/%d\n"
                                  % (a, a, a, b, b, b, c, c, c))
                         fh.write("f %d/%d/%d %d/%d/%d %d/%d/%d\n"
                                  % (a, a, a, c, c, c, d, d, d))
                 for slot, faces in face_by_fam.items():
-                    rec = by_family.setdefault(ATLAS_FAMILIES[slot - 1],
+                    rec = by_family.setdefault(SLOT_NAMES[slot - 1],
                                                {"quads": 0, "tiles": 0})
                     rec["quads"] += len(faces)
                     rec["tiles"] += 1
