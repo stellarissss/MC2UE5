@@ -88,8 +88,14 @@ SPORT_FAMILY = "sports"
 #: shifts every v coordinate) at the 33rd family. `glass` is therefore free.
 GLASS_FAMILY = "glass"
 
+#: The iron-bars family (ART-S5.6). Also appended last. `iron_bars` is 8,161
+#: blocks -- 40% of the old `metal` family and its largest single component --
+#: and it must be BLEND_MASKED while `iron_block` (3,561) must stay opaque. A
+#: per-family material is one blend mode, so it cannot share `metal`.
+BARS_FAMILY = "bars"
+
 ATLAS_FAMILIES = (list(FAMILIES) + list(GENERATED_FAMILIES)
-                  + [SPORT_FAMILY, GLASS_FAMILY])
+                  + [SPORT_FAMILY, GLASS_FAMILY, BARS_FAMILY])
 
 #: Defaults the mesher also reads. Kept in one dict so `--atlas-*` on either
 #: tool produces the same numbers.
@@ -116,6 +122,10 @@ GENERATED_RGB = {
     # not blue water (C* <= 10 vs water's 19.7). The per-family texture adds a
     # little grain on top of this flat colour.
     "glass": (58, 68, 74),
+    # ART-S5.6: iron_bars. The atlas cell is the flat rail colour only; the
+    # grille cutout lives in the alpha of the per-family texture (an atlas cell
+    # cannot hold alpha without turning the whole atlas RGBA).
+    "bars": (78, 80, 82),
 }
 
 #: Re-sourced families: family -> ambientCG asset id. These eight measured
@@ -245,7 +255,7 @@ EXPECTED_MEAN = {
     "fabric": (178, 180, 184), "quartz": (196, 198, 200),
     "greystone": (104, 106, 104), "other": (150, 148, 144),
     "water": (58, 106, 128), "sports": (96, 122, 74),
-    "glass": (58, 68, 74),
+    "glass": (58, 68, 74), "bars": (78, 80, 82),
 }
 
 #: Licence. Sourced textures are CC0. Poly Haven supplied the families that

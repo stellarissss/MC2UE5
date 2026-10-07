@@ -135,6 +135,15 @@ _RULES = (
     ("slate", "roof"),
     ("_tile", "tiles"),
     # metal
+    #
+    # iron_bars must come FIRST, ahead of ("iron", "metal"): it contains "iron"
+    # and would otherwise be swallowed by that rule and rendered as an opaque
+    # metal plate. It is the largest component of the old metal family (8,161
+    # of 20,232 blocks) and it is the one that has to be BLEND_MASKED -- a
+    # per-family material is one blend mode, so it cannot share `metal` with
+    # `iron_block` (3,561, opaque). `("iron", "metal")` is kept, not deleted:
+    # iron_block / iron_door / iron_trapdoor still depend on it.
+    ("iron_bars", "bars"),
     ("iron", "metal"),
     ("gold", "metal"),
     ("copper", "metal"),
