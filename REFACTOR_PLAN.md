@@ -1137,5 +1137,64 @@ after   -MClayers=-vox         ->  spec=vox=0 struct=1 terrain=1     ✅ 单 tok
 **注意**：`eng-ue` 的 section `MaterialIndex` 探针即便报「正常」也解释不了本现象 ——
 **因为材质本身输出黑**，与三角形分到哪个槽无关。那条探针**降为次要**。
 
+### 8.34 【已修复】地形几何：OBJ 导入器丢弃 99.2% 的多边形 → 改走 MeshDescription
+
+**这是本项目时间跨度最长、也是最隐蔽的缺陷：地形从来就没成功导入过。**
+`tools/probe_mesh_api.py`（一个早已存在的探针）的 docstring 里写着：
+「`reimport_terrain.py` 里导入器**静默丢弃了约 90% 的几何**。守卫调用
+`get_number_verts(mesh, 0)`，而它在这个引擎上抛异常 —— 对每个网格都抛，
+**所以检查从未运行，158 个导入全报「干净」却什么也没验证**。」
+**一个不可能失败的守卫比没有守卫更糟。** 这个缺陷从未被修，只是被一个失效的检查盖住了。
+
+**实测（每次都是真实导入，UE 5.8）**：
+
+| OBJ 面数 | 落地三角形 |
+|---|---|
+| 98（8×8 平坦网格） | 98 = **100%** |
+| 7,938（64×64 平坦） | 975 = 12.3% |
+| 32,258（128×128 平坦瓦片） | 252 = **0.8%** |
+| 32,258（128×128 起伏瓦片） | 3,051 = 9.5% |
+| 10,924（体素壳 bld_028） | 10,924 = **100%** |
+
+**三个解释被逐一测试并否掉（不是推理掉）**：
+① 把所有 `-0.0000` 法线改写成 `+0.0000` → 结果**完全相同**；
+② 把文件改成纯 LF → **完全相同**；
+③ 1,000 面的文件仍然只落地 255 面 → **既非按比例丢失、也与换行/符号零无关**。
+并且**全新导入的数字与现存资产逐位相同** → 资产既不陈旧也没损坏，**是导入器真的在丢面**。
+**导入器不打任何警告**（无 "Too few vertices"、无 "Invalid mesh data (NAN)"），即它认为自己成功了。
+丢面发生在 `UInterchangeOBJTranslator::MakeMeshDescriptionForGroup`
+（`Plugins/Interchange/Runtime/Source/Import/Private/Mesh/InterchangeOBJTranslator.cpp`），
+**是引擎代码，本项目无法打补丁**。
+改用**四边形**更糟：构建跑了几分钟后以 `Input has 0 triangles` 收场。
+
+**修法：用 UE 官方的 MeshDescription 建网格，完全不经 OBJ、不经导入器**
+
+```
+StaticMesh.create_static_mesh_description()
+StaticMeshDescription.create_vertex / create_vertex_instance / create_triangle
+                        / create_polygon_group / set_vertex_position
+                        / set_vertex_instance_uv / set_polygon_group_material_slot_name
+StaticMesh.build_from_static_mesh_descriptions([smd], fast_build=False)
+```
+
+**实测：128×128 平坦网格 32,258 / 32,258 = 100%，0.7 秒。**
+
+两个必须记住的实现细节：
+1. **编辑器内嵌 Python 没有 numpy**（`ModuleNotFoundError`）→ 几何在 venv 侧算好、
+   写成紧凑二进制包（`tools/pack_terrain_tiles.py`），编辑器侧只用标准库 `array` 读取
+   （`tools/build_terrain_meshes.py`）。**这正是原流程要「venv 生 OBJ → UE 导入」的原因。**
+2. **`fast_build` 默认 `True` 会让异步网格构建与保存竞态**，后台 worker 崩在
+   `Assertion failed: (Index >= 0) & (Index < ArrayNum) [Array.h:1339]`。
+   改成 **`fast_build=False`** 后彻底消失。分批、逐瓦片、单瓦片重试都曾被这个竞态误导过。
+3. **顶点实例共享（每顶点或每「材质组+顶点」共享）必崩**，只有「每三角形角一个实例」可用。
+   代价是网格实际未索引（每面 3 个实例），这是**已知待优化项**，正确性优先。
+
+**结果**：`24 个瓦片 / 676,656 / 676,656 三角形 / 38.8 秒 / 零崩溃`，
+材质槽位与 section 数逐一对上（1 section→`M_MC_grass`；8 sections→8 个族材质）。
+**资产名不变，所以关卡里那 24 个地形 actor 自动用上新网格，关卡本身不用动。**
+
+坐标口径复用了导入器的基准变换（OBJ `(x,y,z)` → UE `(x,-y,z)`、UV `(u,v)` → `(u,1-v)`），
+因此**地形与仍走导入器的 158 个结构网格保持一致**。
+
 ---
-*本文档为唯一权威计划。S0 定架构，S1–S4 已回填，S5 见 §8，S4.5 见 §8.10，S5.5/5.6 见 §8.13–8.33。*
+*本文档为唯一权威计划。S0 定架构，S1–S4 已回填，S5 见 §8，S4.5 见 §8.10，S5.5/5.6 见 §8.13–8.34。*
