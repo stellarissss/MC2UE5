@@ -306,6 +306,42 @@ the packaged build; the packaged build is the one to trust for visual evidence.
 - **`MC/Atlas` in the pak** — correctly absent now (§2); the brief's
   "must appear in the pak" predates the per-family change.
 
+### 6.5 Grey materials: it is a cluster of four, not one pair (noted, not fixed)
+
+Brief §4 asked for granite vs greystone to be noted, not fixed. Measured on the
+**source family textures** (`out/families/*.png`), converting mean sRGB to
+CIELAB and taking ΔE76:
+
+| family | mean RGB | Lab |
+|---|---|---|
+| granite | (110,110,112) | (46.48, 0.42, −1.10) |
+| greystone | (104,106,104) | (44.56, −1.15, 0.87) |
+| concrete | (112,112,110) | (47.16, −0.39, 1.08) |
+| rock | (96,94,92) | (39.98, 0.38, 1.40) |
+| gravel | (140,138,134) | (57.45, −0.05, 2.38) |
+
+ΔE76 against the ≥8 separation guideline:
+
+| pair | ΔE76 | |
+|---|---|---|
+| granite vs greystone | **3.17** | below (matches the brief's number exactly) |
+| granite vs concrete | **2.42** | below |
+| greystone vs concrete | **2.72** | below |
+| greystone vs rock | **4.86** | below |
+| granite vs gravel | 11.52 | ok |
+
+**The brief's single pair is the tip of a bigger problem: granite, greystone
+and concrete are mutually indistinguishable (ΔE76 ≤ 3.2), and rock is nearly so
+against greystone.** These four are the dominant façade/stone families, so the
+whole stone palette reads as one grey — consistent with QA reading them as the
+same material on screen.
+
+On screen, none of this is currently visible: the frame renders 0 % green and a
+uniform tan, so the greys do not even separate from the ground. **I did not
+nudge any target**, per the brief. When the albedo loss in §5 is fixed, re-check
+this cluster — it will then be the visible defect.
+
+
 ---
 
 ## 7. `tools/` exists in two places — recommendation
@@ -347,6 +383,11 @@ path so nothing is duplicated.
 - Terrain surface area 82.1 % grass (§5).
 - Frame statistics, noise floor, hue census (§4).
 - Ground chroma ≈ soil, not grass (§4).
+- Grey-family separation: granite/greystone ΔE76 = 3.17, reproduced exactly;
+  granite/concrete 2.42, greystone/concrete 2.72, greystone/rock 4.86 (§6.5).
+- Camera frustum is 42–46 % grass — cross-checked independently by
+  quality-lead-2 from their own family map + spawn data, so 0 % green cannot be
+  a framing artefact (§5).
 - `-MClayers` first-token-only behaviour (§6.1), from `logs/mclayers.txt`.
 - Run-time census `meshes=182`; the `vis=0` detector is stale (§3).
 - Frame time p50 2.4–3.3 ms on the packaged build (§9).
