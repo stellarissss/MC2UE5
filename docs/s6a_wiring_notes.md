@@ -31,6 +31,7 @@ in the render path, not in the asset graph.** Details and the evidence chain in
 
 | Artifact | Path |
 |---|---|
+| Compile Shipping (`-NoUBA`) | `repo/tools/build_shipping.bat` |
 | Cook + package (2 steps, `-SkipZenStore`) | `repo/tools/package_shipping.bat` |
 | Pak-content reader (engine's own index) | `repo/tools/pak_report.py` |
 | Frame texture statistics | `repo/tools/frame_stats.py` |
@@ -122,15 +123,38 @@ for all non-`-MCstop` shots — byte-identical across runs (verified by regex ov
 `logs/mc_runtime.txt`). `-MCstop=0` parks at the sports field
 `(14966,-21166,2155)`.
 
-Runtime census after the wiring fix: `meshes=182 terrain(vis=0 col=0)`.
-**182 = 158 + 24, so the meshes are loaded.** `vis=0 col=0` is a **stale
-detector, not a fact**: `MCConsoleCommands.cpp` identifies terrain by
-`Mesh->GetName().Contains("overworld")` (lines 81-91 and 360), but the new
-tiles are named `terrain_<x>_<y>`. The census is lying; the geometry is there.
+Runtime census after the wiring fix: `meshes=182 terrain(vis=24 col=0)`.
+**182 = 158 + 24, so the meshes are loaded**, and `vis=24` correctly counts the
+24 terrain tiles. (Before I fixed the detector this read `terrain(vis=0 col=0)`,
+which is a **stale detector, not a fact**: `MCConsoleCommands.cpp` identified
+terrain by `Mesh->GetName().Contains("overworld")`, but the new tiles are named
+`terrain_<x>_<y>`. The same wrong prefix was in `MCLayerControl.cpp`. Both are
+fixed — see §6.6.)
 
 ---
 
 ## 4. Tiling measurement — the required numbers
+
+### 4.0 METHODOLOGY — do not gate pixels with a frame hash
+
+**This build is not frame-deterministic.** Two captures of the *same* build at
+the *same* camera, ~4 s apart, differ by:
+
+```
+noise floor:  max 35   mean 0.45   px>8 = 620   (0.061 % of 1,024,000 px)
+```
+
+Therefore **`sha256(frame_A) != sha256(frame_B)` is not a valid gate** — it is
+true by construction and will green-tick a no-op. QA demonstrated this earlier
+with a byte-identical PNG producing two different frame hashes. Any pixel
+judgement here must be a **tolerance** judgement against the measured noise
+floor, reported as both an absolute `px>8` count and a `% of frame`, e.g.
+"separation must clearly exceed 620 px / 0.061 %".
+
+Corollary: the **camera must be held byte-identical** between compared frames.
+For the default spawn that is `cam=(1632,-21496,980) rot=(p0 y-93)`; verify it
+from `logs/mc_runtime.txt` rather than assuming, because `-MCstop=` may or may
+not have fired by capture time (§6.2).
 
 Noise floor = two captures, same build, same camera, ~4 s apart.
 
@@ -248,7 +272,7 @@ Things ruled out along the way:
 
 ## 6. Defects and contradictions found (important)
 
-### 6.1 `-MClayers` silently honours only the FIRST comma-separated token
+### 6.1 `-MClayers` silently honours only the FIRST comma-separated token — **FIXED**
 
 > **KNOWN INVALIDATING CONDITION FOR THIS A/B — read before quoting any
 > `-MClayers` comparison.** If a `-MClayers` spec contained more than one
@@ -256,7 +280,27 @@ Things ruled out along the way:
 > invalid conclusion** (it measured the first token only). Single-token specs
 > are fine. Confirmed independently by quality-lead-2 as the correct reading.
 
-Verified by four launches, reading `logs/mclayers.txt`:
+**Root cause (from engine source, not guessed).** `FParse::Value`'s FString
+overload declares `bool bShouldStopOnSeparator = true`
+(`Engine/Source/Runtime/Core/Public/Misc/Parse.h:71`), and
+`Parse.cpp:299` turns that into the terminator set
+`bShouldStopOnSeparator ? TEXT(",) \r\n\t") : WhiteSpaceChars`. With the
+default, the value read for `-MClayers=-vox,-struct` stops at the comma, so
+`ParseIntoArray(TEXT(","))` only ever saw one element.
+
+**Fix.** Pass `false` at the call site (`MCLayerControl.cpp`,
+`FMCLayerSpec::FromCommandLine`) — one extra argument, whitespace-only
+terminators. Rebuilt Shipping and verified on the packaged binary:
+
+```
+before:  -MClayers=-vox,-struct  ->  parse spec=vox=0 struct=1 terrain=1   (2nd token lost)
+after :  -MClayers=-vox,-struct  ->  parse spec=vox=0 struct=0 terrain=1   <-- FIXED
+after :  -MClayers=-vox          ->  parse spec=vox=0 struct=1 terrain=1   (single token unaffected)
+```
+
+Anyone quoting a multi-token `-MClayers` result from before this rebuild is
+quoting an invalid measurement. Regenerate it.
+
 
 ```
 -MClayers=-struct            -> spec=... struct=0 ...            (applied)
@@ -346,6 +390,69 @@ this cluster — it will then be the visible defect.
 
 ---
 
+### 6.6 `terrain(vis=0)` was a stale detector — **FIXED**
+
+Two places matched terrain by the *old* asset prefix `overworld`:
+
+- `MCConsoleCommands.cpp` — the per-second runtime census line
+  (`meshes=… terrain(vis=N col=N)`), which reported `vis=0` while 24 tiles
+  were loaded;
+- `MCLayerControl.cpp` — the `-MClayers` census, which reported
+  `terrain(vis=0 col=0)` in its apply line.
+
+The current tiles are named `terrain_<x>_<y>`, so the old prefix matched
+nothing. Both now accept `terrain_` **or** `overworld` (the old prefix is kept
+so a level built the old way does not silently stop being seen). Rebuilt and
+verified on the packaged binary:
+
+```
+before:  meshes=182 terrain(vis=0  col=0)
+after :  meshes=182 terrain(vis=24 col=0)   <-- FIXED, 24 = the tile count
+```
+
+`col=0` is correct: the level places no separate `C_*` collision meshes, so
+there is no second layer to count.
+
+**Lesson for the toolkit:** a census that matches by an asset-name substring is
+a silent liar when naming changes, and "0" then reads as "the geometry is
+missing". Two rounds were spent on that. The census should ideally fail loudly
+on an unknown prefix rather than report zero.
+
+### 6.7 Hypothesis for the albedo loss (NOT proven — a constraint for the probe)
+
+Team-lead narrowed the colour loss to the per-section material assignment, and
+noted we have only ever verified the **slot array**, never
+`FStaticMeshSection.MaterialIndex`. The existing probe
+(`logs/probe_resolved.py`) confirms that: it reads `sc.get_material(i)` over
+`static_materials`, which is the slot array, not the section mapping.
+
+I ran an area-weighted colour prediction over the source OBJs to see which
+mapping is even consistent with the frame (triangle-area weighting, family mean
+colours from `out/families/*.png`):
+
+| | correct mapping | all sections → FIRST slot | all sections → LAST slot |
+|---|---|---|---|
+| terrain predicts | (94.0, 108.7, 76.7) **green** | (84.0, 104.0, 66.1) **green** | (114.2, 114.6, 105.9) grey |
+| structures predict | (137.0, 133.5, 130.9) light grey | (114.5, 113.8, 111.7) grey | (101.7, 94.5, 86.6) brown-grey |
+
+Observed: ground (105.1, 88.3, 69.5), façade (95.5, 84.0, 71.6).
+
+**What this rules out:** the *correct* mapping. It predicts a green terrain; the
+frame has **0 % green**. So the sections are not all pointing at the right slot.
+
+**What it weakly supports:** "all → LAST slot" for structures (101.7,94.5,86.6
+vs observed 95.5,84.0,71.6 — the closest of the three), while terrain matches
+none of the three cleanly. Observed values are uniformly darker than every
+prediction, which is expected from shading, so **absolute means are a weak
+discriminator here** — the hue is the real signal, and the hue says "not the
+correct mapping".
+
+**I am not claiming the mechanism.** The probe should report, per mesh, the
+distribution of `section.MaterialIndex` (all `0`? all `nslots-1`? out of
+range?) — that number settles it.
+
+---
+
 ## 7. `tools/` exists in two places — recommendation
 
 Two trees, overlapping partially:
@@ -390,7 +497,9 @@ path so nothing is duplicated.
 - Camera frustum is 42–46 % grass — cross-checked independently by
   quality-lead-2 from their own family map + spawn data, so 0 % green cannot be
   a framing artefact (§5).
-- `-MClayers` first-token-only behaviour (§6.1), from `logs/mclayers.txt`.
+- `-MClayers` first-token-only behaviour, and its **fix** verified on the
+  rebuilt binary (§6.1); terrain detector fix verified (`vis=0` → `vis=24`,
+  §6.6).
 - Run-time census `meshes=182`; the `vis=0` detector is stale (§3).
 - Frame time p50 2.4–3.3 ms on the packaged build (§9).
 - All 129 crash dirs are editor runs (§6.3).

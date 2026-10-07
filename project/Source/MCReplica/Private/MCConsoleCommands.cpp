@@ -77,7 +77,11 @@ namespace
 			// is not what the level builder labelled it, and the label does not
 			// survive a cook.
 			const FString MN = M->GetName();
-			if (MN.Contains(TEXT("overworld")))
+			// ``terrain_*`` is the current tile naming; ``overworld`` is the
+			// older pipeline's. Matching only the old prefix made this census
+			// report ``terrain(vis=0 col=0)`` while 24 tiles were loaded, which
+			// read as "terrain is missing" for several rounds.
+			if (MN.Contains(TEXT("terrain_")) || MN.Contains(TEXT("overworld")))
 			{
 				if (MN.StartsWith(TEXT("C_")))
 				{
