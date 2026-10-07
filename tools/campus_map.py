@@ -8,8 +8,13 @@ to check at a glance that the UE scene corresponds to the save (the core
 constraint): the field has to appear where the field is, the buildings where the
 buildings are.
 
-Legend: F field/wool  B building stone  G grass  T tree/leaves  W water
-        # other/structures  .  empty column
+Material classification: the ONE authoritative block-name -> material family
+map is `block_families.py`. This file MUST NOT keep a second one. All it does
+is present that family as an ASCII symbol (`FAMILY_SYMBOL` below); it holds no
+block-name list of its own.
+
+Legend: F field/wool  B building stone  G grass/ground  T tree/leaves  W water
+        # other  .  empty column
 """
 
 import os
@@ -18,28 +23,37 @@ from collections import Counter
 
 import numpy as np
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                 "..", "phase2"))
 from voxelio import VoxelFile                     # noqa: E402
+from block_families import family                 # noqa: E402
 
 CAMPUS = (-144, 303, -544, 223)
 STEP = 12          # blocks per map cell
 
+#: family -> ASCII legend symbol. Presentation only; the families themselves
+#: come from `block_families.family()`. Anything not listed falls to "#".
+#:
+#: "B" is deliberately limited to the light masonry families a *built* surface
+#: is made of. The ubiquitous grey stone mass (greystone / rock / granite),
+#: metal trim (bars, rails, lanterns) and the ground families map to "#" so
+#: that a whole column's worth of underground stone and fittings does not swamp
+#: every cell -- this reproduces the original map's readability while removing
+#: the second taxonomy.
+FAMILY_SYMBOL = {
+    "fabric": "F",                       # wool / carpet -- the sports field
+    "grass": "G",
+    "leaves": "T", "bark": "T", "wood": "T",
+    "water": "W",
+    "concrete": "B", "quartz": "B", "gravel": "B", "brick": "B",
+    "plaster": "B", "tiles": "B", "roof": "B",
+}
+
 
 def role(name):
-    n = name.split(":", 1)[-1]
-    if "wool" in n:
-        return "F"
-    if n in ("white_concrete", "light_gray_concrete", "quartz_block",
-             "smooth_quartz", "smooth_sandstone"):
-        return "B"
-    if "leaves" in n or "log" in n:
-        return "T"
-    if n in ("water",):
-        return "W"
-    if n in ("grass_block", "grass", "dirt_path", "grass_path"):
-        return "G"
-    return "#"
+    """-> one ASCII symbol for a namespaced block name (family-derived)."""
+    return FAMILY_SYMBOL.get(family(name), "#")
 
 
 def main():
