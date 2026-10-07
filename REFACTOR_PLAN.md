@@ -440,6 +440,10 @@ lime_wool + green_wool = 18,199 块全部落进近白的 `fabric` 族
 | `EditorLoadingAndSavingUtils.save_dirty_packages` 对 `.umap` **是空操作** | 必须用 `LevelEditorSubsystem.save_current_level()`；且保存后要**重新 `load_map` 再数一遍 actor**才算证据 |
 | UE 5.8 Python 的 `StaticMesh` **没有** `set_material`/`get_num_materials` | 实测每次调用抛 AttributeError；槽位只能通过 `static_materials` 数组访问 |
 | 材质槽位只刷 slot 0 时其余槽仍是 `WorldGridMaterial` | `bld_001_structure` 13 槽里 12 槽是引擎默认灰，15 个可见族里 14 个糊成一片 |
+| 探针读「导入后贴图尺寸」时 22 个全返回 **None**，看着像导入失败 | UE 5.8 Python **没有** `imported_size_x/y` 属性；正确访问器是 **`blueprint_get_size_x()` / `blueprint_get_size_y()`**。**实测 22 张全部 512×512** —— 是探针读错了属性名，不是导入失败 |
+| `-ExecutePythonScript` 后面的 `--stage=x` **传不进脚本**（`sys.argv[1:] == []`） | UE 自己吞掉了参数 → 静默按默认 stage 跑（曾因此误入 meshes 阶段）。**用环境变量 `MC_STAGE=<stage>`**，并在日志首行打印实际解析到的 stage |
+| `-game` 与无头编辑器**不加 `-nullrhi` 会崩** | 预存断言 `Assertion failed: NumAcceptedStaticMeshes >= 0 && MDCIdx < 0xffff [ShadowSetup.cpp:1611]`，**Python 还没跑就 exit=3**。所有无头编辑器/cook 一律加 `-nullrhi` |
+| 清空组件 override 后再 `load_map`，override 会**从盘上读回来** | 清空必须发生在**保存之前**；保存后若要复核须用**新进程**重载（同进程内的复核会共享写缓存，本项目已被骗过一次） |
 
 ### 8.12 阻断性 bug：组件 override 覆盖资产槽位（引擎源码定论）
 
