@@ -1264,5 +1264,54 @@ DefaultInputComponentClass=/Script/Engine.InputComponent
 输入不通 ⇒ 镜头不动 ⇒ 所有截图来自同一机位 ⇒ 所有"画面没变"的结论都不可归因。
 **这一条修好之前，任何视觉判断都缺乏基础。**
 
+### 8.37 【已定位】地形渲染全黑 = MeshDescription 建的网格**没有顶点法线**
+
+**现象**：地形几何 100% 完整（676,656/676,656）、材质绑定正确、位置正确
+（`terrain_-016_0096` 包围盒 origin (4750, **-15950**, 468)、相机 (1632, **-21496**, 980)
+的 X/Y 都在盒内、Z 只高出盒顶 255 cm），但**渲染成纯黑、无任何纹理细节**。
+
+**根因（引擎源码）**：
+```
+StaticMesh.cpp:8558  UStaticMesh::BuildFromMeshDescription(...)
+StaticMesh.cpp:8576    TVertexInstanceAttributesConstRef<FVector3f> VertexInstanceNormals = ...GetVertexInstanceNormals();
+StaticMesh.cpp:8589    StaticMeshVertex.TangentZ = VertexInstanceNormals[VertexInstanceID];   // 着色法线直接取自 MeshDescription
+```
+**UE 不会替你补算法线。** 而 UE 5.8 的 `StaticMeshDescription` 在 Python 里暴露的 `set_*` 只有
+`set_editor_properties` / `set_editor_property` / `set_polygon_group_material_slot_name` /
+`set_polygon_polygon_group` / `set_polygon_vertex_instances` / `set_vertex_instance_uv` /
+`set_vertex_position` —— **没有任何法线设置接口**；`EditorStaticMeshLibrary` 与
+`StaticMeshEditorSubsystem` 也只有 lightmap UV / LOD 设置，**无法线或切线重算**。
+（`StaticMesh.cpp:8769` 那段在 `ExportStaticMeshLOD` 里，是**导出**方向，不是补算。）
+
+**我犯的错误**：改用 MeshDescription 绕开导入器丢面时，只验证了三角形数，
+**从未渲染过**，所以「没有法线」一直没暴露。之前的探针只数面 —— **这是探针设计的疏漏。**
+
+**排除项（都已实测，不是推断）**：
+- 材质绑定：`M_MC_grass` 的 `BaseColor ← MaterialExpressionTextureSampleParameter2D`、
+  `texture = T_MC_grass`、`blend_mode = BLEND_OPAQUE` ✓
+- 网格：`meshes=182`、`terrain_-016_-416` 32,258 面、9 个 section ✓
+- 位置：包围盒与相机重合（Z 上方 255 cm）✓
+- 响应光照：`-MCsuns=100000` → **全屏纯白**；`-MCsuns=1000` → **地面仍纯黑**。
+  100 倍光差在「黑」与「白」之间**无任何过渡**，正是着色法线为零的特征
+  （`dot(N,L)=0` 与光强无关，只有环境光/高光在极端值时才饱和）。
+- 之前「画面偏褐」与本条无关：那是旧体素层的暖色 `MI_*` 材质，不是族材质。
+
+**两条路各缺一半**：
+| 路线 | 面数 | 法线 | 结果 |
+|---|---|---|---|
+| OBJ 导入器 | **0.8%–12.3%** | 引擎计算 ✓ | 稀疏但受光 |
+| MeshDescription | **100%** ✓ | **无（Python 无法设置）** | 完整但全黑 |
+
+**建议的修法（按优先级）**：
+1. **加一个极小的 C++ 蓝图函数**（本项目已有 `MCReplica` 模块）：
+   对 `UStaticMesh` 调 `FStaticMeshOperations::ComputeTriangleTangentsAndNormals` 后重建。
+   这是标准引擎 API，专门用于「补齐缺失的切线/法线」。**约 20 行，一次编译解决**，
+   且让 MeshDescription 路线（100% 面）真正可用。**这是首选。**
+2. 退回到 OBJ 路线并接受稀疏 —— **不可接受**，0.8% 等于没有地形。
+3. 把地形改成封闭体（不是）—— 排除。
+
+**注意**：修好之前，地形的视觉验收**无法进行**；而结构件（走 OBJ 路线、有法线）
+不受此影响，可以先行验收。
+
 ---
-*本文档为唯一权威计划。S0 定架构，S1–S4 已回填，S5 见 §8，S4.5 见 §8.10，S5.5/5.6 见 §8.13–8.36。*
+*本文档为唯一权威计划。S0 定架构，S1–S4 已回填，S5 见 §8，S4.5 见 §8.10，S5.5/5.6 见 §8.13–8.37。*
