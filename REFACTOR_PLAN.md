@@ -1196,5 +1196,73 @@ StaticMesh.build_from_static_mesh_descriptions([smd], fast_build=False)
 坐标口径复用了导入器的基准变换（OBJ `(x,y,z)` → UE `(x,-y,z)`、UV `(u,v)` → `(u,1-v)`），
 因此**地形与仍走导入器的 158 个结构网格保持一致**。
 
+### 8.35 【已修复】「镜头完全无法移动」+「画面一直不变」= 同一个根因
+
+这两个症状不是两个问题，是一个。**镜头不动 ⇒ 画面不可能变 ⇒ 此前所有视觉迭代在结构上就是无效的。**
+
+**事实链**：
+1. `DefaultInput.ini` 有 **14 条传统映射**（`MoveForward`/`MoveRight`/`Turn`/`LookUp` → W/A/S/D/MouseX/MouseY，另有 `Jump`/`Sprint`）
+2. `AMCReplicaCharacter::SetupPlayerInputComponent` **确实绑了这些名字**，并调用
+   `AddMovementInput` / `AddControllerYawInput`（`MCReplicaCharacter.cpp:246-304`）
+3. 但 `DefaultPlayerInputClass` / `DefaultInputComponentClass` **被设成了 EnhancedInput**
+
+**引擎源码**（`Engine/Plugins/EnhancedInput/Source/EnhancedInput/Public/EnhancedInputComponent.h`）：
+
+```cpp
+class UEnhancedInputComponent : public UInputComponent
+...
+FInputActionBinding& BindAction(const FName ActionName, ...) = delete;
+FInputAxisBinding&  BindAxis (const FName AxisName,  ...) = delete;
+```
+
+且 `UEnhancedPlayerInput` 用 Enhanced 路径**替换**了 `UPlayerInput::ProcessInputStack` ——
+而后者才是遍历 `AxisBindings` / `ActionBindings` 的地方。
+**⇒ 绑定被注册、然后被静默忽略：WASD 无效、镜头不转，且任何地方都不报错。**
+
+**而且本项目没有任何 `UInputMappingContext` / `UInputAction` 资产，也没有任何
+`AddMappingContext` 调用** —— Enhanced Input 在原理上就不可能工作。
+真正接线的是传统体系。
+
+**修法（两行配置）**：
+```ini
+DefaultPlayerInputClass=/Script/Engine.PlayerInput
+DefaultInputComponentClass=/Script/Engine.InputComponent
+```
+**纯配置改动，不需要重编，引擎启动即生效。**
+**但打包版必须重新 cook 才能带上**（配置在 cook 时 stage 进去）——
+所以用户手上那个 10-05 的旧包**仍然是不能动的**，这是必须说清的一点。
+
+**验证边界（诚实说明）**：证据是**引擎源码 + 配置事实链**，不是猜测；
+但我**无法合成按键**，所以「按下 W 后 `speed` 非零」这一步必须由人确认。
+好在 `logs/mc_runtime.txt` 早就在记录 `speed=` 与 `rot=(p.. y..)`，
+**动一下就能从日志里直接看到变化** —— 不需要新加任何仪表。
+
+### 8.36 偏移审计：目标 vs 现状
+
+**原地图（资源）**：MC 存档**本机不可得**（已穷尽查找，见 §6.1）。
+唯一数据源是 `voxel_data/full/overworld.bin`（1,949,579 体素）。
+**这不是可修复的偏移**，但它意味着**任何"与原存档逐块比对"的验收都做不了**，
+只能靠 `out/ref_map.png`（由该 .bin 导出的真实色俯视图）作为代理真值。
+
+**目标产物**：可游玩的第一人称校园 —— 布局与存档严格对应、运动场可辨认、视觉写实。
+
+| 环节 | 状态 | 数字 / 缺口 |
+|---|---|---|
+| 语义分类 S1 | ✅ | 1,949,579 体素 → 88 建筑 + 121 树 |
+| 平滑地形 S2 几何 | ✅ **本轮修复** | 24 瓦片 **676,656 / 676,656 三角形**（此前 0.8%–12.3%） |
+| 建筑对象 S3 | ✅ | 158 网格，94,744 三角面，**100%** 落地 |
+| 细节 S4 | ✅ | 6 类细节库 |
+| **植被 S4.5** | ❌ **缺口** | **0 棵树**（47,671 植被块全靠旧体素层） |
+| 材质 S5 | ✅ | 24 族材质 / 24 纹理，`TA_WRAP`，24/24 编译通过 |
+| **颜色变体 S5.5** | ❌ **卡在接线** | 27 张变体贴图已烘焙，但 `family_key()` 未接进 `extract_structures` → **网格仍发射基础族名，运动场仍是橙红+近白** |
+| 玻璃 S5.6 | ❌ | `glass` 族已定义，但无网格引用（等 re-extract） |
+| **输入** | ✅ **本轮修复** | 两行配置，需重新 cook 才进打包版 |
+| 旧体素层 S6 | ⚠️ | 已在关卡里**隐藏**，1041 个 actor 仍在 |
+| 打包 | ❌ | 用户手上的包是 **10-05** 的，缺以上全部修复 |
+
+**最大的结构性偏移**：我们一直在**一个不能玩的游戏**上做视觉迭代。
+输入不通 ⇒ 镜头不动 ⇒ 所有截图来自同一机位 ⇒ 所有"画面没变"的结论都不可归因。
+**这一条修好之前，任何视觉判断都缺乏基础。**
+
 ---
-*本文档为唯一权威计划。S0 定架构，S1–S4 已回填，S5 见 §8，S4.5 见 §8.10，S5.5/5.6 见 §8.13–8.34。*
+*本文档为唯一权威计划。S0 定架构，S1–S4 已回填，S5 见 §8，S4.5 见 §8.10，S5.5/5.6 见 §8.13–8.36。*
