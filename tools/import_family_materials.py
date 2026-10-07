@@ -93,14 +93,85 @@ TEX_FMT = FAMILY_CONTENT + "/T_MC_%s"
 MAT_FMT = FAMILY_CONTENT + "/M_MC_%s"
 MI_FMT = FAMILY_CONTENT + "/MI_MC_%s"
 
-# Same list and order as build_atlas.ATLAS_FAMILIES. Kept as a literal because
-# importing build_atlas here would pull numpy/PIL into the editor's embedded
-# interpreter; the order is asserted against the families manifest at runtime.
+# Fallback family list. The manifest (out/families/manifest.json) is the single
+# source of truth and is loaded by load_families() before any stage runs; this
+# literal exists only so the module is importable and so a missing manifest is
+# visible rather than fatal. It is deliberately NOT the authority -- a family
+# added to the manifest (glass, bars) must be picked up without editing code.
 FAMILIES = [
     "grass", "path", "soil", "asphalt", "concrete", "plaster", "brick",
     "granite", "tiles", "roof", "wood", "bark", "leaves", "metal", "gravel",
     "rock", "fabric", "quartz", "greystone", "other", "water", "sports",
 ]
+
+#: Roughness for every family that does not say otherwise. The base recipe's
+#: single Constant node -- changing it is free (no new node, no new shader
+#: variant).
+DEFAULT_ROUGHNESS = 0.85
+
+#: Per-family deltas on top of the one base recipe, keyed by family name. Most
+#: families have none on purpose: every entry is a decision that costs something
+#: (a shader permutation, or a claim that needs re-verifying), so "same as
+#: everyone else" is the default.
+#:
+#: Each entry is justified by a measurement, with the spec that made it:
+#:
+#:   leaves (this task, team-lead's checklist):
+#:     out/families/leaves.png is RGBA keyed from a black background, so ~2/3 of
+#:     its pixels are alpha==0 (the gaps between leaves). Sampled as
+#:     RGB->BaseColor alone those gaps render as opaque slabs -- a canopy
+#:     becomes a box. So:
+#:       * the sample's ALREADY-PRESENT A output goes to MP_OPACITY_MASK. This
+#:         is NOT a new node -- it is one more output of the
+#:         TextureSampleParameter2D the base recipe already creates. Adding
+#:         *node types* that are not proven (WorldPosition and friends) is what
+#:         is forbidden.
+#:       * BLEND_MASKED, not BLEND_TRANSLUCENT: masked stays in the opaque pass,
+#:         sorts correctly, casts proper shadows. Translucent foliage sorts
+#:         badly and gets no shadow. (glass_spec.md section 2.4 is the same
+#:         argument for bars.)
+#:       * opacity_mask_clip_value = 0.333, set EXPLICITLY and asserted. The
+#:         engine default 0 keeps everything (no cutout) and 1 deletes the whole
+#:         family; neither reports anything.
+#:       * TC_BC7 instead of TC_DEFAULT: TC_DEFAULT targets opaque colour and is
+#:         unreliable for a texture whose alpha is load-bearing. NOT TC_MASKS
+#:         (non-sRGB single-channel; would shift the leaf colour).
+#:       * TwoSided stays OFF: the mesher emits closed cubes.
+#:
+#:   glass (docs/glass_spec.md section 2.1 / 5, conservative tier):
+#:     BLEND_OPAQUE, Roughness 0.10. Windows on a plaster facade must read as
+#:     dark rectangles; the spec explicitly REJECTS translucency (buildings are
+#:     hollow shells, 20.6% fill -- see-through reads as a bug) and rejects
+#:     masked for glass. So this is only a roughness change; the texture carries
+#:     the dark base colour (58,68,74).
+#:
+#:   bars (docs/glass_spec.md section 2.2 / 5, full tier):
+#:     iron_bars is 40% of the metal family and is currently greedy-merged into
+#:     a solid plate. Same masked path as leaves, Roughness 0.30. Listed here
+#:     ready for when the family lands in the manifest; a table entry for a
+#:     family that is not present is simply unused.
+MATERIAL_OVERRIDES = {
+    "leaves": {
+        "opacity_from_alpha": True,
+        "blend_mode": "BLEND_MASKED",
+        "opacity_mask_clip_value": 0.333,
+        "compression": "TC_BC7",
+    },
+    "bars": {
+        "roughness": 0.30,
+        "opacity_from_alpha": True,
+        "blend_mode": "BLEND_MASKED",
+        "opacity_mask_clip_value": 0.333,
+        "compression": "TC_BC7",
+    },
+    "glass": {
+        "roughness": 0.10,
+    },
+}
+
+#: The one clip value the assertions accept, so a typo in the table above cannot
+#: quietly become the accepted truth.
+MASKED_CLIP = 0.333
 
 _LINES = []
 
@@ -203,21 +274,135 @@ def scan_compile_errors(mat_name, offset, tries=6, gap=0.2):
 # stage = materials
 # --------------------------------------------------------------------------- #
 
-def check_family_list():
-    """The literal FAMILIES must equal the families manifest, or the textures
-    and the meshes' `usemtl` names would disagree."""
+def png_alpha_stats(path):
+    """-> dict(frac_0, frac_opaque, opaque_frac, total) or None.
+
+    Decodes an 8-bit RGBA/Gray+Alpha PNG with only `zlib` (always present), so
+    it works in the editor's embedded interpreter, which has numpy but not PIL.
+    Returns None -- never a fake pass -- for a bit depth or colour type this
+    does not handle.
+
+    Why this exists: the leaves cutout only works if the imported alpha is not
+    all-1. If alpha were all-1 the masked material would be indistinguishable
+    from an opaque one and "success" would be reported with no cutout at all.
+    Reading the source PNG is the honest check available from Python; UE 5.8
+    exposes no pixel readback for a Texture2D.
+    """
+    try:
+        import struct
+        import zlib
+        with open(path, "rb") as fh:
+            data = fh.read()
+        if data[:8] != b"\x89PNG\r\n\x1a\n":
+            return None
+        pos = 8
+        width = height = bitdepth = colortype = None
+        idat = bytearray()
+        while pos + 8 <= len(data):
+            (length,) = struct.unpack(">I", data[pos:pos + 4])
+            ctype = data[pos + 4:pos + 8]
+            body = data[pos + 8:pos + 8 + length]
+            if ctype == b"IHDR":
+                width, height, bitdepth, colortype = struct.unpack(
+                    ">IIBB", body[:10])
+            elif ctype == b"IDAT":
+                idat += body
+            elif ctype == b"IEND":
+                break
+            pos += 12 + length
+        if bitdepth != 8 or colortype not in (6, 4):
+            return None
+        channels = 4 if colortype == 6 else 2
+        raw = zlib.decompress(bytes(idat))
+        stride = width * channels
+        prev = bytearray(stride)
+        alpha_idx = channels - 1
+        n = width * height
+        c0 = c255 = 0
+        pos_in = 0
+        for _ in range(height):
+            filt = raw[pos_in]
+            pos_in += 1
+            line = bytearray(raw[pos_in:pos_in + stride])
+            pos_in += stride
+            if filt == 1:      # Sub
+                for i in range(channels, stride):
+                    line[i] = (line[i] + line[i - channels]) & 0xFF
+            elif filt == 2:    # Up
+                for i in range(stride):
+                    line[i] = (line[i] + prev[i]) & 0xFF
+            elif filt == 3:    # Average
+                for i in range(stride):
+                    a = line[i - channels] if i >= channels else 0
+                    line[i] = (line[i] + ((a + prev[i]) >> 1)) & 0xFF
+            elif filt == 4:    # Paeth
+                for i in range(stride):
+                    a = line[i - channels] if i >= channels else 0
+                    b = prev[i]
+                    c = prev[i - channels] if i >= channels else 0
+                    p = a + b - c
+                    pa, pb, pc = abs(p - a), abs(p - b), abs(p - c)
+                    pr = a if (pa <= pb and pa <= pc) else (b if pb <= pc else c)
+                    line[i] = (line[i] + pr) & 0xFF
+            for i in range(alpha_idx, stride, channels):
+                if line[i] == 0:
+                    c0 += 1
+                elif line[i] == 255:
+                    c255 += 1
+            prev = line
+        return {"total": n, "frac_0": c0 / float(n),
+                "frac_opaque": c255 / float(n),
+                "opaque_frac": (n - c0) / float(n)}
+    except Exception:
+        return None
+
+
+def load_families():
+    """Set the module-level FAMILIES from out/families/manifest.json.
+
+    The manifest is the single source of truth: it is written by the step that
+    actually produces the PNGs, so a family added there (glass, bars, ...) is
+    processed without editing this file. This replaces a hard-coded list that
+    HAD to equal the manifest -- which turned a legitimate new family into a
+    hard failure (the guard did its job, but the fix is to read the list, not
+    to keep two copies of it in sync by hand).
+
+    A manifest that is missing or unreadable is reported and the built-in
+    fallback list is used, so a broken manifest does not silently shrink the
+    work set.
+    """
+    global FAMILIES
     mf = os.path.join(FAMILY_DIR, "manifest.json")
     if not os.path.isfile(mf):
-        say("FATAL: families manifest missing at %s" % mf)
+        say("WARNING: families manifest missing at %s; using built-in "
+            "fallback list (%d families)" % (mf, len(FAMILIES)))
         return False
-    with open(mf, encoding="utf-8") as fh:
-        man = json.load(fh)
-    listed = [f["family"] for f in man["families"]]
-    if listed != FAMILIES:
-        say("FATAL: family list mismatch\n  code : %s\n  disk : %s"
-            % (FAMILIES, listed))
+    try:
+        with open(mf, encoding="utf-8") as fh:
+            man = json.load(fh)
+        listed = [f["family"] for f in man["families"]]
+    except Exception as exc:
+        say("WARNING: could not read %s (%s); using built-in fallback list"
+            % (mf, str(exc)[:80]))
         return False
-    say("family list matches manifest: %d families" % len(FAMILIES))
+    if not listed:
+        say("WARNING: manifest lists no families; using built-in fallback list")
+        return False
+
+    added = [f for f in listed if f not in FAMILIES]
+    gone = [f for f in FAMILIES if f not in listed]
+    FAMILIES = listed
+    say("families from manifest: %d -> %s" % (len(listed), ", ".join(listed)))
+    if added:
+        say("  new since the built-in fallback: %s" % added)
+    if gone:
+        say("  WARNING: in the fallback but not the manifest: %s" % gone)
+    unused = sorted(k for k in MATERIAL_OVERRIDES if k not in listed)
+    if unused:
+        say("  override entries not in the manifest (harmless, unused): %s"
+            % unused)
+    say("  overrides applied to: %s"
+        % sorted(k for k in MATERIAL_OVERRIDES if k in listed))
     return True
 
 
@@ -242,14 +427,18 @@ def import_texture(family):
 
     # Wrap is the whole point. Clamp here = no tiling = the exact bug this
     # change removes.
+    compression = unreal.TextureCompressionSettings.TC_DEFAULT
+    ov = MATERIAL_OVERRIDES.get(family, {})
+    if ov.get("compression"):
+        compression = getattr(unreal.TextureCompressionSettings,
+                              ov["compression"])
     settings = (
         ("address_x", unreal.TextureAddress.TA_WRAP),
         ("address_y", unreal.TextureAddress.TA_WRAP),
         ("srgb", True),
         ("lod_group", unreal.TextureGroup.TEXTUREGROUP_WORLD),
         ("never_stream", True),
-        ("compression_settings",
-         unreal.TextureCompressionSettings.TC_DEFAULT),
+        ("compression_settings", compression),
         ("mip_gen_settings",
          unreal.TextureMipGenSettings.TMGS_FROM_TEXTURE_GROUP),
     )
@@ -267,6 +456,10 @@ def import_texture(family):
     ay = tex.get_editor_property("address_y")
     if ax != unreal.TextureAddress.TA_WRAP or ay != unreal.TextureAddress.TA_WRAP:
         return None, "address_x/y read back as %s/%s (expected TA_WRAP)" % (ax, ay)
+    if ov.get("compression"):
+        got = tex.get_editor_property("compression_settings")
+        if got != compression:
+            return None, "compression read back as %s (wanted %s)" % (got, compression)
     return tex, "ok"
 
 
@@ -297,6 +490,8 @@ def build_material(family, tex):
             raise RuntimeError("could not create %s" % cls.get_name())
         return e
 
+    ov = MATERIAL_OVERRIDES.get(family, {})
+
     # --- the one proven shape. Nothing else. ------------------------------
     try:
         sample = node(unreal.MaterialExpressionTextureSampleParameter2D, -400, 0)
@@ -315,12 +510,46 @@ def build_material(family, tex):
         mel.connect_material_expressions(tiling, "", mult, "B")
         mel.connect_material_expressions(mult, "", sample, "Coordinates")
 
+        # Roughness is a Constant node whose value is free to change -- no new
+        # node, no new shader variant. glass wants 0.10 (its whole "looks like
+        # glass" lever per glass_spec.md section 2.3), bars 0.30, the rest 0.85.
+        rough_val = ov.get("roughness", DEFAULT_ROUGHNESS)
         rough = node(unreal.MaterialExpressionConstant, -180, 260)
-        rough.set_editor_property("R", 0.85)
+        rough.set_editor_property("R", rough_val)
         mel.connect_material_property(rough, "",
                                       unreal.MaterialProperty.MP_ROUGHNESS)
+
+        # --- the per-family delta (masked cutout). See MATERIAL_OVERRIDES. -
+        # Reuses the sample created above: one more output wired out, no new
+        # node type.
+        if ov.get("opacity_from_alpha"):
+            mel.connect_material_property(
+                sample, "A", unreal.MaterialProperty.MP_OPACITY_MASK)
+            mat.set_editor_property(
+                "blend_mode",
+                getattr(unreal.BlendMode, ov["blend_mode"]))
+            mat.set_editor_property(
+                "opacity_mask_clip_value", ov["opacity_mask_clip_value"])
     except Exception as exc:
         return None, "graph build failed: %s" % str(exc)[:150]
+
+    # Assert the explicit clip value BEFORE compiling, because 0 (keep all) and
+    # 1 (delete the family) both compile happily and neither reports anything.
+    if ov.get("opacity_from_alpha"):
+        got_clip = mat.get_editor_property("opacity_mask_clip_value")
+        got_blend = mat.get_editor_property("blend_mode")
+        if abs(float(got_clip) - MASKED_CLIP) > 1e-6:
+            return None, "opacity_mask_clip_value read back %s (wanted %s)" \
+                % (got_clip, MASKED_CLIP)
+        if got_blend != getattr(unreal.BlendMode, ov["blend_mode"]):
+            return None, "blend_mode read back %s (wanted %s)" \
+                % (got_blend, ov["blend_mode"])
+    elif mat.get_editor_property("blend_mode") != unreal.BlendMode.BLEND_OPAQUE:
+        # A family with no masked delta must stay opaque: masked/translucent
+        # here would be an unwanted shader variant and, for translucent, a
+        # sorting problem.
+        return None, "blend_mode is %s but no opacity override is declared" \
+            % mat.get_editor_property("blend_mode")
 
     offset = current_log_offset()
     mel.recompile_material(mat)
@@ -336,10 +565,10 @@ def build_material(family, tex):
 
 
 def run_materials():
-    """Import 22 textures, build 22 materials, verify each from a fresh load."""
+    """Import one texture + build one material per family, then verify from a
+    fresh load."""
     say("=== stage: materials ===")
-    if not check_family_list():
-        return False
+    load_families()
 
     if not unreal.EditorAssetLibrary.does_directory_exist(FAMILY_CONTENT):
         unreal.EditorAssetLibrary.make_directory(FAMILY_CONTENT)
@@ -410,13 +639,23 @@ def run_materials():
             }
             counts = {}
             sample = None
+            rough_r = None
             for e in mel.get_material_expressions(mat):
                 c = e.get_class().get_name()
                 counts[c] = counts.get(c, 0) + 1
                 if c == "MaterialExpressionTextureSampleParameter2D":
                     sample = e
+                elif c == "MaterialExpressionConstant":
+                    rough_r = e.get_editor_property("R")
             if counts != expected:
                 problems.append("graph=%s" % counts)
+            # Roughness is the one free "look" parameter (glass 0.10, bars 0.30,
+            # rest 0.85). A wrong value is a silent visual failure, so it is
+            # read back from the saved graph rather than trusted.
+            want_rough = MATERIAL_OVERRIDES.get(fam, {}).get(
+                "roughness", DEFAULT_ROUGHNESS)
+            if rough_r is None or abs(float(rough_r) - want_rough) > 1e-6:
+                problems.append("roughness=%s wanted %s" % (rough_r, want_rough))
             if sample is None:
                 problems.append("no TextureSampleParameter2D")
             else:
@@ -449,11 +688,94 @@ def run_materials():
             all_ok = False
             say("  %-11s VERIFY FAIL  %s" % (fam, "; ".join(problems)))
         else:
-            say("  %-11s OK  addr=%s/%s  sample<-%s  coords<-%s  BaseColor<-%s"
+            say("  %-11s OK  addr=%s/%s  rough=%.2f  sample<-%s  coords<-%s  "
+                "BaseColor<-%s"
                 % (fam,
                    tex.get_editor_property("address_x").name,
                    tex.get_editor_property("address_y").name,
+                   MATERIAL_OVERRIDES.get(fam, {}).get("roughness",
+                                                       DEFAULT_ROUGHNESS),
                    bound, coord_class, base_class))
+
+    # --- the masked families and the opaque ones, asserted separately ------
+    # Each of these can fail silently on its own, so none is assumed.
+    masked = [f for f in FAMILIES
+              if MATERIAL_OVERRIDES.get(f, {}).get("opacity_from_alpha")]
+    say("--- masked families: %s ---" % (masked or "none"))
+    masked_ok = True
+
+    for fam in masked:
+        # 1. source alpha must not be all-opaque, or masked == fully opaque.
+        png = os.path.join(FAMILY_DIR, fam + ".png")
+        stats = png_alpha_stats(png)
+        if stats is None:
+            masked_ok = False
+            say("  %-8s alpha: COULD NOT READ %s (not 8-bit RGBA) -- unverified"
+                % (fam, png))
+        else:
+            say("  %-8s source alpha: total=%d  ==0 %.2f%%  ==255 %.2f%%  "
+                "opaque %.2f%%"
+                % (fam, stats["total"], 100 * stats["frac_0"],
+                   100 * stats["frac_opaque"], 100 * stats["opaque_frac"]))
+            if stats["frac_0"] <= 0.0:
+                masked_ok = False
+                say("  *** %s alpha is all-opaque: masked degenerates to "
+                    "opaque, 'success' with no cutout ***" % fam)
+        # 2. texture compression must be the alpha-safe one.
+        tex = unreal.load_asset(TEX_FMT % fam)
+        if tex is not None:
+            got_c = tex.get_editor_property("compression_settings")
+            want_c = getattr(unreal.TextureCompressionSettings,
+                             MATERIAL_OVERRIDES[fam].get("compression",
+                                                         "TC_DEFAULT"))
+            if got_c != want_c:
+                masked_ok = False
+                say("  *** %s compression=%s, wanted %s ***"
+                    % (fam, got_c, want_c))
+            else:
+                say("  %-8s compression=%s srgb=%s" % (fam, got_c.name,
+                                                       tex.get_editor_property("srgb")))
+        # 3. clip value + blend + OpacityMask source, from a fresh load.
+        m = unreal.load_asset(MAT_FMT % fam)
+        if m is None:
+            masked_ok = False
+            say("  M_MC_%s MISSING" % fam)
+            continue
+        clip = m.get_editor_property("opacity_mask_clip_value")
+        blend = m.get_editor_property("blend_mode")
+        try:
+            alias = mel.get_material_property_input_node(
+                m, unreal.MaterialProperty.MP_OPACITY_MASK)
+            alias_cls = alias.get_class().get_name() if alias else "NOTHING"
+        except Exception:
+            alias_cls = "unverified"
+        say("  %-8s clip=%.4f  blend=%s  OpacityMask<-%s"
+            % (fam, clip, blend.name, alias_cls))
+        if abs(float(clip) - MASKED_CLIP) > 1e-6:
+            masked_ok = False
+            say("  *** clip != %.3f ***" % MASKED_CLIP)
+        if blend != unreal.BlendMode.BLEND_MASKED:
+            masked_ok = False
+            say("  *** blend != BLEND_MASKED ***")
+        if alias_cls != "MaterialExpressionTextureSampleParameter2D":
+            masked_ok = False
+            say("  *** OpacityMask not driven by the sample ***")
+
+    # 4. every family with no masked delta must be plain opaque, or we are
+    #    paying for shader variants (and, if translucent, sorting artefacts)
+    #    that nothing asked for.
+    for fam in FAMILIES:
+        if fam in masked:
+            continue
+        m = unreal.load_asset(MAT_FMT % fam)
+        if m is None:
+            continue
+        bm = m.get_editor_property("blend_mode")
+        if bm != unreal.BlendMode.BLEND_OPAQUE:
+            masked_ok = False
+            say("  *** %s is %s, expected BLEND_OPAQUE ***" % (fam, bm.name))
+    say("  masked assertions: %s" % ("OK" if masked_ok else "FAIL"))
+    all_ok = all_ok and masked_ok
 
     if failed:
         say("failed families: %s" % sorted(set(failed)))
@@ -774,11 +1096,12 @@ def run_verify():
     only counted, and the material recompiles are not saved.
     """
     say("=== stage: verify (read-only) ===")
+    load_families()
     ok = True
     mel = unreal.MaterialEditingLibrary
 
     # 1. family textures -- Wrap must survive the save
-    say("--- 22 textures (address mode) ---")
+    say("--- %d textures (address mode) ---" % len(FAMILIES))
     bad_t = []
     for fam in FAMILIES:
         tex = unreal.load_asset(TEX_FMT % fam)
@@ -798,7 +1121,7 @@ def run_verify():
     ok = ok and not bad_t
 
     # 2. family materials -- compile + graph, read back from disk
-    say("--- 22 materials (recompile + BaseColor) ---")
+    say("--- %d materials (recompile + BaseColor) ---" % len(FAMILIES))
     bad_m = []
     for fam in FAMILIES:
         mat = unreal.load_asset(MAT_FMT % fam)
