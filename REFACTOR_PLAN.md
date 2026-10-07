@@ -445,36 +445,6 @@ lime_wool + green_wool = 18,199 块全部落进近白的 `fabric` 族
 | `-game` 与无头编辑器**不加 `-nullrhi` 会崩** | 预存断言 `Assertion failed: NumAcceptedStaticMeshes >= 0 && MDCIdx < 0xffff [ShadowSetup.cpp:1611]`，**Python 还没跑就 exit=3**。所有无头编辑器/cook 一律加 `-nullrhi` |
 | 清空组件 override 后再 `load_map`，override 会**从盘上读回来** | 清空必须发生在**保存之前**；保存后若要复核须用**新进程**重载（同进程内的复核会共享写缓存，本项目已被骗过一次） |
 
-### 8.12 阻断性 bug：组件 override 覆盖资产槽位（引擎源码定论）
-
-`FStaticMeshComponentHelper::GetMaterial()`
-（`Q:/UE/UE_5.8/Engine/Source/Runtime/Engine/Public/StaticMeshComponentHelper.h:133-164`，
-`UStaticMeshComponent::GetMaterial` 转调它）：
-
-```cpp
-// If we have a base materials array, use that
-if (OverrideMaterials.IsValidIndex(MaterialIndex) && OverrideMaterials[MaterialIndex])
-    OutMaterial = OverrideMaterials[MaterialIndex];
-// Otherwise get from static mesh
-else if (Component.GetStaticMesh())
-    OutMaterial = Component.GetStaticMesh()->GetMaterial(MaterialIndex);
-```
-
-**→ 组件 override 非空时优先；只有该槽 override 为 null 才回退到资产的 `static_materials`。**
-同一模式在 `StaticMeshComponent.cpp:2911-2925`（`GetEditorMaterial`）与 `GetUsedRayTracingOnlyMaterials`
-重复出现三次，是确定语义，不是分支怪癖。
-
-**实测后果（actor 普查）**：
-
-| 对象 | 资产槽位 | 组件 override | 实际渲染 |
-|---|---|---|---|
-| 158 个结构 actor（370 槽） | ✅ 全部 `M_MC_<family>`，逐位正确 | ❌ **每槽都是旧 `M_MC_Atlas`** | **旧图集** —— 22 个新族材质**完全没被用上** |
-| 24 个地形 actor（90 槽） | ✅ 逐位正确 | slot 0 = `M_MC_Atlas`，其余 null | grass（占地形 quads **82%**）用旧图集；soil/rock/greystone 正确 |
-
-**这是一个「资产全对、画面不变」的 bug** —— 最难查的一类：它会让 S5 的全部工作**视觉上等于没做**，
-「整片单色」原样保留，而且没有任何报错。**修法**：清空这 182 个 actor 的 `override_materials`
-（资产槽位已是唯一权威），**并在 `run_meshes()` 里固化为管线步骤** —— 否则任何人重导网格都会让它静默复发。
-
 ### 8.6 工程卫生（S6–S9 的具体化）
 
 | # | 问题 | 实测 | 处置 |
@@ -556,6 +526,36 @@ else if (Component.GetStaticMesh())
 **`MCFrameCaptureGameMode` 输出的 `VERDICT nothing lit` 不是场景证据**，
 它是一次坏仪器的自述。视觉结论一律以 `focus_capture.py` + 像素测量为准。
 
+### 8.12 阻断性 bug：组件 override 覆盖资产槽位（引擎源码定论）
+
+`FStaticMeshComponentHelper::GetMaterial()`
+（`Q:/UE/UE_5.8/Engine/Source/Runtime/Engine/Public/StaticMeshComponentHelper.h:133-164`，
+`UStaticMeshComponent::GetMaterial` 转调它）：
+
+```cpp
+// If we have a base materials array, use that
+if (OverrideMaterials.IsValidIndex(MaterialIndex) && OverrideMaterials[MaterialIndex])
+    OutMaterial = OverrideMaterials[MaterialIndex];
+// Otherwise get from static mesh
+else if (Component.GetStaticMesh())
+    OutMaterial = Component.GetStaticMesh()->GetMaterial(MaterialIndex);
+```
+
+**→ 组件 override 非空时优先；只有该槽 override 为 null 才回退到资产的 `static_materials`。**
+同一模式在 `StaticMeshComponent.cpp:2911-2925`（`GetEditorMaterial`）与 `GetUsedRayTracingOnlyMaterials`
+重复出现三次，是确定语义，不是分支怪癖。
+
+**实测后果（actor 普查）**：
+
+| 对象 | 资产槽位 | 组件 override | 实际渲染 |
+|---|---|---|---|
+| 158 个结构 actor（370 槽） | ✅ 全部 `M_MC_<family>`，逐位正确 | ❌ **每槽都是旧 `M_MC_Atlas`** | **旧图集** —— 22 个新族材质**完全没被用上** |
+| 24 个地形 actor（90 槽） | ✅ 逐位正确 | slot 0 = `M_MC_Atlas`，其余 null | grass（占地形 quads **82%**）用旧图集；soil/rock/greystone 正确 |
+
+**这是一个「资产全对、画面不变」的 bug** —— 最难查的一类：它会让 S5 的全部工作**视觉上等于没做**，
+「整片单色」原样保留，而且没有任何报错。**修法**：清空这 182 个 actor 的 `override_materials`
+（资产槽位已是唯一权威），**并在 `run_meshes()` 里固化为管线步骤** —— 否则任何人重导网格都会让它静默复发。
+
 ### 8.13 玻璃/铁栏规格（ART-S5b·2，`docs/glass_spec.md`）+ 一处计数方法纠错
 
 **① 计数方法纠错（我的错，影响面比看起来大）**
@@ -590,45 +590,31 @@ else if (Component.GetStaticMesh())
 （`greedy_quads(mask, cap)` 把每块都当立方体，`iron_bars` 因此被合并成**整片实心金属板**）。
 → **修复不必重新发明，把既有元数据接回管线即可。**
 
-**④ 图集容量：`glass` + `bars` 正好用满 24 格，仍然 3 行，零位移**
+**④ 图集容量：~~24 是硬上限~~ —— 我写错了，实际上是 32（已核实并更正）**
 
+`plan_layout` 把 `used_rows` **向上取整到 2 的幂**：
+```python
+used_rows = ceil(len(families) / cols)      # cols = 8
+rows = 1
+while rows < used_rows: rows *= 2            # ← 关键：取到 2 的幂
 ```
-cols=8:  ceil(22/8)=3 行 → ceil(23/8)=3 行 → ceil(24/8)=3 行   全部零位移 ✅
-         ceil(25/8)=4 行 → plan_layout 的 (rows-1-row) 平移所有既有族的 v  ✅⚠️
-```
-**而且**：mesher 已切到 `--uv-mode block`，网格存的是**方块单位 UV**，
-每族还各自采样 `T_MC_<family>`（不再采样图集）→ **图集排布对网格完全无影响**，
-所以 24 不是硬约束。新增族只需**追加到 `ATLAS_FAMILIES` 末尾**（`fam_idx` 是 uint8，上限 255）。
-**5 个染色玻璃必须是 `glass` 的变体**（`glass_white` 等），不占图集格。
+实测族数 → 行数：
+
+| 族数 | 21 | **22–32** | **33** |
+|---|---|---|---|
+| `rows` | 4 | **4（不变）** | **8** |
+| 图集高 | 2048 | **2048（不变）** | 4096 |
+
+→ **22 到 32 族全部 `rows=4`、零位移**，**第 33 个族才触发 rows=8** 并平移所有既有族。
+`glass`（索引 22）落在 row 2 / col 6，与既有族同行，`y0` 不变。
+**所以可用家族名额是 10 个，不是 2 个** —— `bars` 与将来的族都不受排期限制。
+（`build_atlas.py:77` 的原始注释其实写对了「rounds up to 4 exactly as 21 did」，
+是后续分析把它误推成 24 上限；已在源码注释里写清。）
+**并且** mesher 已走 `--uv-mode block`、每族各自采样 `T_MC_<family>`，
+**图集排布对网格完全无影响** —— 所以真正的上限只有 `fam_idx` 的 uint8（255）。
+**5 个染色玻璃仍做成 `glass` 的变体**（变体不占图集格，这个判断本身是对的）。
 
 **⑤ 落地：blend mode 是材质级属性，所以必须是新族而不能是 `metal`/`fabric` 变体**
-
-`iron_bars` 要 masked，但 `metal` 族里还有 `iron_block` 3,561（**必须不透明**）；
-`fabric` 必须保持不透明（羊毛 21,542 + 地毯 + 床）。共用材质会把铁块也变镂空。
-`("glass","fabric")` 本来就是占位规则（`block_families.py:31` 自己写着 *"placeholder until a glass material lands"*），本规格是来兑现它的。
-
-**⑥ 两档方案（建议节奏：保守档 → 验收 → 完整档）**
-
-| | 保守档（**并入颜色变体同一批**） | 完整档（随后） |
-|---|---|---|
-| 内容 | `glass` 不透明新族（Roughness 0.10，BaseColor (58,68,74)）+ `glass_<colour>` 变体 | `bars` 新族 + `BLEND_MASKED` + alpha 镂空 |
-| 代价 | **新节点 0、新 shader 变体 0** —— 与 21 个变体**同一套机制** | 1 个新 shader 变体 + alpha 管线 |
-| 收益 | 窗户 100% 可见（解决「立面可辨」主要问题） | 铁栏近距离观感 |
-
-**`bars` 的最小节点清单 = 1 条新连线 + 2 个材质属性，不需要任何新节点类型**：
-`TextureSample.A → MP_OPACITY`（唯一图形改动）、`BlendMode = BLEND_MASKED`、
-`OpacityMaskClipValue = 0.333`。玻璃的反射**只调已冻结图形里那个 `Roughness` 常数**（设 0.10），不加节点。
-**`TwoSided` 不需要**（mesher 产完整立方体，内外都有正面）。
-
-**⑦ 对颜色变体表的一处偏离（已裁决：接受）**
-`glass_white` 用**乳白 (205,208,206)** 而非纯白羊毛色 (233,236,236) —— 白玻璃若用近白，
-在白墙上依然会消失，白做。
-
-**⑧ 优先级（同意 art-director 的拆分）**
-颜色变体 **+ 不透明玻璃**同批（**同一套机制、近乎零边际成本**），**铁栏 alpha 单独排**。
-数量级：色变体影响 194,718 块（9.99%）vs 玻璃 9,666（0.50%）vs 铁栏 8,161（0.42%）；
-但**单位成本换来的辨识度，窗户的杠杆率高于大多数单个颜色变体** —— 一块深色玻璃
-就能让整面白墙读出窗格节奏。所以是**并入第一批**的理由，不是延后的理由。
 
 ### 8.14 颜色变体交付 + 接缝根因（commit `a412739` / `dd47740`）
 
@@ -672,6 +658,84 @@ cols=8:  ceil(22/8)=3 行 → ceil(23/8)=3 行 → ceil(24/8)=3 行   全部零�
 **④ 一个可复用的坑**：**PIL 的 LANCZOS 在 RGBA 上会按 alpha 加权重采样 RGB**
 → 会把已标定的颜色**悄悄改掉**，且只在抠图族上出现。必须 **RGB 与 alpha 分开缩放再 merge**
 （这样 RGB 与原来逐字节一致）。已在实现里落地。
+
+### 8.14.1 族贴图改从**源图**派生（commit `b4ff4e8`）—— 接缝 −31%，并证明镜像边是错的
+
+**根因（§8.14 ③ 已定位）**：族贴图从**图集裁 504px 格子**，而 ambientCG 源图按 **1024px
+设计成可平铺**，裁子窗口破坏平铺。修法：**直接从源图缩放 512 + 施加已标定的 `BAKE_GAINS`**。
+`--source cc0` 现为默认，`--source atlas` 可一条命令回退。
+
+**实测（我独立复算 10 个族，与交付者数字逐位一致）**：
+
+| 族 | atlas 裁切 | **cc0 源图** | 改善 |
+|---|---|---|---|
+| **brick** | 12.87 | **3.98** | **−69.1%** |
+| **leaves** | 33.49 | **7.03** | **−79.0%** |
+| **metal** | 37.51 | **7.73** | **−79.4%** |
+| **rock** | 17.70 | **4.73** | **−73.3%** |
+| **quartz** | 9.87 | **3.71** | **−62.4%** |
+| soil / bark / roof / concrete / grass | — | — | −46% ~ −32% |
+| **合计（23 族）** | **305.60** | **210.98** | **−31.0%** |
+
+**「缝 / 内部基线 > 1.1」的族：atlas 5 个 → cc0 0 个。** 即 cc0 下**没有任何族**
+存在一个「比自身内部变化还突兀」的接缝。
+
+**一个例外，我裁决为可接受**：`wood` 绝对值 14.77 → **66.42**（+349.8%），
+但**它的内部基线本身就是 63.59** —— 木纹是高对比纹理，66.42 只相当于它任意相邻两列的
+正常差异，**ratio 1.04 ≈ 1**。所以 `wood` **没有接缝问题**，只是纹理对比度高。
+→ **不做特例**（为单独一个族分来源会让「每族来源不同」，复杂度不值）。
+
+**关键量化：镜像边不是在修平铺，而是在掩盖它。**
+`--source cc0 --mirror yes` 会让合计缠绕缝从 **208 反向恶化到 296** —— 这是
+「镜像边修不好平铺」的直接证据。所以 **cc0 路径必须不镜像**（`--mirror auto` 已如此默认）。
+（§8.14 ③ 曾推测「镜像边只让边框↔内侧连续，却塞进 16px 镜像带」，这里得到了数字确认。）
+
+**颜色不受影响**：cc0 均值 vs atlas 均值，**中位 `dE2000` 0.065、最大 0.180**（阈值 <2.0）。
+即「同一组 `BAKE_GAINS` 施加在源图缩放结果上」等价于原来施加在图集格子上 ——
+**已标定的颜色全部保住**，同时画质更好（1024→512 优于 504→512）。
+
+### 8.14.2 `glass` 族 + 26 个变体全部落地（commit `2150ba8`）
+
+`glass.png` 均值 **(58,68,74)**，与目标差 **0.00**；**色度 `C* = 5.59`**（要求 ≤10；
+对照 `water` 19.72 → **玻璃确实是灰的，没变成蓝水**）；`R−B = −16.0`。
+**`dE2000(glass, plaster) = 44.77`** —— 与规格文档预测的 44.8 **吻合到小数第一位**，
+亮度差 109.9/255（要求 ≥60）→ **窗户不会在白墙上消失**。
+`glass` 族体素 **10,864**（9,666 无染色 + 1,198 染色），与规格计数完全一致。
+
+全库 **26 个变体**一起烘焙，**最大 `dE2000` = 0.151**（原 21 个因基底换成 cc0，
+最大从 0.238 降到 0.074）。既有族 sha256 烘焙前后未变，且**连跑两次结果逐字节相同**
+（grain 用 `crc32` 播种而非 `hash()` —— 后者每进程随机化，会导致不可复现）。
+
+**`glass_pane` 现在落到 `glass` 族** ✓；4 个染色玻璃变体各自命中。
+`family()` 回归：840 个调色板名中差异 **61 个 nameid，全部是玻璃类**，**非玻璃方块 0 差异**。
+
+
+`iron_bars` 要 masked，但 `metal` 族里还有 `iron_block` 3,561（**必须不透明**）；
+`fabric` 必须保持不透明（羊毛 21,542 + 地毯 + 床）。共用材质会把铁块也变镂空。
+`("glass","fabric")` 本来就是占位规则（`block_families.py:31` 自己写着 *"placeholder until a glass material lands"*），本规格是来兑现它的。
+
+**⑥ 两档方案（建议节奏：保守档 → 验收 → 完整档）**
+
+| | 保守档（**并入颜色变体同一批**） | 完整档（随后） |
+|---|---|---|
+| 内容 | `glass` 不透明新族（Roughness 0.10，BaseColor (58,68,74)）+ `glass_<colour>` 变体 | `bars` 新族 + `BLEND_MASKED` + alpha 镂空 |
+| 代价 | **新节点 0、新 shader 变体 0** —— 与 21 个变体**同一套机制** | 1 个新 shader 变体 + alpha 管线 |
+| 收益 | 窗户 100% 可见（解决「立面可辨」主要问题） | 铁栏近距离观感 |
+
+**`bars` 的最小节点清单 = 1 条新连线 + 2 个材质属性，不需要任何新节点类型**：
+`TextureSample.A → MP_OPACITY`（唯一图形改动）、`BlendMode = BLEND_MASKED`、
+`OpacityMaskClipValue = 0.333`。玻璃的反射**只调已冻结图形里那个 `Roughness` 常数**（设 0.10），不加节点。
+**`TwoSided` 不需要**（mesher 产完整立方体，内外都有正面）。
+
+**⑦ 对颜色变体表的一处偏离（已裁决：接受）**
+`glass_white` 用**乳白 (205,208,206)** 而非纯白羊毛色 (233,236,236) —— 白玻璃若用近白，
+在白墙上依然会消失，白做。
+
+**⑧ 优先级（同意 art-director 的拆分）**
+颜色变体 **+ 不透明玻璃**同批（**同一套机制、近乎零边际成本**），**铁栏 alpha 单独排**。
+数量级：色变体影响 194,718 块（9.99%）vs 玻璃 9,666（0.50%）vs 铁栏 8,161（0.42%）；
+但**单位成本换来的辨识度，窗户的杠杆率高于大多数单个颜色变体** —— 一块深色玻璃
+就能让整面白墙读出窗格节奏。所以是**并入第一批**的理由，不是延后的理由。
 
 ### 8.15 第一份真实视觉证据（`Q:/MC2UE5/shots/family_materials_*_20261007_*.png`）
 
