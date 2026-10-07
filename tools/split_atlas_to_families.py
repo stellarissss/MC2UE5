@@ -78,7 +78,13 @@ from build_atlas import (ATLAS_DEFAULTS, ATLAS_FAMILIES, GENERATED_RGB,
                          RESOURCE, SOURCE_TILE, SPORT_FAMILY, _find_source,
                          bake, find_ambientcg, plan_layout)          # noqa: E402
 
+#: QA / review artefacts live here, NOT in the families directory. Two
+#: contact sheets used to sit in `out/families/`; if any consumer ever switched
+#: from the explicit family list to a directory glob, they would be imported as
+#: two junk materials and nothing would error. `main()` warns if a `_`-prefixed
+#: PNG reappears there.
 OUT_DIR = "out/families"
+QA_DIR = "out/qa"
 ATLAS = "out/atlas/atlas_diffuse.png"
 MANIFEST = "out/atlas/manifest.json"
 
@@ -424,6 +430,15 @@ def main():
                 "source": alpha_src,
             }
         made.append((f, rec, out))
+
+    # ---- guard: no QA/review artefact may live in the families directory --
+    stray = sorted(n for n in os.listdir(args.out_dir)
+                   if n.startswith("_") and n.endswith(".png"))
+    if stray:
+        print("WARNING: %s 里有以下非族 PNG，会被 glob 型消费者当成族导入: %s"
+              % (args.out_dir, stray))
+        print("         把它们放到 %s（见 QA_DIR）" % QA_DIR)
+    os.makedirs(QA_DIR, exist_ok=True)
 
     # ---- manifest: merge, never clobber the variant list -----------------
     mpath = os.path.join(args.out_dir, "manifest.json")

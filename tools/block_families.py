@@ -353,6 +353,11 @@ VARIANT_TARGET = {
     "fabric_black":        ( 20,  21,  25),
     "fabric_brown":        (114,  71,  40),
     "fabric_blue":         ( 53,  57, 157),
+    # 132 blocks (all `gray_carpet` at the palette level), above the 100-block
+    # threshold. Colour is MC's official gray dye; unlike the other fabric
+    # entries there is no measured in-world wool value for gray in the spec, so
+    # the canonical dye triple is used rather than a scaled guess.
+    "fabric_gray":         ( 66,  70,  73),
     # ---- glass (ART-S5.6; the 5 stained-glass colours in the palette) -----
     # Reuse the fabric/wool in-world values of the same dye for red / black /
     # orange, so a stained pane and a stained wool of one colour agree.
