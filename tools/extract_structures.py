@@ -409,6 +409,15 @@ def mesh_volume(solid, occupied, mat, cap, world_offset):
             quads)
 
 
+#: "atlas" maps each quad onto its family's atlas cell (the original model,
+#: which stretches one whole tile across every merged quad and therefore shows a
+#: flat average per block). "block" keeps the UVs in block units instead, so a
+#: normal wrapping texture tiles physically across the surface -- which is how
+#: the per-family materials now sample, and the only mode that produces texture
+#: detail at 1 m scale.
+UV_MODE = "atlas"
+
+
 def scale_uvs(uvs, quads, layout):
     """Map block-space UVs into each material's atlas cell.
 
@@ -496,7 +505,9 @@ def emit(mask, fam_idx, occupied, layout, cap, out_dir, name, comments):
                                               CAMPUS[2] + off[2]))
     if not quads:
         return None
-    uvs = scale_uvs(uvs, quads, layout)
+    if UV_MODE == "atlas":
+        uvs = scale_uvs(uvs, quads, layout)
+    # else: keep block-space UVs (0..w, 0..h per quad) for a tiling sampler.
     path = os.path.join(out_dir, name + ".obj")
     write_obj(path, comments, corners, uvs, normals, quads)
     slots = Counter(ATLAS_FAMILIES[q[1] - 1] for q in quads)
@@ -526,6 +537,9 @@ def main():
     ap.add_argument("--out", default="out")
     ap.add_argument("--bin", default="voxel_data/full/overworld.bin")
     ap.add_argument("--material-cache", default="out/materials/voxelmat.npz")
+    ap.add_argument("--uv-mode", choices=("atlas", "block"), default="atlas",
+                    help="atlas = per-quad cell mapping (flat averages at 1 m); "
+                         "block = block-unit UVs for a tiling sampler")
     ap.add_argument("--max-quad", type=int, default=4,
                     help="max blocks per merged quad edge. Raise for fewer "
                          "triangles, lower for sharper facades. Bounds how far "
@@ -533,6 +547,9 @@ def main():
     ap.add_argument("--min-detail", type=int, default=1,
                     help="smallest detail component to list in the manifest")
     args = ap.parse_args()
+
+    global UV_MODE
+    UV_MODE = args.uv_mode
 
     t0 = time.time()
     x0, x1, z0, z1 = CAMPUS
@@ -730,6 +747,21 @@ def main():
     all_quads = tot_quads + sum(v["quads"] for v in by_kind.values()) \
         + water_report.get("quads", 0)
 
+    # The UV convention is mode-dependent and must be recorded as such: a
+    # reader who assumes atlas semantics on a block-mode mesh would look for
+    # the atlas cell and find block counts instead, with nothing to warn them.
+    if UV_MODE == "block":
+        uv_convention = ("block-unit UVs, 1 texture repeat per block, "
+                         "sampler address mode = Wrap")
+        why_capped = ("greedy merging emits quads measured in blocks; the cap "
+                      "bounds how many blocks one quad spans so the per-block "
+                      "texture repeat stays uniform across the facade")
+    else:
+        uv_convention = ("each merged quad is stretched onto its material's "
+                         "atlas cell, never tiled across it")
+        why_capped = ("greedy merging alone stretches one atlas cell across a "
+                      "whole facade; the cap bounds texel density")
+
     manifest = {
         "step": "S3+S4",
         "campus": list(CAMPUS),
@@ -741,10 +773,9 @@ def main():
             "face_culling": "a face is emitted only where the neighbouring "
                             "voxel is empty in ANY role, campus-wide",
             "max_quad_blocks": args.max_quad,
-            "why_capped": "greedy merging alone stretches one atlas cell across "
-                          "a whole facade; the cap bounds texel density",
-            "uv_convention": "each merged quad is stretched onto its material's "
-                             "atlas cell, never tiled across it",
+            "uv_mode": UV_MODE,
+            "why_capped": why_capped,
+            "uv_convention": uv_convention,
             "winding": "right-hand rule around the outward normal, parity "
                        "derived per axis rather than hardcoded",
         },

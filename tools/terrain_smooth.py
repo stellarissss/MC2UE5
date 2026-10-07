@@ -36,8 +36,18 @@ import time
 
 import numpy as np
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+from build_atlas import ATLAS_FAMILIES                          # noqa: E402
+
 CAMPUS = (-144, 303, -544, 223)
 BLOCK_CM = 100.0
+
+#: 1-based family slot per family name, matching build_material_volume's
+#: encoding (``fam_slot = {f: i+1 ...}``, 0 = air). The terrain reuses it so a
+#: column's surface family and a structure voxel's family mean the same slot.
+FAMILY_SLOT = {f: i + 1 for i, f in enumerate(ATLAS_FAMILIES)}
+OTHER_SLOT = FAMILY_SLOT["other"]
 
 
 def fill_invalid(h):
@@ -83,13 +93,50 @@ def smooth_heightfield(h, sigma, flat_restore):
     return sm, float(np.abs(sm - h32).mean())
 
 
-def build_tiles(hm, origin, tile, upscale, out_dir):
+def surface_family_map(h, fam_vol, max_down=3):
+    """-> (nu, nv) uint8 of the 1-based surface family slot per terrain column.
+
+    ``h`` is the classified height field (out/classify/terrain.npy) and
+    ``fam_vol`` the voxel->family volume from build_material_volume, both in
+    campus-local indices: ``h[i, j]`` is the surface level of column (x=i,
+    z=j), and ``fam_vol[i, y, j]`` its material at height y.
+
+    The level ``h[i, j]`` is often air (slot 0): classify.py's
+    ``--pave-max-above`` raises the terrain to the *top* of paving, which can
+    sit one or more blocks above the solid surface. So the search walks down up
+    to ``max_down`` blocks and takes the first solid family; if none is found
+    the column gets the neutral "other" slot rather than a bogus material.
+    """
+    nu, nv = h.shape
+    ny = fam_vol.shape[1]
+    yy = h.astype(np.int32)
+    ii, jj = np.meshgrid(np.arange(nu), np.arange(nv), indexing="ij")
+
+    resolved = np.zeros((nu, nv), bool)
+    out = np.full((nu, nv), OTHER_SLOT, dtype=np.uint8)
+    for di in range(max_down + 1):
+        lvl = yy - di
+        in_range = (lvl >= 0) & (lvl < ny)
+        if not in_range.any():
+            continue
+        vals = fam_vol[ii, np.clip(lvl, 0, ny - 1), jj]
+        take = (~resolved) & in_range & (vals != 0)
+        out[take] = vals[take]
+        resolved |= take
+    return out
+
+
+def build_tiles(hm, origin, tile, upscale, out_dir, fam_map=None):
     """Write one OBJ per tile of the smooth height field.
 
     Axes: Minecraft (x, y, z) maps to Unreal (X, Y, Z) as
     (x, z, height) * 100 cm, with Z up. That single mapping is the whole
     coordinate contract; getting it wrong once is what made the old height-map
     path invisible, so it lives in exactly one place.
+
+    ``fam_map`` is the (nu, nv) surface-family slot per column from
+    :func:`surface_family_map`; each face is written under the ``usemtl`` of
+    its column's family. Returns ``(tiles, quads_by_family)``.
     """
     os.makedirs(out_dir, exist_ok=True)
     nu, nv = hm.shape
@@ -113,6 +160,7 @@ def build_tiles(hm, origin, tile, upscale, out_dir):
     nx, ny, nz = nx / ln, ny / ln, nz / ln
 
     written = []
+    by_family = {}
     for tu in range(0, nu, tile):
         for tv in range(0, nv, tile):
             bu = min(tu + tile, nu)
@@ -144,16 +192,35 @@ def build_tiles(hm, origin, tile, upscale, out_dir):
                         fh.write("vn %.4f %.4f %.4f\n" % (nx[i, j], ny[i, j], nz[i, j]))
                 # Faces: (a,b,c) with b = +u, c = +u+v gives an upward normal by
                 # the right-hand rule, which is the OBJ front-face convention.
+                # They are grouped by the surface family of their column so the
+                # importer builds one material slot per family: a terrain mesh
+                # with a single slot paints grass, track and paving with the
+                # same material and the campus reads as one tone no matter how
+                # the maps are baked.
+                face_by_fam = {}
                 for i in range(tu, bu - 1):
                     for j in range(tv, bv - 1):
                         a = idx[(i, j)]
                         b = idx[(i + 1, j)]
                         c = idx[(i + 1, j + 1)]
                         d = idx[(i, j + 1)]
+                        slot = int(fam_map[i // upscale, j // upscale])
+                        face_by_fam.setdefault(slot, []).append((a, b, c, d))
+                # Slot order is ATLAS_FAMILIES order -- the same order the
+                # structures OBJs emit -- so both meshes assign consistent
+                # material indices.
+                for slot in sorted(face_by_fam):
+                    fh.write("usemtl %s\n" % ATLAS_FAMILIES[slot - 1])
+                    for a, b, c, d in face_by_fam[slot]:
                         fh.write("f %d/%d/%d %d/%d/%d %d/%d/%d\n"
                                  % (a, a, a, b, b, b, c, c, c))
                         fh.write("f %d/%d/%d %d/%d/%d %d/%d/%d\n"
                                  % (a, a, a, c, c, c, d, d, d))
+                for slot, faces in face_by_fam.items():
+                    rec = by_family.setdefault(ATLAS_FAMILIES[slot - 1],
+                                               {"quads": 0, "tiles": 0})
+                    rec["quads"] += len(faces)
+                    rec["tiles"] += 1
             written.append({
                 "name": name,
                 "obj": "terrain/%s.obj" % name,
@@ -162,13 +229,19 @@ def build_tiles(hm, origin, tile, upscale, out_dir):
                 "vertices": (bu - tu) * (bv - tv),
                 "triangles": 2 * (bu - tu - 1) * (bv - tv - 1),
             })
-    return written
+    for rec in by_family.values():
+        rec["triangles"] = rec["quads"] * 2
+    return written, by_family
 
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--terrain", default="out/classify/terrain.npy")
     ap.add_argument("--structures", default="out/classify/structures.json")
+    ap.add_argument("--bin", default="voxel_data/full/overworld.bin",
+                    help="save used by build_material_volume for surface "
+                         "families (read from the cache when possible)")
+    ap.add_argument("--material-cache", default="out/materials/voxelmat.npz")
     ap.add_argument("--out", default="out")
     ap.add_argument("--sigma", type=float, default=0.9,
                     help="Gaussian sigma in blocks; 0 disables smoothing")
@@ -189,6 +262,17 @@ def main():
     h = fill_invalid(h)
     before = h.astype(np.float32)
 
+    # Surface families per column. Reuses the mesher's voxel->family volume so
+    # the two meshes agree on what "grass" or "brick" means; the cache means
+    # this does not re-read the multi-GB save.
+    from extract_structures import build_material_volume
+    print("loading material volume for surface families ...")
+    fam_vol, _nameid, _names = build_material_volume(args.bin,
+                                                     args.material_cache)
+    fam_map = surface_family_map(h, fam_vol)
+    print("surface families: %d distinct, other=%d columns"
+          % (int(np.unique(fam_map).size), int((fam_map == OTHER_SLOT).sum())))
+
     sm, mean_shift = smooth_heightfield(before, args.sigma, args.flat_restore)
 
     if args.upscale > 1:
@@ -204,13 +288,16 @@ def main():
     print("  columns moved >1 m: %d (%.4f%%)"
           % (int((err > 1.0).sum()), 100.0 * (err > 1.0).mean()))
 
-    tiles = build_tiles(sm.astype(np.float32), (CAMPUS[0], CAMPUS[2]),
-                        args.tile, args.upscale,
-                        os.path.join(args.out, "terrain"))
+    tiles, by_family = build_tiles(
+        sm.astype(np.float32), (CAMPUS[0], CAMPUS[2]),
+        args.tile, args.upscale, os.path.join(args.out, "terrain"), fam_map)
     tris = sum(t["triangles"] for t in tiles)
     verts = sum(t["vertices"] for t in tiles)
     print("mesh: %d tiles, %d vertices, %d triangles  (%.1fs)"
           % (len(tiles), verts, tris, time.time() - t0))
+    print("  families: %s"
+          % ", ".join("%s=%d" % (f, r["quads"])
+                      for f, r in sorted(by_family.items())))
 
     # Compare against what the cube layer costs, which is the whole point.
     cubes = 1171144
@@ -248,6 +335,7 @@ def main():
         "tiles": tiles,
         "vertices": verts,
         "triangles": tris,
+        "materials_by_family": {f: by_family[f] for f in sorted(by_family)},
         "smoothing": {
             "mean_abs_dh_m": round(float(err.mean()), 4),
             "p95_abs_dh_m": round(float(np.percentile(err, 95)), 4),
