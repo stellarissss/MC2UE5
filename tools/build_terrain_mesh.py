@@ -45,10 +45,14 @@ Usage:
 import argparse
 import json
 import os
+import sys
 import struct
 import sys
 import time
 import zlib
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import objio  # noqa: E402
 
 BLOCK_CM = 100.0
 
@@ -142,38 +146,25 @@ def decode_height_cm(u16, meta):
 def write_obj(out_path, width, height, rows, channels, meta, origin_cm,
               stride=1):
     """
-    Write one tile as a Wavefront OBJ, in world centimetres.
+    Write one `.u16` tile as a Wavefront OBJ, in world centimetres.
 
-    Axis mapping follows the pipeline's convention: MC ``x`` is UE ``X``, MC
-    ``z`` is UE ``Y``, and the decoded block height is UE ``Z``. Vertices are
-    laid out on a grid with 1 vertex per ``stride`` blocks, and each quad
-    becomes two triangles with a consistent winding so the surface normal
-    points up.
-
-    UVs are per sampled step, which keeps the texel density the same as the
-    full-resolution mesh regardless of stride -- so a collision proxy and the
-    visual mesh tile identically.
-
-    ``stride`` > 1 subsamples the grid. It is used for the collision proxy:
-    complex-as-simple collision over the full 392k triangles per tile would
-    cook to a physics mesh hundreds of megabytes across four tiles, while a
-    stride-sampled copy traces identically at pawn scale.
+    This function's only remaining job is the *decoding*: the `.u16` rows and the
+    `landscape.json` height metadata are specific to the phase-2 landscape
+    format. The geometry itself lives in `tools/objio.py` so that a second
+    heightfield source -- `terrain_smooth.py`, which reads a plain array of block
+    heights -- writes byte-identical OBJs instead of its own near-copy of this
+    loop.
     """
-    ox, oy = float(origin_cm[0]), float(origin_cm[1])
     step = max(1, int(stride))
-
-    # Sample the column and row indices once; every emit loop then walks the
-    # same list instead of testing the stride per element.
     cols = list(range(0, width, step))
     if cols[-1] != width - 1:
         cols.append(width - 1)
     rws = list(range(0, height, step))
     if rws[-1] != height - 1:
         rws.append(height - 1)
-    gw, gh = len(cols), len(rws)
 
-    # Heights once, as centimetres, so the emit loops do no decoding.
-    z = []
+    # Decode once, here, so objio never sees the phase-2 format.
+    z_cm = []
     for r in rws:
         line = rows[r]
         zr = []
@@ -181,49 +172,18 @@ def write_obj(out_path, width, height, rows, channels, meta, origin_cm,
             i = (c * channels) * 2
             (v,) = struct.unpack(">H", bytes(line[i:i + 2]))
             zr.append(decode_height_cm(v, meta))
-        z.append(zr)
+        z_cm.append(zr)
 
-    with open(out_path, "w", newline="\n") as fh:
-        fh.write("# MC2UE5 terrain tile%s\n"
-                 % (" (collision proxy)" if step > 1 else ""))
-        fh.write("# %d x %d vertices, %d blocks per vertex, XY scale %.1f cm\n"
-                 % (gw, gh, step, BLOCK_CM))
-
-        w = fh.write
-        for ri, r in enumerate(rws):
-            wy = oy + r * BLOCK_CM
-            zr = z[ri]
-            for ci, c in enumerate(cols):
-                w("v %.2f %.2f %.3f\n" % (ox + c * BLOCK_CM, wy, zr[ci]))
-
-        for r in rws:
-            for c in cols:
-                w("vt %.4f %.4f\n" % (c, r))
-
-        for _r in rws:
-            for _c in cols:
-                w("vn 0.0000 0.0000 1.0000\n")
-
-        # Quad (r,c)-(r,c+1)-(r+1,c+1)-(r+1,c) -> two triangles, CCW seen from
-        # above so the normal is +Z.
-        for r in range(gh - 1):
-            row0 = r * gw + 1              # 1-based OBJ indices
-            row1 = (r + 1) * gw + 1
-            wbuf = []
-            for c in range(gw - 1):
-                a = row0 + c
-                b = row0 + c + 1
-                cc = row1 + c + 1
-                d = row1 + c
-                wbuf.append("f %d/%d/%d %d/%d/%d %d/%d/%d\n"
-                            % (a, a, a, cc, cc, cc, b, b, b))
-                wbuf.append("f %d/%d/%d %d/%d/%d %d/%d/%d\n"
-                            % (a, a, a, d, d, d, cc, cc, cc))
-            w("".join(wbuf))
-
-    tris = (gw - 1) * (gh - 1) * 2
-    return {"verts": gw * gh, "tris": tris,
-            "bytes": os.path.getsize(out_path)}
+    out_path = str(out_path)
+    res = objio.write_heightfield_obj(
+        out_path, z_cm, origin_cm=origin_cm, block_cm=BLOCK_CM,
+        stride=1,                      # already subsampled above
+        comment="phase-2 landscape tile")
+    # Report the pre-subsample triangle count, which is what `main` logs.
+    gw, gh = len(cols), len(rws)
+    res["stride"] = step
+    res["verts"] = gw * gh
+    return res
 
 
 def main():
