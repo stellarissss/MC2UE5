@@ -59,7 +59,10 @@ from block_families import FAMILIES                        # noqa: E402
 
 #: Atlas families. `block_families.family()` returns one of FAMILIES, "other",
 #: or (for water, which no rule matches) "other" as well -- water is forced to
-#: its own cell here so the S4 water layer has a real material.
+#: its own cell here so the S4 water layer has a real material. `glass` is a
+#: real family now (see GLASS_FAMILY) but is generated rather than sourced, so
+#: it is kept out of this tuple and appended explicitly below; both are looked
+#: up through GENERATED_RGB.
 GENERATED_FAMILIES = ("other", "water")
 
 #: The sports-field surface is an *atlas* family, not a *voxel* family: no
@@ -73,7 +76,20 @@ GENERATED_FAMILIES = ("other", "water")
 #: Appending it does not change the atlas dimensions: 22 families still need
 #: only ceil(22/8) = 3 rows, which rounds up to 4 exactly as 21 did.
 SPORT_FAMILY = "sports"
-ATLAS_FAMILIES = list(FAMILIES) + list(GENERATED_FAMILIES) + [SPORT_FAMILY]
+
+#: The glass family (ART-S5.6). Appended LAST, after `sports`, for the same
+#: reason `sports` was: appending cannot shift an existing family's index, and
+#: therefore cannot invalidate a mesh already generated. `sports` at index 21
+#: and `glass` at 22 keep every cell 0..21 exactly where it was.
+#:
+#: The commonly quoted "the atlas only has room for 24 families" is wrong: the
+#: row count is rounded up to a power of two (`plan_layout`), so 22, 23, 24, 25
+#: and up to **32** families all give `rows = 4`. The atlas only grows (and
+#: shifts every v coordinate) at the 33rd family. `glass` is therefore free.
+GLASS_FAMILY = "glass"
+
+ATLAS_FAMILIES = (list(FAMILIES) + list(GENERATED_FAMILIES)
+                  + [SPORT_FAMILY, GLASS_FAMILY])
 
 #: Defaults the mesher also reads. Kept in one dict so `--atlas-*` on either
 #: tool produces the same numbers.
@@ -93,6 +109,13 @@ SOURCE_TILE = 1024
 GENERATED_RGB = {
     "other": (150, 148, 144),
     "water": (58, 106, 128),
+    # ART-S5.6: opaque dark glass. Windows vanish into the white plaster facade
+    # (measured dE2000 4.3 between the two cells) because glass was routed to
+    # `fabric`; this cell is the cold grey-blue that makes a window read as a
+    # window against plaster. Deliberately much greyer than `water` -- glass is
+    # not blue water (C* <= 10 vs water's 19.7). The per-family texture adds a
+    # little grain on top of this flat colour.
+    "glass": (58, 68, 74),
 }
 
 #: Re-sourced families: family -> ambientCG asset id. These eight measured
@@ -222,6 +245,7 @@ EXPECTED_MEAN = {
     "fabric": (178, 180, 184), "quartz": (196, 198, 200),
     "greystone": (104, 106, 104), "other": (150, 148, 144),
     "water": (58, 106, 128), "sports": (96, 122, 74),
+    "glass": (58, 68, 74),
 }
 
 #: Licence. Sourced textures are CC0. Poly Haven supplied the families that

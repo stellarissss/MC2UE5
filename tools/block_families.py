@@ -27,8 +27,12 @@ FAMILIES = (
 #: (substring, family). First match wins; the list is ordered so the more
 #: specific tokens are tested before the catch-alls ("stone" is near the end).
 _RULES = (
-    # glass / translucent (no CC0 texture yet -> treated as glass family)
-    ("glass", "fabric"),          # placeholder until a glass material lands
+    # glass -- its own family as of ART-S5.6. This rule used to send glass to
+    # `fabric` as a placeholder, which made windows render the same near-white
+    # as the plaster facade (measured dE2000 4.3) and therefore invisible.
+    # `glass` must stay first: `stained_glass_pane` contains both "glass" and
+    # "pane", and every glass spelling has to land here before any later rule.
+    ("glass", "glass"),
     ("ice", "fabric"),
     # vegetation
     ("leaves", "leaves"),
@@ -300,7 +304,7 @@ VARIANT_EXCLUDE = (
 #: variant base token -> the FAMILIES family it belongs to.
 VARIANT_BASE_FAMILY = {
     "wool": "fabric", "carpet": "fabric", "bed": "fabric",
-    "stained_glass_pane": "fabric", "stained_glass": "fabric",
+    "stained_glass_pane": "glass", "stained_glass": "glass",
     "concrete": "concrete", "terracotta": "brick",
 }
 
@@ -340,6 +344,17 @@ VARIANT_TARGET = {
     "fabric_black":        ( 20,  21,  25),
     "fabric_brown":        (114,  71,  40),
     "fabric_blue":         ( 53,  57, 157),
+    # ---- glass (ART-S5.6; the 5 stained-glass colours in the palette) -----
+    # Reuse the fabric/wool in-world values of the same dye for red / black /
+    # orange, so a stained pane and a stained wool of one colour agree.
+    # `glass_white` deliberately does NOT: pure white (233,236,236) would put
+    # white glass back to the plaster it is trying to stand out from, so it is
+    # milky glass instead (spec 2.1).
+    "glass_white":         (205, 208, 206),
+    "glass_black":         ( 20,  21,  25),
+    "glass_red":           (161,  39,  34),
+    "glass_orange":        (240, 118,  19),
+    "glass_light_gray":    (157, 157, 151),
 }
 
 
