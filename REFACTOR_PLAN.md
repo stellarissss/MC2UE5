@@ -222,7 +222,8 @@ SIGGRAPH '25 论文《Minecraft to 3D》作者对这种做法有一句直接评�
 | **S2** | 平滑地形 `tools/terrain_smooth.py`（复用已有链） | 连续高度场 OBJ | 无方块阶梯；与存档高低一致 |
 | **S3** | 建筑对象化 `tools/extract_structures.py`：连通域 → 独立网格 | 每建筑一个 OBJ，**体量位置不变** | 楼数/位置与 `campus_map` 一致 |
 | **S4** | 细节部件真实化 + 水体层 | 窗/门/栏杆真实几何 + 水面 | 立面可辨；水面独立 |
-| **S5** | 图集 + 标准导入 + 材质 | 图集 PNG + StaticMesh + 纯母材质 | cook 零编译失败 |
+| **S5** | 逐族平铺材质 + 标准导入 + **逐槽位**材质绑定 | 22 张族贴图 + 22 母材质 + StaticMesh | 每方块可见纹理细节；槽位与 `usemtl` 逐位一致 |
+| **S5.5** | 颜色变体（MC 染色方块）→ 材质实例 tint | 19 个 `MI_MC_*` | 运动场呈绿/红，不是近白 |
 | **S6** | 装配替换：**删除 1.17 M 体素层** | 干净关卡 | 帧时 < 16 ms @ 400 m |
 | **S7** | C++ 拆分上帝文件 | `MCGameMode/MCLook/MCDiagnostics/MCTour` | 无 > 400 行文件 |
 | **S8** | 单一管线入口 `tools/pipeline.py` + `tools/shoot.py` | 一条命令跑全链 | 从体素到截图 |
@@ -294,4 +295,136 @@ SIGGRAPH '25 论文《Minecraft to 3D》作者对这种做法有一句直接评�
 | `QUALITY_TIERS.md` / `PHASE2_PLAN.md` | 分层管线 | 本次 S1 起由 `pipeline.py` 取代 |
 
 ---
-*本文档为 S0 交付；S1 起每阶段完成后回填实测数据。*
+
+## 八、S5 实施回填与新增发现（2026-10-07）
+
+> 本节是 S1–S5 的实测回填。**下面每一条都有磁盘/像素证据**，不是推断。
+> 与前文冲突处以本节为准。
+
+### 8.1 阶段状态（实测）
+
+| 阶段 | 状态 | 证据 |
+|---|---|---|
+| S1 分类 | ✅ | 1,949,579 体素 → 88 栋建筑 + 121 树；`out/classify/*.npy` |
+| S2 平滑地形 | ✅ | 24 瓦片 / 676,656 三角面（旧方块层 14,053,728，**20.8×** 降幅）；p95 位移 0.397 m |
+| S3 建筑对象化 | ✅ | 88 栋 → 158 OBJ / 277,014 面；bbox **88/88** 与 `structures.json` 精确一致 |
+| S4 细节 + 水体 | ✅ | 6 类细节库 + `water_layer.obj`（13 个水方块，如实报告不隐藏） |
+| S5 材质 | 🔄 | 见 8.2 / 8.3 —— 架构已改对，正在重导 |
+| S5.5 颜色变体 | ⏳ | 见 8.4（新发现的 P1 缺陷） |
+| S6–S9 | ⏳ | 未开始 |
+
+### 8.2 S5 的真正根因：**不是素材偏暖，是 UV 模型错了**
+
+前文 §2.5 与 §6.3 把「一片单色」归因为 CC0 素材偏暖、需要换源。
+**这个归因是错的**，换源永远修不好它。真正的原因是寻址模型：
+
+```
+贪心合并产生一个 4×4 方块的大四边形
+        │  scale_uvs() 把 UV 归一化后塞进该材质在图集里的那一格
+        ▼
+那个四边形整块显示一张 504 px 贴图
+        → 每个 1 米方块看到的是这张贴图的"平均色"
+        → 草 / 砖 / 跑道 / 路面全部塌陷成一片平色
+```
+
+`out/atlas/manifest.json` 里其实早就写着这条规则——
+"a merged quad is STRETCHED onto its material's cell"——
+只是没人注意到它**在 1 米尺度上正好把细节全抹平**。
+（讽刺的是 `mesher.why_capped` 还写着「cap 是为了限制贴图密度」，说明当初已隐约察觉，但没有质疑模型本身。）
+
+**修法（标准做法，不自研）**：每族一张 **Wrap 平铺贴图** + **方块单位 UV**（1 方块 = 1 次重复）。
+网格本来就每族一个材质槽（OBJ 写 `usemtl <family>`，导入器逐组生成槽位），所以这条路不需要新架构。
+- `tools/extract_structures.py` 加 `--uv-mode {atlas,block}`，block 模式**完全跳过** `scale_uvs`，
+  UV 保持 `mesh_volume()` 的方块单位值。
+- `tools/split_atlas_to_families.py` 把图集切成 22 张族贴图，镜像 16 px 边保证可平铺，
+  再 LANCZOS 重采样到 **512×512（2 的幂）**——非 2 的幂配 Wrap + mip + BC 压缩会踩一整类坑。
+
+实测（commit `54ad055`）：`bld_001_structure.obj` 的 `vt` u∈[0,4]、v∈[0,104]（方块单位），
+`vt>2.0` 占 18.59%；`terrain_-144_-544.obj` u/v∈[0,127]，`vt>2.0` 占 97.66%。
+（对照：atlas 模式 `vt∈[0.00098,0.99902]`，`vt>2.0 = 0` —— 行为未变，回归通过。）
+
+### 8.3 地形**从未被赋过材质**（第二个独立缺陷）
+
+`tools/import_terrain_tiles.py` 只做「导入 + 摆放」，**从不设材质**。
+所以 24 个地形瓦片一直挂着 UE 默认的 `WorldGridMaterial`，
+后来被统一刷成 `M_MC_Atlas`（寻址 `TA_CLAMP`）。
+这就是「地面和建筑出现同一种细网格」的来源——两者在采样同一张图集。
+
+而且地形瓦片**当时没有 `usemtl` 分组**，整个地形只有 1 个材质槽，
+草地 / 红色跑道 / 灰路面注定共用一种材质，校园不可能辨认。
+已修：`terrain_smooth.py` 新增 `surface_family_map()`，
+按 `terrain_h[i,j]` 层的族号分组（该层是 air 时向下搜 ≤3 格，兜底 `other`），
+按族写 `usemtl`。实测 24 瓦片族数直方图 `{1组:5, 2组:6, 4组:4, 5组:4, 6组:1, 7组:1, 8组:3}`
+—— 5 个纯 `grass` 瓦片是数据单调，不是 bug。
+
+### 8.4 新发现的 P1 缺陷：**10% 的方块颜色被压平，运动场会是近白色**
+
+`tools/block_families.py` 的映射**按材质类型分族，但不认 MC 的 16 色染色前缀**：
+
+```
+("wool", "fabric")        ← green_wool / lime_wool / red_wool 全部命中，共用一张近白贴图
+("concrete", "concrete")  ← white_concrete / green_concrete / cyan_concrete 全部合并
+("terracotta", "brick")   ← pink_terracotta 17,270 块 → 橙红砖色
+```
+
+实测（`voxelmat.npz` 的 `family`/`nameid` × `rolevolume.npy` 的 `role!=0`）：
+
+| 项 | 数字 |
+|---|---|
+| 带染色前缀的方块 | **195,032 块 = 校园的 10.00%** |
+| 却被压进的族数量 | **5 个**（concrete 139,384 / fabric 35,022 / brick 20,392 / plaster 95 / leaves 75 / bark 64） |
+| 羊毛合计 | **21,542 块**（lime 9,347 + green 8,852 + red 3,117 + brown 223 + light_blue 3） |
+| `fabric` 族贴图实测均值 | **RGB(178,180,184) —— 近白** |
+| 需新增的 (族,颜色) 组合（≥100 块） | **19 个，合计 55,358 块（2.84%）** |
+
+**后果**：`classify.py` 自述「运动场在这个存档里是羊毛」。
+lime_wool + green_wool = 18,199 块全部落进近白的 `fabric` 族
+→ **运动场会被渲染成近白色**，而用户明确点名「运动场必须能认出来」。
+这是直接违反核心约束的缺陷，与 §5 验收标准第 1 条冲突。
+
+**修法（S5.5）**：MC 的染色方块本来就是「同一张贴图 × 染料色」。
+- `block_families` 输出带颜色的键 `<family>#<colour>`；
+- 族母材质加 `Tint` 向量参数，`BaseColor = Texture × Tint`；
+- 建 19 个材质实例 `MI_MC_<family>_<colour>`，用 MC 真实染料色；
+- `import_family_materials.py` 的材质查找按名解析（先 `M_MC_<name>` 再 `MI_MC_<name>`），
+  **脚本无需改动**即可支持。
+
+另注：`assets/textures/block/*.png`（739 个）**是 git-LFS 指针，不是真 PNG**
+（内容以 `version https://git-lfs...` 开头）。所以 MC 原版贴图本地不可直接读，
+颜色变体只能走 tint 或另找源 —— 这与 §6.3「允许另找素材源」的决策一致。
+
+### 8.5 另外两个静默失败（新增到 §2.3）
+
+| 现象 | 根因 |
+|---|---|
+| 组件级 `set_material(i, ...)` 报成功、存了关卡、**画面零变化** | 绘制路径读的是**资产**的 `static_materials` 数组，不是组件覆盖。且 UE 5.8 Python 的 `StaticMesh` **没有** `set_material`/`get_num_materials`（实测每次调用抛 AttributeError） |
+| `EditorLoadingAndSavingUtils.save_dirty_packages` 对 `.umap` **是空操作** | 必须用 `LevelEditorSubsystem.save_current_level()`；且保存后要**重新 `load_map` 再数一遍 actor**才算证据 |
+
+还有一个曾被误判的点：**材质槽位只刷 slot 0** 时，`bld_001_structure` 的 13 个槽里
+12 个仍是 `WorldGridMaterial`（引擎默认灰），
+15 个可见族里 14 个渲染成引擎灰糊成一片 —— 这也是「一片单色」的贡献者之一。
+
+### 8.6 工程卫生（S6–S9 的具体化）
+
+| # | 问题 | 实测 | 处置 |
+|---|---|---|---|
+| 1 | 旧体素层仍在关卡里 | `mc_runtime.txt` 11:50：`propISM=1041 propInst=1171144` | S6 删除；`MCLayerControl.h` 的 `bVox=true` 默认要改 |
+| 2 | 上帝文件 | `MCConsoleCommands.cpp` **1,614 行**（前文记 1,464，已增长） | S7 拆为 GameMode / Look / Diagnostics / Tour |
+| 3 | `docs/` **未被 git 跟踪** | `git ls-files docs/` 为空；5 份文档只在本机 | 立即入库（含本文件引用的 `s5_material_spec.md`、`qa_s5_report.md`） |
+| 4 | **两套 `tools/` 树** | `repo/tools` 35 个 · `Q:/MC2UE5/tools` 13 个，**零重叠**；且有重复功能（`fetch_lfs.py` vs `fetch_lfs_object.py`/`fetch_lfs_raw.py`） | 收敛到 `repo/tools/`，硬编码绝对路径改为参数 |
+| 5 | **6 份并列计划文档** | `README` / `PHASE2_PLAN` / `QUALITY_TIERS` / `RENDER_PLAN` / `REFACTOR_PLAN` / `RELEASE_NOTES` | 收敛为「本文件 = 唯一权威计划」+ README 现状描述，其余归档 |
+| 6 | Shipping 包内容为空 | `dist52/MCReplica/Content/` 只有 `Paks/`；`Paks/` 目录**为空** | 未解决；UAT stage 不复制项目 Content |
+| 7 | 无单一管线入口 | S8 未做 | `tools/pipeline.py` 一条命令跑全链 |
+
+### 8.7 目标与验收（重申，不变）
+
+**目标**：把 `SYFZ_1.16.5` 的校园变成可游玩、视觉写实的 UE5 关卡，
+**且布局与 MC 地图严格对应**（操场 / 大门 / 各栋楼位置不能变）。
+
+**当前离目标最近的三个具体缺口**：
+1. 逐族平铺材质尚未完成一次成功的端到端渲染（S5 收尾中）；
+2. 颜色变体未做，运动场会是近白色（S5.5）；
+3. 旧体素层仍在关卡里（S6），性能与取景仍受它牵制。
+
+---
+*本文档为唯一权威计划。S0 定架构，S1–S4 已回填，S5 见 §8.*
