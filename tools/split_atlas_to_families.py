@@ -108,12 +108,26 @@ ALPHA_KEY = {
 
 #: Families generated procedurally -- no CC0 source and no usable atlas cell.
 #: `rgb` is the flat base colour, `grain` the standard deviation of a small
-#: seeded noise added so a wall of it is not a mathematically flat colour.
+#: seeded noise added so a wall of it is not a mathematically flat colour, and
+#: `grille` builds a real alpha mask (BLEND_MASKED source).
 #: KEEP `rgb` IN SYNC with `build_atlas.GENERATED_RGB`; `main()` asserts it.
 PROCEDURAL = {
     "glass": {"rgb": (58, 68, 74), "grain": 3.0},
+    # ART-S5.6: iron_bars is meshed as a full cube (greedy_quads treats every
+    # block as a box), so the only way to read it as a railing rather than a
+    # metal plate is an alpha cutout. It is a procedural grille, not a keyed
+    # photo: 2 vertical bars + 2 horizontal rails, all away from the edges, so
+    # the mask is periodic by construction and tiles exactly.
+    "bars": {"rgb": (78, 80, 82), "grain": 0.0, "grille": True},
 }
 GRAIN_SEED = 20260507
+
+#: Grille geometry, as fractions of the tile. Bars are centred at these u
+#: positions, rails at these v positions, and each has this width/height. The
+#: union coverage is 2*w + 2*h - 4*w*h = 0.36, which is the 30-40% the spec
+#: asks for (below ~25% the railing looks like it vanished, above ~45% it reads
+#: as a solid plate again).
+GRILLE = {"bars_u": (0.25, 0.75), "rails_v": (0.10, 0.90), "w": 0.10, "h": 0.10}
 
 
 def reconstruct_alpha(rgb, lo, hi):
@@ -198,6 +212,47 @@ def procedural_rgb(family):
     # rint, not truncate: the downstream `astype(np.uint8)` truncates, which
     # would bias a procedural cell about -0.5/channel below its spec colour.
     return np.rint(np.clip(base, 0.0, 255.0))
+
+
+def grille_alpha():
+    """-> (H, W) uint8 alpha mask for the `bars` family: 0 gap, 255 rail.
+
+    Built from the GRILLE fractions as a union of two vertical bars and two
+    horizontal rails. Every element is well inside the tile, so the mask is
+    exactly periodic (`mask[:, 0] == mask[:, -1]` and likewise for rows) and a
+    TA_WRAP sampler sees no seam at all -- which is the opposite of the photo
+    textures, where the boundary has to be taken as it comes.
+
+    Binary on purpose: BLEND_MASKED compares against a single clip value
+    (0.333), so a mid-grey edge would sort to one side of it arbitrarily and
+    contribute nothing. At 512 px a bar is ~51 px wide, so there is no aliasing
+    problem to antialias away.
+    """
+    g = GRILLE
+    # Pixel centre coordinates in [0, 1), so periodicity is exact.
+    coord = (np.arange(OUT_PX) + 0.5) / float(OUT_PX)
+    vert = np.zeros(OUT_PX, dtype=bool)
+    for u0 in g["bars_u"]:
+        vert |= np.abs(coord - u0) <= g["w"] / 2.0
+    horiz = np.zeros(OUT_PX, dtype=bool)
+    for v0 in g["rails_v"]:
+        horiz |= np.abs(coord - v0) <= g["h"] / 2.0
+    mask = vert[None, :] | horiz[:, None]
+    a = np.where(mask, 255, 0).astype(np.uint8)
+    return a
+
+
+def procedural_alpha(family):
+    """-> (H, W) uint8 alpha for a procedural family, or None if opaque.
+
+    Applied on BOTH source paths. On the atlas path `bars` has no alpha in the
+    atlas (the atlas is RGB), so without this a masked material would silently
+    become opaque -- the spec's first silent-failure mode.
+    """
+    spec = PROCEDURAL.get(family)
+    if not spec or not spec.get("grille"):
+        return None
+    return grille_alpha()
 
 
 def seam_metrics(rgb):
@@ -305,6 +360,18 @@ def main():
                 alpha_src = "keyed from black background (JPG lost the alpha)"
             arr = np.dstack([rgb.astype(np.uint8), alpha]).astype(np.float32)
 
+        # A procedural mask overrides whatever alpha the source path produced.
+        # It is applied after BOTH branches so the mask cannot depend on which
+        # source was chosen: the atlas is RGB, so an atlas cell can never carry
+        # the grille, and a masked material whose texture has alpha==255
+        # everywhere renders opaque with no error (the spec's first
+        # silent-failure mode). `bars` is in PROCEDURAL and so never reads the
+        # atlas today; this keeps that true if it ever does.
+        pmask = procedural_alpha(f)
+        if pmask is not None:
+            arr[..., 3] = pmask.astype(np.float32)
+            alpha_src = "procedural grille"
+
         if mirror:
             arr = mirror_edges(arr)
 
@@ -333,6 +400,10 @@ def main():
         m = ra[..., :3].astype(np.float32).reshape(-1, 3).mean(0)
         alpha = ra[..., 3]
         wrap_h, wrap_v, base = seam_metrics(ra[..., :3])
+        # Alpha seam too: for a masked texture the cutout continuity is what a
+        # viewer sees, and it is measured on the mask directly.
+        amask = alpha.astype(np.float32)[..., None]
+        aw_h, aw_v, a_base = seam_metrics(amask)
         rec = {"family": f, "png": out, "mode": resized.mode,
                "source_mode": label,
                "mirrored": bool(mirror),
@@ -342,7 +413,9 @@ def main():
                "seam": {"wrap_h": round(wrap_h, 3), "wrap_v": round(wrap_v, 3),
                         "baseline": round(base, 3),
                         "ratio_h": round(wrap_h / base, 3) if base else None,
-                        "ratio_v": round(wrap_v / base, 3) if base else None}}
+                        "ratio_v": round(wrap_v / base, 3) if base else None,
+                        "alpha_wrap_h": round(aw_h, 3),
+                        "alpha_wrap_v": round(aw_v, 3)}}
         if alpha.min() < 255:
             rec["alpha"] = {
                 "min": int(alpha.min()), "max": int(alpha.max()),
@@ -398,6 +471,17 @@ def main():
              [f for f, r, _ in made if r["seam"]["wrap_h"] == np.max(wh)][0]))
     print("ratio_h 中位 %.2f   比值 <1.0 的族: %d/%d"
           % (np.median(rt), sum(1 for x in rt if x < 1.0), len(rt)))
+    masked = [(f, r) for f, r, _ in made if r.get("alpha")]
+    if masked:
+        print()
+        print("带 alpha 的族（masked 材质用）:")
+        for f, r in masked:
+            a = r["alpha"]
+            print("  %-8s 不透明 %.1f%%  全透 %.1f%%  RGB缝 %.2f  缠绕缝(alpha) "
+                  "%.3f/%.3f  [%s]"
+                  % (f, 100 * r["alpha_opaque_frac"], 100 * a["frac_0"],
+                     r["seam"]["wrap_h"], r["seam"]["alpha_wrap_h"],
+                     r["seam"]["alpha_wrap_v"], a["source"]))
     print("report: %s" % mpath)
     return 0
 

@@ -71,7 +71,9 @@ architecture it must not.
 cannot list it standalone (`Missing directory index`) and `pak_report.py`
 labels it rather than failing the build over it.
 
-Family coverage: **17 of 22** family materials are cooked. The 5 that are not
+Family coverage: **17 of 22** family materials are cooked (see §10 — the family
+set has since grown to 23 with `glass`, so re-derive this before quoting). The
+5 that are not
 (`asphalt`, `path`, `roof`, `sports`, `tiles`) are **correctly culled** — they
 have **zero** mesh references. Verified by counting `usemtl` across every OBJ:
 
@@ -425,27 +427,33 @@ buffer's distribution, not the `frame=` column (that is clamped by
 
 ---
 
-## 10. `granite` vs `greystone` — note only, not fixed
+## 10. Correction: family set grew mid-session (S5.6 + colour variants)
 
-Per the brief's item 4. Measured on the **family textures now in the render
-path** (`out/families/*.png`), mean sRGB → CIELAB, ΔE76 between means:
+While this task ran, S5.6 (`2150ba8`, `b4ff4e8`, `b5f587a`) added a **`glass`**
+family and re-derived family textures from CC0 sources, and a colour-variant
+pass added 26 tinted variants. Current state, measured:
 
-| pair | mean RGB | ΔE76 |
-|---|---|---|
-| granite vs greystone | (110,110,112) vs (104,106,104) | **3.17** |
-| granite vs concrete | (110,110,112) vs (112,112,110) | **2.42** |
-| greystone vs concrete | (104,106,104) vs (112,112,110) | **2.72** |
+| | count |
+|---|---|
+| base family PNGs in `out/families/` | **24** |
+| colour-variant PNGs in `out/families/` | **26** (brick_cyan, concrete_white, fabric_lime, glass_red, …) |
+| `M_MC_*` / `T_MC_*` in the UE project | **23 / 23** |
+| colour-variant uassets in the UE project | **0** |
 
-ΔE76 = 3.17 **reproduces the brief's number exactly** (independent computation,
-so the brief is right here). The guideline is ≥ 8.
+So: `glass` **is** imported; `bars` exists on disk but is **not** imported; and
+**none of the 26 colour variants are in the UE project yet** — they are a
+data-side product, not yet in the render path. This is consistent with the
+known `sports` defect (MC dye prefixes → wrong family) still being open.
 
-**A worse finding than the brief states: it is not a pair, it is a trio.**
-`granite`, `greystone` and `concrete` are three near-neutral greys, all within
-ΔE ≈ 2.4–3.2 of each other. On screen they will read as one material, and the
-three are used *separately* in the meshes (e.g. `bld_001_structure` carries
-both `concrete` and `greystone` as distinct slots), so a viewer cannot tell
-which is which. `quartz` (L\* 79.7) and `brick` (a\* 14.1) are the only
-strongly separated families in the palette.
+This supersedes the "22 families" figure used in §1–§5 and in the brief's
+reference list. **The conclusions do not change** — pak contents, 0 % green,
+and the albedo chain were all measured against the cooked build and remain
+valid; only the *denominator* moved. §2's "17 of 22" was correct for the
+22-family set as it stood; `glass`, `bars` and the variants were not in the
+OBJ `usemtl` census I ran (`out/structures/*.obj` predate the S5.6 work).
+Re-run `pak_report.py` after the next cook for the current split.
 
-Not nudged, per instruction — this is a report.
+Verified that the S5.6 re-derivation did **not** move my headline premise:
+`grass.png` is still mean **(84.0, 104.0, 66.1)** — green — at 13:18
+(regenerated), and `glass.png` is (58,68,74).
 
