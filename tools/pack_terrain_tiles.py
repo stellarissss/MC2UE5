@@ -105,6 +105,43 @@ def main():
             uv[:, 0] = ii.ravel() - tu                          # U
             uv[:, 1] = 1.0 - (jj.ravel() - tv)                  # V, flipped
 
+            # Shading normals and tangents, per vertex.
+            #
+            # These cannot be left to the engine: a StaticMesh built from a
+            # UStaticMeshDescription copies whatever normals the description
+            # holds straight into the render data
+            # (StaticMeshVertex.TangentZ = VertexInstanceNormals[...]) and
+            # never computes them, so a script-built surface shades with a zero
+            # normal and renders black at any sun intensity. UE 5.8's Python API
+            # cannot set them, hence project/Source/.../MCMeshTools.cpp.
+            #
+            # Axes. The OBJ writer works in its own space (x, z, h) and negates
+            # Y on the way into Unreal, so in the FINAL Unreal space the
+            # surface is h(X, -Y) and dh/dY = -dzdy. The OBJ writer's normal
+            # (nx, ny, nz) = (-dzdx, -dzdy, 1) is therefore, after the same
+            # negation, (-dzdx, +dzdy, 1) -- which is what is written here, so
+            # the two paths agree.
+            step_cm = float(BLOCK_CM)   # one vertex per block
+            h = sm[tu:bu, tv:bv].astype(np.float64)
+            dzdx = np.gradient(h, axis=0) / step_cm
+            dzdy = np.gradient(h, axis=1) / step_cm
+            nrm = np.empty((w * d, 3), dtype=np.float32)
+            nrm[:, 0] = -dzdx.ravel()
+            nrm[:, 1] = dzdy.ravel()
+            nrm[:, 2] = 1.0
+            ln = np.sqrt((nrm * nrm).sum(axis=1))
+            ln[ln == 0.0] = 1.0
+            nrm /= ln[:, None]
+            # Tangent along +U, then made perpendicular to the normal by the
+            # writer; dZ/dX in Unreal space is dzdx.
+            tan = np.empty((w * d, 3), dtype=np.float32)
+            tan[:, 0] = 1.0
+            tan[:, 1] = 0.0
+            tan[:, 2] = -dzdx.ravel()
+            tl = np.sqrt((tan * tan).sum(axis=1))
+            tl[tl == 0.0] = 1.0
+            tan /= tl[:, None]
+
             # Triangles per cell: (a,b,c) and (a,c,d) with a=(i,j),
             # b=(i+1,j), c=(i+1,j+1), d=(i,j+1) -- the OBJ writer's winding.
             gi, gj = np.meshgrid(np.arange(w - 1), np.arange(d - 1),
@@ -125,7 +162,7 @@ def main():
             tri, facefam = tri[keep], facefam[keep]
 
             for suffix, arr in (("pos", pos), ("uv", uv), ("tri", tri),
-                                ("fam", facefam)):
+                                ("fam", facefam), ("nrm", nrm), ("tan", tan)):
                 arr.tofile(os.path.join(args.out, "%s.%s" % (name, suffix)))
 
             fams = sorted(int(s) for s in np.unique(facefam))

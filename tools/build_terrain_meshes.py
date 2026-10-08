@@ -117,6 +117,16 @@ def build_tile(t):
     pos = read_array(os.path.join(PACK, name + ".pos"), "f", 3)
     uv = read_array(os.path.join(PACK, name + ".uv"), "f", 2)
     tri = read_array(os.path.join(PACK, name + ".tri"), "i", 3)
+    # Shading normals / tangents, one row per VERTEX (same order as pos). They
+    # are expanded to per vertex instance in the loop below, because the C++
+    # writer takes them in vertex-instance order and this builder creates one
+    # instance per triangle corner.
+    nrm = read_array(os.path.join(PACK, name + ".nrm"), "f", 3)
+    tan = read_array(os.path.join(PACK, name + ".tan"), "f", 3)
+    if len(nrm) != len(pos) or len(tan) != len(pos):
+        return {"name": name,
+                "error": "nrm/tan length %d/%d != pos %d"
+                         % (len(nrm), len(tan), len(pos))}
     fam = array.array("B")
     with open(os.path.join(PACK, name + ".fam"), "rb") as fh:
         fam.frombytes(fh.read())
@@ -169,6 +179,11 @@ def build_tile(t):
     # exactly right. The cost is that the mesh is effectively non-indexed
     # (3 instances per triangle instead of ~1 per vertex), which is a known
     # optimisation to revisit -- correctness first.
+    # Collected in the same order the instances are created, which is the order
+    # the C++ writer walks the mesh description.
+    inst_normals = []
+    inst_tangents = []
+
     for k in range(want):
         i0, i1, i2 = tri[k]
         nm = name_of_slot[fam[k]]
@@ -177,6 +192,10 @@ def build_tile(t):
             inst = smd.create_vertex_instance(vids[idx])
             smd.set_vertex_instance_uv(
                 inst, unreal.Vector2D(float(uv[idx][0]), float(uv[idx][1])), 0)
+            inst_normals.append(unreal.Vector(nrm[idx][0], nrm[idx][1],
+                                             nrm[idx][2]))
+            inst_tangents.append(unreal.Vector(tan[idx][0], tan[idx][1],
+                                               tan[idx][2]))
             iv.append(inst)
         smd.create_triangle(group_of[nm], iv)
 
@@ -211,6 +230,24 @@ def build_tile(t):
     asset.build_from_static_mesh_descriptions(
         [smd], build_simple_collision=False,
         fast_build=os.environ.get("MC_FAST_BUILD", "0") == "1")
+
+    # A mesh description carries no shading normals, and
+    # UStaticMesh::BuildFromMeshDescription copies that absence straight into the
+    # render data (StaticMeshVertex.TangentZ = VertexInstanceNormals[...]) without
+    # ever computing it. A zero normal means dot(N,L) = 0 at any sun intensity,
+    # which is exactly why this terrain rendered flat black while the imported
+    # structure meshes lit normally. UE 5.8's Python API cannot set them, hence
+    # project/Source/MCReplica/Private/MCMeshTools.cpp.
+    try:
+        written = unreal.MCMeshTools.write_vertex_instance_normals(
+            asset, inst_normals, inst_tangents, 1.0)
+    except Exception as exc:
+        return {"name": name,
+                "error": "write_vertex_instance_normals: %s" % str(exc)[:140]}
+    if written != want * 3:
+        return {"name": name,
+                "error": "normals written %s, expected %d"
+                         % (written, want * 3)}
 
     unreal.EditorAssetLibrary.save_loaded_asset(asset)
 

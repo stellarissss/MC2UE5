@@ -12,6 +12,7 @@
 #include "MCConsoleCommands.h"
 
 #include "MCFrameCapture.h"
+#include "MCLayerControl.h"
 #include "MCReplicaCharacter.h"
 
 #include "Components/StaticMeshComponent.h"
@@ -101,11 +102,24 @@ namespace
 		// usual way to show this but they are not exported by this engine build
 		// (no declaration survives in the installed headers), and a missing
 		// symbol here would cost a build cycle to discover.
+		//
+		// **This number is not trustworthy on its own and must not be quoted as
+		// the frame time.** `GetDeltaSeconds()` is clamped by MaxDeltaTime
+		// (0.4 s), so every frame slower than 400 ms reports as exactly
+		// 400.0 ms, and it is a single instantaneous sample taken once a second
+		// -- blind to anything faster. The measured log shows 18 samples at
+		// exactly 400.0 ms, which is the clamp, not a measurement.
+		//
+		// The honest figures come from the ring buffer, which is sampled every
+		// frame and reported as a distribution. Both are written; the
+		// distribution is the one to read.
 		const double DeltaSec = W->GetDeltaSeconds();
+		const FMCTimeStats FT = FMCTimeRing::Consume();
 		FString Line = FString::Printf(
-			TEXT("[%6.1fs] frame=%.1fms fps=%.0f pawn=%s"),
+			TEXT("[%6.1fs] frame=%.1fms fps=%.0f | ft[%s] pawn=%s"),
 			W->GetTimeSeconds(), DeltaSec * 1000.0,
 			DeltaSec > 0.0 ? 1.0 / DeltaSec : 0.0,
+			*FT.Describe(),
 			Pawn ? TEXT("yes") : TEXT("NO"));
 
 		if (Pawn)
@@ -238,11 +252,25 @@ namespace
 		// nothing -- an empty instanced component looks exactly like a populated
 		// one. The nearest instance's height against the terrain is what tells
 		// whether they are buried, floating, or placed correctly.
+		//
+		// **The instance loop is capped, and the cap is load-bearing.** This
+		// function used to call GetInstanceTransform() for all 1,171,144
+		// instances on the game thread, once a second, unconditionally (see the
+		// timer in BeginPlay). That is the P0 freeze: a million world-space
+		// transform compositions per second is several hundred milliseconds of
+		// game thread, every second. Input queues behind the tick, so the camera
+		// stops responding; the renderer starves, so CPU and GPU both look idle.
+		//
+		// The totals below come from GetInstanceCount(), which is O(1) per
+		// component. Only the nearest-instance search needs per-instance data,
+		// and it now examines a bounded sample: it is a placement sanity check,
+		// not a census, and a sample answers it.
 		{
 			int32 IsmComps = 0;
 			int64 InstTotal = 0;
 			float NearestDist = -1.0f;
 			FVector NearestLoc = FVector::ZeroVector;
+			int32 Examined = 0;
 			const FVector Ref = Pawn ? Pawn->GetActorLocation() : FVector::ZeroVector;
 			for (TActorIterator<AActor> It(W); It; ++It)
 			{
@@ -256,8 +284,11 @@ namespace
 					}
 					++IsmComps;
 					const int32 N = C->GetInstanceCount();
-					InstTotal += N;
-					for (int32 i = 0; i < N; ++i)
+					InstTotal += N;      // O(1): the real instance count
+					// Spread the sample across the component rather than taking a
+					// prefix, so it is not always the same corner of the campus.
+					const int32 Step = FMath::Max(1, N / 64);
+					for (int32 i = 0; i < N && Examined < 4096; i += Step, ++Examined)
 					{
 						FTransform T;
 						if (!C->GetInstanceTransform(i, T, /*bWorldSpace*/ true))
@@ -274,8 +305,8 @@ namespace
 				}
 			}
 			Line += FString::Printf(
-				TEXT(" | propISM=%d propInst=%lld"),
-				IsmComps, (long long)InstTotal);
+				TEXT(" | propISM=%d propInst=%lld sampled=%d"),
+				IsmComps, (long long)InstTotal, Examined);
 			if (NearestDist >= 0.0f)
 			{
 				Line += FString::Printf(
@@ -373,19 +404,42 @@ void AMCFrameCaptureGameMode::BeginPlay()
 	// produced identical frames, which can only happen if nothing was written.
 	ApplyLook();
 
-	GetWorldTimerManager().SetTimer(GLookHandle,
-		FTimerDelegate::CreateUObject(this, &AMCFrameCaptureGameMode::ApplyLook),
-		1.0f, /*bLoop*/ true, /*FirstDelay*/ 1.0f);
-	// Stop once streaming has certainly settled, so this does not fight the game
-	// for the rest of the session.
-	FTimerHandle LookStop;
-	GetWorldTimerManager().SetTimer(LookStop,
-		FTimerDelegate::CreateLambda([this]()
+	// How long to keep re-applying the look. 0 disables the repeat entirely.
+	//
+	// Re-applying is needed only because the PostProcessVolume streams in
+	// after BeginPlay, and a second or two is enough to catch it. The shipped
+	// value used to be 15 s at a 1 s period, which meant 15 unconditional sky
+	// re-captures -- and each one is a stall, because MarkRenderStateDirty on
+	// a real-time-capture skylight discards the capture and re-renders it.
+	// That is expensive enough to dominate the frame.
+	//
+	// -MClook=<seconds> to change it, so the cost can be measured rather than
+	// argued about; -MClook=0 turns the repeat off and leaves one-shot apply.
+	float LookRepeatSeconds = 15.0f;
+	{
+		float V = 0.0f;
+		if (FParse::Value(FCommandLine::Get(), TEXT("MClook="), V))
 		{
-			GetWorldTimerManager().ClearTimer(GLookHandle);
-			ApplyLook();
-			UE_LOG(LogMCFrame, Warning, TEXT("ApplyLook: final pass done"));
-		}), 15.0f, false);
+			LookRepeatSeconds = FMath::Max(0.0f, V);
+		}
+	}
+
+	if (LookRepeatSeconds > 0.0f)
+	{
+		GetWorldTimerManager().SetTimer(GLookHandle,
+			FTimerDelegate::CreateUObject(this,
+				&AMCFrameCaptureGameMode::ApplyLook),
+			1.0f, /*bLoop*/ true, /*FirstDelay*/ 1.0f);
+		// Stop once streaming has certainly settled, so this does not fight
+		// the game for the rest of the session.
+		FTimerHandle LookStop;
+		GetWorldTimerManager().SetTimer(LookStop,
+			FTimerDelegate::CreateLambda([this]()
+			{
+				GetWorldTimerManager().ClearTimer(GLookHandle);
+				ApplyLook();
+			}), LookRepeatSeconds, false);
+	}
 
 	// Park the camera at one tour stop and stay there. One stop per launch,
 	// because the reliable way to get a picture out of this build is an external
@@ -417,21 +471,10 @@ void AMCFrameCaptureGameMode::BeginPlay()
 				&AMCFrameCaptureGameMode::MCTour), 12.0f, false);
 	}
 
-	if (FParse::Param(FCommandLine::Get(), TEXT("MCdiag")))
-	{
-		UWorld* W = GetWorld();
-		if (W)
-		{
-			WriteMCDiagLine(W);
-			W->GetTimerManager().SetTimer(
-				GDiagTimer,
-				FTimerDelegate::CreateLambda([W]()
-				{
-					WriteMCDiagLine(W);
-				}),
-				1.0f, /*bLoop*/ true);
-		}
-	}
+	// The -MCdiag timer is registered once, at the end of BeginPlay. It used to
+	// be registered here *as well as* there, so asking for the diagnostic gave
+	// you two writers appending to the same file -- which doubles the cost of
+	// the thing being measured and interleaves two time series in one log.
 
 #if WITH_EDITOR
 	// Everything below is editor-side diagnostic scaffolding: it rebuilds the
@@ -632,14 +675,65 @@ void AMCFrameCaptureGameMode::BeginPlay()
 		40.0f, /*bLoop*/ false);
 #endif // WITH_EDITOR
 
-	// Runtime collision diagnostic. Always on: it is the only way to see inside a
-	// Shipping build, and it costs one line a second. Remove or gate it once the
-	// gameplay state is known good.
-	GetWorldTimerManager().SetTimer(
-		GDiagHandle,
-		FTimerDelegate::CreateUObject(this,
-			&AMCFrameCaptureGameMode::RunRuntimeDiag),
-		1.0f, /*bLoop*/ true);
+	// The frame-time ring is always on: it is two integers and one float write
+	// per frame, and it is the only way to tell a sustained plateau from a
+	// periodic spike after the fact.
+	FMCTimeRing::Start();
+
+	// Runtime collision diagnostic. **Now gated on -MCdiag.**
+	//
+	// It used to be unconditional, and that was the P0 freeze. A diagnostic that
+	// walks the world's instances is not a diagnostic, it is a load test: at
+	// 1.17 M instances it cost several hundred milliseconds of game thread per
+	// second, which stalled input (so the camera looked broken) and starved the
+	// renderer (so CPU and GPU both looked idle). A measurement instrument that
+	// changes what it measures is worse than none.
+	//
+	//     MCReplica.exe -MCdiag
+	if (FParse::Param(FCommandLine::Get(), TEXT("MCdiag")))
+	{
+		GetWorldTimerManager().SetTimer(
+			GDiagHandle,
+			FTimerDelegate::CreateUObject(this,
+				&AMCFrameCaptureGameMode::RunRuntimeDiag),
+			1.0f, /*bLoop*/ true);
+	}
+
+	// -MClayers=<spec> turns geometry/collision/shadow layers off
+	// independently, so one launch bisects the space instead of one build per
+	// hypothesis. Applied a few seconds in, because World Partition has not
+	// finished streaming the actors the switches need to find at BeginPlay.
+	// Written to a file like everything else, because a Shipping build has no
+	// log to read.
+	{
+		const FMCLayerSpec Spec = FMCLayerSpec::FromCommandLine();
+		const bool bAnyOff = !Spec.bVox || !Spec.bStruct || !Spec.bTerrain
+			|| !Spec.bShadow || !Spec.bCollision;
+		// Written unconditionally, and immediately, so that "the switch did
+		// nothing" can be separated into "the spec did not parse" and "the
+		// apply did not run". Those look identical from the outside otherwise.
+		FFileHelper::SaveStringToFile(
+			FString::Printf(TEXT("parse bAnyOff=%d spec=%s t=%.2f\r\n"),
+				bAnyOff ? 1 : 0, *Spec.Describe(), GetWorld()->GetTimeSeconds()),
+			TEXT("Q:/MC2UE5/logs/mclayers.txt"),
+			FFileHelper::EEncodingOptions::AutoDetect,
+			&IFileManager::Get(), FILEWRITE_Append);
+		if (bAnyOff)
+		{
+			FTimerHandle LayerKick;
+			GetWorldTimerManager().SetTimer(LayerKick,
+				FTimerDelegate::CreateLambda([this, Spec]()
+				{
+					const FMCLayerCensus Census = ApplyMCLayers(GetWorld(), Spec);
+					FFileHelper::SaveStringToFile(
+						FString::Printf(TEXT("apply  spec=%s -> %s\r\n"),
+							*Spec.Describe(), *Census.Describe()),
+						TEXT("Q:/MC2UE5/logs/mclayers.txt"),
+						FFileHelper::EEncodingOptions::AutoDetect,
+						&IFileManager::Get(), FILEWRITE_Append);
+				}), 6.0f, /*bLoop*/ false);
+		}
+	}
 }
 
 void AMCFrameCaptureGameMode::RunRuntimeDiag()
@@ -788,6 +882,19 @@ namespace
 
 	/** Sky light intensity from the command line; < 0 means "use the default". */
 	float gSkyOverride = -1.0f;
+
+	/**
+	 * Whether the sky light has already been forced to re-capture.
+	 *
+	 * ApplyLook runs more than once by design (the PostProcessVolume streams in
+	 * late), but re-capturing the sky is a ~1 s stall each time. The capture is
+	 * needed once; the exposure settings are cheap and idempotent. See the
+	 * ASkyLight loop.
+	 */
+	bool GLookSkyCaptured = false;
+
+	/** Whether the sun has already been marked for a render-state update. */
+	bool GLookSunApplied = false;
 }
 
 void AMCFrameCaptureGameMode::ApplyLook()
@@ -895,7 +1002,16 @@ void AMCFrameCaptureGameMode::ApplyLook()
 		ADirectionalLight* Sun = *It;
 		// Oblique but high: one lit face, one sky-lit face, and short enough
 		// shadows that the courtyard is not swallowed.
-		Sun->SetActorRotation(FRotator(-48.0f, -135.0f, 0.0f));
+		//
+		// Movable and Movable-only-from-the-first-pass, for the same reason as
+		// the sky: SetMobility on an already-movable light still dirties the
+		// render state, which re-registers the shadow cascades for the whole
+		// scene -- 1.17 M shadow casters' worth. Once is enough.
+		if (!GLookSunApplied)
+		{
+			Sun->SetActorRotation(FRotator(-48.0f, -135.0f, 0.0f));
+			GLookSunApplied = true;
+		}
 
 		if (ULightComponent* L = Sun->GetLightComponent())
 		{
@@ -905,7 +1021,30 @@ void AMCFrameCaptureGameMode::ApplyLook()
 			// is set.
 			L->SetMobility(EComponentMobility::Movable);
 			L->SetIntensity(SunLux);
-			L->SetCastShadows(true);
+
+			// Shadows are off by default and this used to be an unconditional
+			// SetCastShadows(true), which meant the level's setting was irrelevant:
+			// enabling a light at all was enough to make the process die on
+			// startup with
+			//
+			//   Assertion failed: NumAcceptedStaticMeshes >= 0 && MDCIdx < ((uint16) 0xffff)
+			//   [File:.../Runtime/Renderer/Private/ShadowSetup.cpp] [Line: 1611]
+			//
+			// AcceptMDC() checks the mesh-draw-command index against MAX_uint16,
+			// and this scene still carries 1,041 legacy ISM clusters holding
+			// 1,171,144 instances from the original cube-layer pipeline, which is
+			// more than the shadow pass can index. Turning cast_shadow off on those
+			// components does not help -- the editor-side write does not mark the
+			// render state dirty.
+			//
+			// -MCshadows=1 opts back in for anyone testing after the legacy layer
+			// is retired. Until then, shadows on means no frame at all.
+			int32 ShadowFlag = 0;
+			const bool bWantShadows =
+				FParse::Value(FCommandLine::Get(), TEXT("MCshadows="),
+							  ShadowFlag) && ShadowFlag > 0;
+			L->SetCastShadows(bWantShadows);
+
 			L->SetUseTemperature(true);
 			L->SetTemperature(5500.0f);
 		}
@@ -918,6 +1057,19 @@ void AMCFrameCaptureGameMode::ApplyLook()
 			// Real-time capture keeps the sky light consistent with the
 			// atmosphere, whose luminance is itself derived from the sun. A baked
 			// capture is a constant that stops matching the moment the sun moves.
+			//
+			// **Only on the first pass.** MarkRenderStateDirty() below discards
+			// the capture and forces the sky to be re-rendered and re-uploaded,
+			// and that costs on the order of a second -- measured, not guessed:
+			// re-running ApplyLook every second produced a repeating ~1.2 s
+			// stall, which is what made the camera feel frozen and left the CPU
+			// pinned on one core with the GPU idle. ApplyLook is called on a
+			// timer precisely so that a *late-streaming* PostProcessVolume gets
+			// picked up, so the repeat is kept -- but it must not re-capture the
+			// sky fourteen more times to achieve that.
+			//
+			// The settings are written unconditionally (they are idempotent, and
+			// cheap); only the render-state dirty is guarded.
 			C->SetMobility(EComponentMobility::Movable);
 			C->bRealTimeCapture = true;
 			C->SetIntensity(gSkyOverride >= 0.0f ? gSkyOverride : 0.25f);
@@ -926,7 +1078,11 @@ void AMCFrameCaptureGameMode::ApplyLook()
 			C->bLowerHemisphereIsBlack = false;
 			C->LowerHemisphereColor =
 				FLinearColor(0.18f, 0.16f, 0.14f, 1.0f);
-			C->MarkRenderStateDirty();
+			if (!GLookSkyCaptured)
+			{
+				GLookSkyCaptured = true;
+				C->MarkRenderStateDirty();
+			}
 		}
 	}
 
@@ -1022,7 +1178,14 @@ void AMCFrameCaptureGameMode::ApplyLook()
 	// editor showed the instances correctly bound, so this checks the *packaged*
 	// build -- "it works in the editor" and "the reference survived the cook" are
 	// different claims, and only the second one ships.
+	// Resolved once. LoadObject is a synchronous load: four of them on a
+	// one-second timer is four blocking asset loads per second, forever, for a
+	// report that says the same thing every time. It was a per-second cost
+	// disguised as a diagnostic.
+	static bool bProbedAssets = false;
+	if (!bProbedAssets)
 	{
+		bProbedAssets = true;
 		FString Report;
 		auto Probe = [&Report](const TCHAR* Path) -> FString
 		{
@@ -1064,16 +1227,26 @@ void AMCFrameCaptureGameMode::ApplyLook()
 	// Written to a file, not just the log: a Shipping build's log routing is not
 	// reliable, and "did this run and how many volumes did it find" is exactly
 	// the question that has been unanswerable through three attempts.
+	//
+	// Only when the result actually changed. ApplyLook is called on a timer,
+	// and a line appended every second records the same numbers 15 times; the
+	// interesting content is the pass where `volumes` first becomes non-zero,
+	// which is the one that proves the PostProcessVolume finally streamed in.
 	{
 		const FString Line = FString::Printf(
 			TEXT("ApplyLook sun=%.0f sky=%.3f ev=%.2f fog=%.4f volumes=%d\r\n"),
 			SunLux, gSkyOverride >= 0.0f ? gSkyOverride : 0.25f,
 			ExposureWindowMin, gFogOverride >= 0.0f ? gFogOverride : 0.0015f,
 			Volumes);
-		FFileHelper::SaveStringToFile(Line,
-			TEXT("Q:/MC2UE5/logs/applylook.txt"),
-			FFileHelper::EEncodingOptions::AutoDetect, &IFileManager::Get(),
-			FILEWRITE_Append);
+		static FString LastLookLine;
+		if (Line != LastLookLine)
+		{
+			LastLookLine = Line;
+			FFileHelper::SaveStringToFile(Line,
+				TEXT("Q:/MC2UE5/logs/applylook.txt"),
+				FFileHelper::EEncodingOptions::AutoDetect, &IFileManager::Get(),
+				FILEWRITE_Append);
+		}
 	}
 }
 

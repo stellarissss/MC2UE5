@@ -25,6 +25,13 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Logging/LogMacros.h"
+
+// Declared here rather than kept private to the .cpp: DEFINE_LOG_CATEGORY in a
+// .cpp only makes the name visible to that one translation unit, and this file
+// is excluded from the module's unity build, so it compiles on its own. The
+// declaration also means other translation units can log to this category.
+DECLARE_LOG_CATEGORY_EXTERN(LogMCLayer, Log, All);
 
 class UWorld;
 

@@ -35,6 +35,14 @@ public class MCReplica : ModuleRules
 			// 196,944-vertex terrain tile arrives almost empty; the heightfield
 			// is shipped as raw data and triangulated here instead.
 			"ProceduralMeshComponent",
+			// UMCMeshTools writes vertex-instance normals into a mesh
+			// description. A description built from script has no normals and
+			// UStaticMesh::BuildFromMeshDescription copies them verbatim into
+			// the render data without computing them, so a script-built surface
+			// shades with a zero normal and renders black. Both modules are
+			// engine-side and referenced only from WITH_EDITOR code.
+			"MeshDescription",
+			"StaticMeshDescription",
 		});
 	}
 }

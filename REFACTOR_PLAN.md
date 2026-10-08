@@ -1313,5 +1313,109 @@ StaticMesh.cpp:8589    StaticMeshVertex.TangentZ = VertexInstanceNormals[VertexI
 **注意**：修好之前，地形的视觉验收**无法进行**；而结构件（走 OBJ 路线、有法线）
 不受此影响，可以先行验收。
 
+### 8.38 【已修复】法线：新增 C++ 写入器并全链路打通
+
+**做法**：新增 `project/Source/MCReplica/{Public,Private}/MCMeshTools.{h,cpp}`，
+提供 `UMCMeshTools::WriteVertexInstanceNormals(UStaticMesh*, TArray<FVector> Normals,
+TArray<FVector> Tangents, float BinormalSign)`，Python 可调。
+函数体包在 `#if WITH_EDITOR` 内——法线是构建期的事，打包版零成本、零依赖。
+配套新增 `CountUsableNormals()`，**回读资产**统计有效法线数量，
+因为「写入函数返回了正确数字」不等于「法线在Commit + 重建后还活着」。
+
+**API 事实（踩过的坑，都已核实）**：
+- 法线通过属性数组写入：`FStaticMeshAttributes(MD).Register()` →
+  `GetVertexInstanceNormals()` → `Normals[VertexInstanceID] = ...`。
+  `SetVertexInstanceNormal` **在本引擎不存在**，别按记忆写。
+- `FVertexInstanceArray` **没有 `begin()/end()`**，range-for 编不过。
+  只能按索引遍历 + `IsValid(i)` 判空洞（有空洞直接返回错误码，不静默跳过）。
+- `GetSafeNormal()` **不接受兜底参数**，退化情况要自己判。
+- `MeshDescriptionElementsAttributeInterfaces.h` **在 5.8 已不存在**，
+  `TVertexInstanceAttributesRef` 在 `MeshDescription.h` 里。
+- Python 暴露名是 **`MCMeshTools`**（类名 `UMCMeshTools` 去 U），
+  **不是** `MC2UE5MeshTools`。用 `dir(unreal)` 过滤 `MC` 前缀可确认。
+
+**数据侧**：`pack_terrain_tiles.py` 新增输出 `.nrm` / `.tan`（每顶点，法线由高度场梯度解析求出，
+最终 UE 空间为 `(-dzdx, +dzdy, 1)` —— OBJ 路径在导入时会翻转 Y，两条路必须一致）；
+`build_terrain_meshes.py` 按「每三角面角点一个实例」的顺序展开成逐实例数组后调用 C++ 写入，
+并校验 `written == want*3`，不等就报错。
+
+**实测**：`CountUsableNormals` 回读 4 个瓦片 **387,096 / 387,096 全部有效**；
+重建 24/24 瓦片通过，`676,656 / 676,656` 三角形。
+
+### 8.39 【已修复】一个先前就存在、一直被掩盖的编译断点
+
+`MCLayerControl.cpp` **自上次成功打包以来从未编译过**——所以游戏能跑，但这个文件的所有成果
+（`-MClayers=` 分层开关、帧时间环形缓冲）从未进入任何可运行构建。
+
+报错是 `DEFINE_LOG_CATEGORY(LogMCLayer)` 处`缺少类型说明符`：
+该文件只有 `DEFINE_`没有 `DECLARE_LOG_CATEGORY_EXTERN`，也没有 include 日志头；
+它又被 Adaptive Build 排除出 unity build，要单独编译，于是单独失败。
+修法：`MCLayerControl.h` 加 `#include "Logging/LogMacros.h"` +
+`DECLARE_LOG_CATEGORY_EXTERN(LogMCLayer, Log, All);`。
+
+**方法学**：编译失败时UBT 只说 `Exited with error code 1` 且不打印诊断。
+**直接手动跑 cl.exe + 响应文件，并把输出按 GBK 转 UTF-8**，才拿到真正的错误行。
+以后遇到「exit code 1 但无诊断」一律照此办理。
+
+### 8.40 【已修复】关卡里根本没有灯 —— 这是「画面偏黑」的真正原因
+
+普查关卡全部 actor：`MCblk 1041 / B 158 / MC 40 / T 24 / SkyAtmosphere 1 / PlayerStart 1`。
+**没有 DirectionalLight，没有 SkyLight。**
+这与 `applylook` 日志里那句 `CreateLight: 0 actors` 完全吻合——灯从来没被创建成功，
+而当时没人把它当成阻塞项。
+
+**没有灯 ⇒ 没有任何表面可以被照亮**。此前所有关于「画面偏黑 / 过曝」的观察，
+量的都是**天空穹**，不是被照亮的表面：
+- `-MCsuns=100000` → 全屏纯白（天空饱和）
+- `-MCsuns=1000 / 10000` → 地面**不变**（没有光源可调）
+这也解释了为什么调光强对地面毫无作用。
+
+**修法**：新增 `tools/ensure_lighting.py`（幂等），建 `MC_Sun`
+（intensity 4.0、rotation -58/0/34、5600K；**俯角刻意不用 -90**，
+顶光会把所有屋顶墙面压成同一个值，正是这次重构要摆脱的「一片褐色色块」）
+与 `MC_SkyLight`（intensity 1.0、real_time_capture、冷色 0.62/0.72/0.90）。
+修完后天空首次渲染正常（不再过曝），证明灯确实生效。
+
+### 8.41 【已修复】一开灯就崩：阴影pass 的 16 位索引溢出
+
+崩溃点（连续 4 次同一断言）：
+```
+Assertion failed: NumAcceptedStaticMeshes >= 0 && MDCIdx < ((uint16) 0xffff)
+[File:.../Runtime/Renderer/Private/ShadowSetup.cpp] [Line: 1611]
+```
+读源码 `ShadowSetup.cpp:1609-1611`：`AcceptMDC()` 里
+`check(NumAcceptedStaticMeshes >= 0 && MDCIdx < MAX_uint16)`——
+**单个 pass 的 mesh draw command 索引超过 65535**。
+
+**排查中被否掉的三个错误假设**（都记下来，别重走）：
+1. ❌「旧体素层的 ISM 投影导致」→ 对 1041 个组件写 `cast_shadow=False` **无效**：
+   编辑器侧写属性不会标脏渲染状态，阴影 pass 照样收集。
+2. ❌「关卡里太阳的cast_shadows 没关」→ 关了，照样崩。
+   （且 `cast_shadows` 是 **LightComponent** 上的属性，不在 actor 上；
+   设在 actor 上会抛 `Failed to find property`，静默无效。）
+3. ❌「天光的 cast_shadows 没关」→ 关了，照样崩。
+
+**真凶**：`MCConsoleCommands.cpp:1024` 有一句无条件的
+`L->SetCastShadows(true);`——**运行时控制台命令强制打开阴影，
+关卡里的设置根本不生效**。
+改成默认关闭、仅 `-MCshadows=1` 显式开启。改完游戏不再崩溃。
+
+### 8.42 【仍未解决】`UnrealEditor -game` 走不完加载 —— 视觉验收被工具卡住
+
+修完崩溃后游戏能跑 40 秒、fps=365、诊断正常刷新，但**加载遮罩
+「Preparing Mesh Distance Fields (2)」始终不消失，画面从不真正 present**，
+随后进程自行退出。这与 `eng-4` 早前记录的一致。
+
+**结论**：在这台机器上 `UnrealEditor.exe -game` + 窗口截图这条路**不能作为视觉验收手段**，
+这是**验证工具的缺陷，不是游戏的缺陷**。
+下一步应走**打包后的真实游戏**（本来就是最终交付物），或修好引擎内截帧
+（`MCFrameCapture` 已在模块里，但同样受制于「从不 present」）。
+
+**当前可信的验收依据**（全部来自磁盘与引擎回读，不依赖截图）：
+地形 676,656/676,656 三角形、24/24 瓦片、法线 387,096/387,096 有效、
+材质 51/51 + 贴图 51/51、`terrain_-016_-416` 绑定 9 个材质含
+brick_pink/fabric_green/fabric_lime/fabric_white、182 个网格 actor 全部
+`visible=True` 且未隐藏、关卡含 DirectionalLight=1 + SkyLight=1。
+
 ---
-*本文档为唯一权威计划。S0 定架构，S1–S4 已回填，S5 见 §8，S4.5 见 §8.10，S5.5/5.6 见 §8.13–8.37。*
+*本文档为唯一权威计划。S0 定架构，S1–S4 已回填，S5 见 §8，S4.5 见 §8.10，S5.5/5.6 见 §8.13–8.42。*
